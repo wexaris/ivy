@@ -1,0 +1,5 @@
+
+fun main(args: String[]) -> int
+{
+	return 1;
+}

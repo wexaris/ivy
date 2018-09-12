@@ -1,2 +1,9 @@
-*.vcxproj
-*.filters
+# Directories
+.vscode/
+bin/*
+obj/*
+
+# Files
+*.o
+*.obj
+*.exe
