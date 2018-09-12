@@ -87,7 +87,9 @@ inline int val_hex(char c) {
 	if (in_range(c, '0', '9')) return c - '0';
 	if (in_range(c, 'a', 'f')) return c - 'a' + 10;
 	if (in_range(c, 'A', 'F')) return c - 'A' + 10;
-	throw std::runtime_error("Tried to get hex value of " + c);
+	
+	std::string msg = std::string("Could not get hex value of '") + c + "'";
+	throw std::runtime_error(msg);
 }
 
 /*	Returns true if the input value corresponds to EOF. */
