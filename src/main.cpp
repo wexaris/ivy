@@ -23,7 +23,8 @@ int main(/*int argc, char* argv[]*/) {
 
 	// TODO: /lexer/numbers/ add AST nodes
 	// TODO: Make the parser
-	Lexer::test_print_tokens("tests/main.ivy");
+	
+	Lexer::test_print_tokens();
 	
 	return 0; 
 }

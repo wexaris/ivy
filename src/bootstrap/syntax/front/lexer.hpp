@@ -101,7 +101,7 @@ public:
 		Once EOF has been reached, '\0' will be returned. */
 	Token next_token();
 
-	/*	Test the lexer.
-		Prints all of the tokens in the source file. */
-	static void test_print_tokens(std::string file);
+	/*	Tests for asessing the lexer's functionality. */
+	static void test_print_tokens();
+	static void test_read_without_source();
 };

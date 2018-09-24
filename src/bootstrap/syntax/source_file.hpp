@@ -17,10 +17,23 @@ private:
 	/* Start position in the CodeMap */
 	int start_position;
 
+	/* The origin of the SourceFile' source code. */
+	enum SFOrigin {
+		// SourceFile source is from a file on the system
+		FILE,
+		// SourceFile source is hand written, from the termial, or elsewhere
+		RAW,
+	} src_origin;
+
 public:
-	/* Create a new SourceFile provided a path, source and position in CodeMap. */
+	/* 	Create a new SourceFile.
+		Assumed to be from a file. */
 	SourceFile(std::string path, std::string src, int start_pos) 
-		: filepath(path), src(src), start_position(start_pos) { }
+		: filepath(path), src(src), start_position(start_pos), src_origin(FILE) { }
+	/* 	Create a new SourceFile.
+		Assumed to be raw. */
+	SourceFile(std::string src, int start_pos) 
+		: src(src), start_position(start_pos), src_origin(RAW) { }
 
 	inline std::string path() const { return filepath; }
 
@@ -35,6 +48,9 @@ public:
 
 	/* Length of the source code in the file. */
 	inline int len() const { return src.length(); }
+
+	/* Origin of the SourceFiles' source. */
+	inline SFOrigin origin() const { return src_origin; }
 
 	/*	Returns the line position corresponding to the given index.
 		The index must be relative to the source file. */

@@ -549,14 +549,9 @@ Token Lexer::next_token_inner() {
 #include "token_translate.hpp"
 #include <iostream>
 
-void Lexer::test_print_tokens(std::string file) {
-
-	// Stop if the test file is not found
-	if (!FileLoader::file_exists(file))
-		throw std::runtime_error("TEST_PRINT_TOKENS failed. The file at the provided path could not be opened");
-
+void Lexer::test_print_tokens() {
 	// Create the SourceFile and Lexer
-	SourceFile source(file, FileLoader::read_file(file), 0);
+	SourceFile source("\nfun main(args: String[]) -> int\n{\n\treturn 1;\n}", 0);
 	Lexer lex(&source);
 
 	// Loop through and print all of the tokens
@@ -565,4 +560,18 @@ void Lexer::test_print_tokens(std::string file) {
 		std::cout << translate::tk_str(tk) << std::endl;
 		tk = lex.next_token();
 	}
+}
+
+void Lexer::test_read_without_source() {
+
+	// Create lexer without target file
+	Lexer lex;
+
+	// Try to get a token
+	Token tk = lex.next_token();
+
+	// The test failed
+	// The lexer retrieved a token even though it has no source code
+	// The thing that should have failed was 'lineno()' sincie it queries the SourceFIle length
+	throw std::runtime_error("TEST_READ_WITHOUT_SOURCE failed: Lexer retrieved a token without a SourceFile");
 }
