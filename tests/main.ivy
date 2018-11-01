@@ -1,5 +1,48 @@
 
+/* src/foo/bar.ivy */			// module 'bar' is declared through a file
+
+mod bar;
+
+pub struct Pos<'a> {				// make public struct 'Pos'
+	pub x: 'a i32;
+	pub y: 'a i32;
+}
+
+impl Pos {						// methods need to implemented seperately
+	pub fun new(x: i32, y: i32) -> Pos {
+		Pos { x: x, y: y }
+	}
+}
+
+pub trait Raw {					// make public trait 'Raw'
+	fun raw(&self) -> (i32, i32);
+}
+
+impl Raw for Pos {				// implement trait 'Raw' for struct 'Pos'
+	pub fun raw(&self) -> (i32, i32) {
+		(x, y)
+	}
+}
+
+
+/* src/main.ivy */				// module 'main' means this is a binary, not a lib
+
+mod main;
+import mod bar;					// import everyting in module 'bar' for use in this module
+// use with scope				// a library could be imported with "import package <lib>"
+// p: bar::Pos					// if you want to use an import outside of the current module, you need to also export it
+								// import export mod foo::bar
+
+use bar;						// scope to module 'bar' implicity from now on
+// no need for scope
+// p: Pos
+
 fun main(args: String[]) -> int
 {
-	return 1;
+	var pos: Pos = Pos::new(1, 1);
+	print!("{:?}", pos);
+
+	print!("Hello, World!");
+
+	return 0;
 }

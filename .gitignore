@@ -1,9 +1,13 @@
-# Directories
-.vscode/
-bin/*
-obj/*
+###################
+### Directories ###
+###################
 
-# Files
-*.o
-*.obj
-*.exe
+# IDE
+.vs/*
+.vscode/*
+.idea/*
+
+# Project
+bin/*
+lib/*
+build/*
