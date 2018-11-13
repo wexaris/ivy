@@ -1,11 +1,9 @@
-###################
-### Directories ###
-###################
-
 # IDE
 .vs/*
 .vscode/*
-.idea/*
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
 
 # Project
 bin/*

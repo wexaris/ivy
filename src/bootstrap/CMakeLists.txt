@@ -8,13 +8,6 @@ set( CURR_DIR ${CMAKE_CURRENT_LIST_DIR} )
 # should be C++17 for [[attributes]] to work
 set( CMAKE_CXX_STANDARD 17 )
 
-# add debug / release specific compile options
-if( ${CMAKE_BUILD_TYPE} EQUAL Debug )
-	add_compile_options( -g -O0 )
-else()
-	add_compile_options( -O3 )
-endif()
-
 # set inlude path
 include_directories( ${CURR_DIR} )
 
