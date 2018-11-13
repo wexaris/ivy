@@ -35,12 +35,14 @@ void compile(const std::vector<std::string>& input, const std::string& output) {
 }
 
 inline std::string dir_from_path(const std::string& path) {
-	int last_slash_index = 0;
+	size_t last_slash_index = 0;
 	for (size_t i = 0; i < path.length(); i++)
 		if (path[i] == '/')
 			last_slash_index = i;
 	return path.substr(0, last_slash_index + 1);
 }
+
+#if (false)
 
 int main(int argc, char* argv[]) {
 
@@ -119,3 +121,13 @@ int main(int argc, char* argv[]) {
 
 	compile(input_files, output_file);
 }
+
+#else
+
+int main() {
+
+	Lexer::test_print_tokens();
+	Lexer::test_read_without_source();
+}
+
+#endif
