@@ -16,12 +16,12 @@ struct Span {
 	 * Holds the absolute bit position,
 	 * as well as the line and column. */
 	struct LinePos { 
-		int bit;
+		size_t bit;
 		int line;
 		int col;
 	} lo, hi;
 
-	Span(SourceFile& sf, int lo_bit, int lo_line, int lo_col, int hi_bit, int hi_line, int hi_col)
+	Span(SourceFile& sf, size_t lo_bit, int lo_line, int lo_col, size_t hi_bit, int hi_line, int hi_col)
 		: sf(sf),
 		lo(LinePos{ lo_bit, lo_line, lo_col }),
 		hi(LinePos{ hi_bit, hi_line, hi_col })

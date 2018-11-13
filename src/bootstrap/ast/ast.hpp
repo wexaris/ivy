@@ -60,10 +60,10 @@ struct Doc {
 	Doc(int bitpos, std::string text) : bitpos(bitpos), text(std::move(text)) {}
 
 	/*	Returns the length of the comment. */
-	inline unsigned long len() const { return text.length(); }
+	inline size_t len() const { return text.length(); }
 
 	/*	Returns the position of the next character after the comment. */
-	inline unsigned long end() const { return bitpos + text.length(); }
+	inline size_t end() const { return bitpos + text.length(); }
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////

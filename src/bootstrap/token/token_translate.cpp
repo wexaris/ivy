@@ -49,10 +49,10 @@ std::string translate::tk_str(int type) {
 		case (int)TokenType::LE:		return "<=";
 		case (int)TokenType::ANDE:		return "&=";
 		case (int)TokenType::ORE:		return "|=";
-		case (int)TokenType::AND:		return "&&";
+		//case (int)TokenType::AND:		return "&&";
 		case (int)TokenType::OR:		return "||";
 		case (int)TokenType::SHL:		return ">>";
-		case (int)TokenType::SHR:		return "<<";
+		//case (int)TokenType::SHR:		return "<<";
 
 		// Miscellaneous
 		case (int)TokenType::DOTDOTDOT:		return "...";
@@ -66,7 +66,7 @@ std::string translate::tk_str(int type) {
 		case (int)TokenType::THING:		return "thing";
 		case (int)TokenType::STR:		return "string";
 		case (int)TokenType::CHAR:		return "char";
-		case (int)TokenType::INT:		return "intr";
+		case (int)TokenType::INT:		return "int";
 		case (int)TokenType::I8:		return "i8";
 		case (int)TokenType::I16:		return "i16";
 		case (int)TokenType::I32:		return "i32";

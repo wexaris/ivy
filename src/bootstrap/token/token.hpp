@@ -5,14 +5,13 @@
 #include "util/span.hpp"
 #include <cstdint>
 #include <string>
+#include <optional>
 
 #include "source/source_file.hpp"
-//class SourceFile;
 
 /* The token class.
- * Created by the lexer for use in parsing.
- * The token has a type and might contain a value.
- * It also stores the token's location.
+ * Has a type and might contain a value.
+ * Also stores the token's location.
  */
 class Token {
 	/* The type of the token.
@@ -28,10 +27,7 @@ class Token {
 	 */
 	std::string str = "";
 
-	/* Information about the location of the token.
-	 * Contains a pointer to the origin file
-	 * and the position in the source.
-	 */
+	/* Information about the location of the token. */
 	std::optional<Span> tk_span = std::nullopt;
 
 public:
@@ -48,8 +44,8 @@ public:
 		: ty((int)type),
 		tk_span(sp)
 	{}
-	/* Create an incomplete token from it's type, location
-	 * and store it's string literal.
+	/* Create an incomplete token.
+	 * Has a type and string, but no specified span.
 	 */
 	Token(TokenType type, const std::string& str)
 		: ty((int)type),
@@ -77,9 +73,8 @@ public:
 		: ty(type),
 		tk_span(sp)
 	{}
-	/* Create an incomplete token from it's type, location and
-	 * store it's string literal.
-	 * Span can and should be added later.
+	/* Create an incomplete token.
+	 * Has a type and string, but no specified span.
 	 */
 	Token(int type, const std::string& str)
 		: ty(type),
@@ -97,8 +92,9 @@ public:
 	/* Returns the type of the token.
 	 * If the return is 0, the file has reached EOF.
 	 * If the return is under 256, it can be cast to a character.
-	 * If the return is over 255, it can be translated into a string
-	 * with 'translate::tk_str()' from 'token_translate.h'
+	 * If the return is over 256, it can be cast to a TokenType.
+	 * The type can be translated into a string
+	 * with 'translate::tk_str()'
 	 */
 	inline int type() const { return ty; }
 

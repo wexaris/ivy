@@ -14,10 +14,7 @@ private:
 
 public:
 	/* Returns true if there exists a file at the given path. */
-	static bool file_exists(const std::string& path) {
-		std::ifstream f (path, std::ios::in | std::ios::binary);
-		return f.good();
-	}
+	static bool file_exists(const std::string& path);
 
 	/* Returns a string with all of the text in the file at the give path
 	 * Throws an exception if the file doesn't exist.
@@ -53,7 +50,7 @@ public:
 	SourceFile& load_file(const std::string& path);
 
 	/* The next free index in the SourceMap. */
-	inline unsigned long next_start_pos() const {
+	inline size_t next_start_pos() const {
 		return source_files.empty() ? 0 : (*source_files.end())->end_pos();
 	}
 

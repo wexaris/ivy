@@ -16,7 +16,7 @@ private:
 	std::vector<int> newline_pos;
 
 	/* Start position in the CodeMap */
-	int start_position;
+	int start_position = 0;
 
 	/* The origin of the SourceFile' source code. */
 	enum Origin {
@@ -35,31 +35,30 @@ public:
 	/* Create a new SourceFile.
 	 * Assumed to be raw.
 	 * */
-	SourceFile(const std::string& src, int start_pos) 
-		: path(), src(std::move(src)), newline_pos(), start_position(start_pos), src_origin(RAW) { }
+	SourceFile(const std::string& src) 
+		: path(), src(std::move(src)), newline_pos(), src_origin(RAW) { }
 
-	inline std::string filepath() const { return path; }
+	inline std::string filepath() const			{ return path; }
 
 	/* Start position in the CodeMap. */
-	inline int start_pos() const { return start_position; }
+	inline int start_pos() const				{ return start_position; }
 	/* End position in the CodeMap. */
-	inline unsigned long end_pos() const { return start_position + src.length(); }
+	inline size_t end_pos() const				{ return start_position + src.length(); }
 
 	/* A view into the file's source code. */
-	inline const std::string& source() { return src; }
+	inline const std::string& source() const	{ return src; }
 
 	/* Length of the source code in the file. */
-	inline unsigned long len() const { return src.length(); }
+	inline size_t len() const					{ return src.length(); }
 
-	/* The type of origin of the file's source code. */
-	inline Origin origin() const { return src_origin; }
-
+	/* The source code's origin type. */
+	inline Origin origin() const				{ return src_origin; }
 
 	/* Save a index as a newline position.
 	 * Called when the source is being tokenized.
 	 * Newline indexing is used for error reporting,
 	 * as it provides a fast way to get to the needed line. */
-	inline void save_newline(int index) {
+	inline void save_newline(const int& index) {
 		newline_pos.push_back(index);
 	}
 };

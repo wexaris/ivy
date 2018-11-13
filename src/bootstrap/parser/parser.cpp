@@ -2,6 +2,13 @@
 #include "util/ranges.hpp"
 #include "ast/ast.hpp"
 
+bool Attributes::contains(TokenType ty) {
+	for (auto attr : *this)
+		if (attr.ty == ty)
+			return true;
+	return false;
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////    Expects    ///////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -243,7 +250,7 @@ Attributes Parser::attributes() {
 				break;
 
 			default:
-				Session::bug("get_attributes failed to identify an attribute");
+				Session::bug("attribute parser could't identify an attribute");
 		}
 		bump();
 	}
@@ -292,11 +299,11 @@ void Parser::generic_params() {
 
 	type_or_lt();
 
-	while (curr_tok.type() == ',') {
+	while (curr_tok.type() != '>') {
 		bump();
 		type_or_lt();
 	}
-
+	
 	expect('>');
 	end_trace();
 }

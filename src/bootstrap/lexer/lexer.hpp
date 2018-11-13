@@ -15,17 +15,16 @@ private:
 	 * If no source file has been set, the index is invalid,
 	 * so source code reading will fail.
 	 */
-	size_t index = __LONG_LONG_MAX__;
+	size_t index = SIZE_MAX;
 
 protected:
-	/* Contains all of the 
-	 */
+	/* Contains the current SourceFile and a shorthand to it's source. */
 	struct SFContext {
 		SourceFile& file;
 		const std::string& src;
 	};
-	/* A possible SoureFileContext object.
-	 * */
+	/* A possible SFContext object.
+	 * Could not exist, if the code doesn't originate from a file. */
 	std::optional<SFContext> sf = std::nullopt;
 
 	/* The current character in the source file */
@@ -45,10 +44,6 @@ protected:
 	char read_next_char();
 
 public:
-	/* Construct a new SourceReader.
-	 * The reading process will fail if no SourceFile will be supplied.
-	 */
-	//SourceReader() {}
 	/* Construct a new SourceReader given a SourceFile. */
 	explicit SourceReader(SourceFile& file) : index(0), sf(SFContext{ file, file.source() }) {
 		// Set the next character and bump it to the current one
@@ -84,7 +79,7 @@ public:
 	/* Current absolute position in the sourcefile.
 	 * Coincides with the position of the character 'curr'.
 	 */
-	constexpr inline int bitpos() const { return index - 2; }
+	constexpr inline size_t bitpos() const { return index - 2; }
 	/* Current line number.
 	 * Coincides with the position of the character 'curr'.
 	 */

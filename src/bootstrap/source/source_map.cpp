@@ -1,6 +1,11 @@
+#include "source_map.hpp"
+
 #include <memory>
 
-#include "source_map.hpp"
+bool FileLoader::file_exists(const std::string& path) {
+	std::ifstream f (path, std::ios::in | std::ios::binary);
+	return f.good();
+}
 
 std::string FileLoader::read_file(const std::string& path) {
 	// Open the file at the path
@@ -12,7 +17,7 @@ std::string FileLoader::read_file(const std::string& path) {
 
 		// Initialize string size to file length
 		fs.seekg(0, std::ios::end);
-		str.resize(fs.tellg());
+		str.resize((unsigned int)fs.tellg());
 		fs.seekg(0, std::ios::beg);
 
 		// Read to the string

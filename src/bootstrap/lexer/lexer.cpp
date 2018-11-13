@@ -14,7 +14,7 @@ void SourceReader::reset(SourceFile& file) {
 	sf.emplace(SFContext{ file, file.source() });
 
 	// Set the position tracking to the beginning of the file
-	index = __LONG_LONG_MAX__;
+	index = SIZE_MAX;
 	curr_ln = 1;
 	curr_col = 1;
 
@@ -41,7 +41,7 @@ void SourceReader::bump(int n) {
 
 		// Increment reading position
 		if (curr == '\n') { 
-			sf->file.save_newline(bitpos());
+			sf->file.save_newline(static_cast<int>(bitpos()));
 			curr_col = 0;
 			curr_ln++;
 		} else {
@@ -194,9 +194,9 @@ Token Lexer::next_token() {
 	eat_ws_and_comments(this);
 
 	// Save file positions for token span
-	int abs = bitpos();
-	int ln = curr_ln;
-	int col = curr_col;
+	auto abs = bitpos();
+	auto ln = curr_ln;
+	auto col = curr_col;
 
 	// If the current character is valid, build the next token
 	// If not, make an EOF/END token
@@ -304,7 +304,7 @@ Token Lexer::next_token_inner() {
 			bump(); return Token('^');											// ^
 
 		case '&':
-			if (next == '&') { bump(2); return Token(TokenType::AND); }			// &&
+			//if (next == '&') { bump(2); return Token(TokenType::AND); }			// &&
 			if (next == '=') { bump(2); return Token(TokenType::ANDE);	}		// &=
 			bump(); return Token('&');											// &
 
@@ -316,7 +316,7 @@ Token Lexer::next_token_inner() {
 		case '>':
 			switch (next) {
 				case '=': bump(2); return Token(TokenType::GE);			// >=
-				case '>': bump(2); return Token(TokenType::SHR);		// >>
+				//case '>': bump(2); return Token(TokenType::SHR);		// >>
 				default:  bump(2); return Token('>');					// >
 			}
 			
@@ -414,9 +414,9 @@ Token Lexer::next_token_inner() {
 			// String for building words
 			std::string build_str;
 
-			int start_byte = bitpos();
-			int start_line = lineno();
-			int start_col = colno();
+			auto start_byte = bitpos();
+			auto start_line = lineno();
+			auto start_col = colno();
 
 			bump();
 			while (curr != '"') {
@@ -492,7 +492,7 @@ Token Lexer::next_token_inner() {
 void Lexer::test_print_tokens() {
 	// TODO: This should be moved to a test file
 	// Create the SourceFile with the test input
-	SourceFile source("\nfun main(args: String[]) -> int\n{\n\treturn 1;\n}", 0);
+	SourceFile source("fun main(args: String[]) -> int\n{\n\treturn 1;\n}");
 	// Create an auto Session and Lexer
 	Session::setup(SysConfig());
 	Lexer lex(source);
@@ -505,11 +505,13 @@ void Lexer::test_print_tokens() {
 	}
 }
 
-/*void Lexer::test_read_without_source() {
+void Lexer::test_read_without_source() {
 
 	// Create an auto Session and Lexer without target file
-	Session sess;
-	Lexer lex();
+	Session::setup(SysConfig());
+
+	SourceFile sf = SourceFile("");
+	Lexer lex(sf);
 
 	// Try to get a valid token
 	if (lex.next_token() == TokenType::END) {
@@ -522,4 +524,4 @@ void Lexer::test_print_tokens() {
 	// The lexer should have checked if the current token is valid before calling 'next_token_inner()', if it wasn't
 	// it should have assumed an empty file and returned an END token
 	throw std::runtime_error("TEST_READ_WITHOUT_SOURCE failed: Lexer retrieved a valid token without a SourceFile");
-}*/
+}

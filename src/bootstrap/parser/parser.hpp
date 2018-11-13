@@ -5,7 +5,7 @@
 #include "token/token_translate.hpp"
 #include <algorithm>
 
-class Node;
+struct Node;
 
 struct Attr {
 	TokenType ty;
@@ -13,12 +13,7 @@ struct Attr {
 };
 struct Attributes : std::vector<Attr> {
 
-	inline bool contains(TokenType ty) {
-		for (auto attr : *this)
-			if (attr.ty == ty)
-				return true;
-		return false;
-	}
+	bool contains(TokenType ty);
 };
 
 /* A single part of a path. */
@@ -89,6 +84,21 @@ private:
 	 * Bumps if true, throws an error if false.
 	 */
 	void expect(const std::vector<TokenType>& exp);
+
+	/* Can interfere with normal token tree parsing,
+	 * so && is built on demand.
+	 */
+	inline void AND() {
+		expect('&');
+		expect('&');
+	}
+	/* Can interfere with normal token tree parsing,
+	 * so >> is built on demand.
+	 */ 
+	inline void SHR() {
+		expect('>');
+		expect('>');
+	}
 
 	// identifiers
 	void ident();

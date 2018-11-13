@@ -16,23 +16,22 @@ enum class Arch {
 	x64,
 };
 
-// Check for Windows and it's architecture
-#ifdef _WIN64
-	#define _OS OS::Windows
-	#define _ARCH Arch::x64
+namespace env {
+
+#ifdef _WIN64				// Check for Windows and it's architecture
+	constexpr const OS _OS = OS::Windows;
+	constexpr const Arch _ARCH = Arch::x64;
 #elif _WIN32
-	#define _OS OS::Windows
-	#define _ARCH Arch::x84
-// Check for Apple MacOS
-#elif __APPLE__
-	#if TARGET_OS_MACpP
-		#define _OS OS::MacOS
+	constexpr const OS _OS = OS::Windows;
+	constexpr const Arch _ARCH = Arch::x86;
+#elif __APPLE__				// Check for Apple MacOS
+	#if TARGET_OS_MAC
+		constexpr const OS _OS = OS::MacOS;
 	#else
     	#error "Unrecognised OS"
 	#endif
-// Check for Linux
-#elif __linux__
-	#define _OS OS::Linux
+#elif __linux__				// Check for Linux
+	constexpr const OS _OS = OS::Linux;
 #else
 	#error "Unrecognised OS"
 #endif
@@ -40,15 +39,19 @@ enum class Arch {
 // Check GNU architecture
 #if __GNUC__
 	#if __x86_64__ || __ppc64__
-		#define _ARCH Arch::x64
+		constexpr const Arch _ARCH = Arch::x64;
 	#else 
-		#define _ARCH Arch::x84
+		constexpr const Arch _ARCH = Arch::x86;
 	#endif
 #else
-	#error "Unrecognised architecture"
+	#ifndef _WIN32
+		#error "Unrecognized architecture"
+	#endif
 #endif
 
-/* Possible default varaible sizes. */
+}
+
+/* Possible default variable sizes. */
 enum class SysType {
 	i8,
 	i16,
@@ -65,11 +68,11 @@ enum class SysType {
 };
 
 struct System {
-	static inline OS get_os() 			{ return _OS; }
-	static inline Arch get_arch() 		{ return _ARCH; }
-	static inline SysType get_isize() 	{ return _ARCH == Arch::x64 ? SysType::i64 : SysType::i32; }
-	static inline SysType get_usize() 	{ return _ARCH == Arch::x64 ? SysType::u64 : SysType::u32; }
-	static inline SysType get_fsize() 	{ return _ARCH == Arch::x64 ? SysType::f64 : SysType::f32; }
+	static constexpr inline OS get_os()				{ return env::_OS; }
+	static constexpr inline Arch get_arch() 		{ return env::_ARCH; }
+	static constexpr inline SysType get_isize() 	{ return env::_ARCH == Arch::x64 ? SysType::i64 : SysType::i32; }
+	static constexpr inline SysType get_usize() 	{ return env::_ARCH == Arch::x64 ? SysType::u64 : SysType::u32; }
+	static constexpr inline SysType get_fsize() 	{ return env::_ARCH == Arch::x64 ? SysType::f64 : SysType::f32; }
 };
 
 /* The full system specification.
@@ -121,7 +124,7 @@ class Session {
 	Session() {}
 
 public:
-	static void setup(SysConfig conf) {
+	static void setup(const SysConfig& conf) {
 		cfg = conf;
 	}
 
