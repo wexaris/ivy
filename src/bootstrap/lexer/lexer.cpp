@@ -383,22 +383,23 @@ Token Lexer::next_token_inner() {
 				// Throw an exception if the character is not terminated
 				if (curr != '\'') {
 					err("unterminated character literal", 
-						Span(sf->file,
-							bitpos() - 1,
-							lineno(),
-							colno() - 1,
-							bitpos(),
-							lineno(),
-							colno()
-						)
-					);
+						Span(sf->file, bitpos() - 1, lineno(), colno() - 1,
+							bitpos(), lineno(), colno()));
 				}
 				bump();
 				return Token(TokenType::LIT_INT, std::to_string(c));
 			}
 
+			// If the first character isn't alpha or an underscore, it can't be a lifetime
+			// We presume it's an unterminated character literal
+			if (!range::is_alpha(c) && c != '_') {
+				err("unterminated character literal or invalid lifetime",
+					Span(sf->file, bitpos() - 1, lineno(), colno() - 1,
+						bitpos(), lineno(), colno()));
+			}
+
 			// If the character isn't in quotes and isn't a number, it's a lifetime
-			std::string build_str = std ::string(1, c);
+			std::string build_str = std::string(1, c);
 			while (range::is_alnum(curr) || curr == '_') {
 				build_str += curr;
 				bump();

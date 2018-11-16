@@ -20,7 +20,7 @@ std::string translate::tk_str(int type) {
 
 	// If the type is 1-255, return the ASCII character
 	if (type > 0 && type <= 255) {
-		auto s = std::string(1, (char)type);
+		auto s = std::string("'") + std::string(1, (char)type) + "'";
 		return s;
 	}
 

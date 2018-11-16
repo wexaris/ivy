@@ -13,9 +13,9 @@ bool Attributes::contains(TokenType ty) {
 /////////////////////////////////////////    Expects    ///////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Parser::expect(int exp) { 
+inline void Parser::expect(int exp) { 
 	if (curr_tok.type() != exp)
-		err("Unexpected token. Expected '" + translate::tk_str(exp) + "', found " + translate::tk_str(curr_tok.type()));
+		err("unexpected token: " + translate::tk_str(curr_tok.type()) + "; expected " + translate::tk_str(exp));
 	bump();
 }
 
@@ -31,11 +31,11 @@ void Parser::expect(const std::vector<int>& exp) {
 	}
 
 	// Collect all of the acceptable types
-	std::string expected;
-	for (auto t : exp)
-		expected += std::string("'") + translate::tk_str(t) + "', ";
+	std::string expected = translate::tk_str(exp[0]);
+	for (size_t i = 1; i < exp.size(); i++)
+		expected += std::string(", ") + translate::tk_str(i);
 
-	err("unexpected token. Expected any of " + expected + "found " + translate::tk_str(curr_tok.type()));
+	err("unexpected token: " + translate::tk_str(curr_tok.type()) + "; expected any of " + expected);
 }
 
 void Parser::expect(const std::vector<TokenType>& exp) {
@@ -50,11 +50,11 @@ void Parser::expect(const std::vector<TokenType>& exp) {
 	}
 
 	// Collect all of the acceptable types
-	std::string expected;
-	for (auto t : exp)
-		expected += std::string("'") + translate::tk_str((int)t) + "', ";
+	std::string expected = translate::tk_str(exp[0]);
+	for (size_t i = 1; i < exp.size(); i++)
+		expected += std::string(", ") + translate::tk_str(i);
 
-	err("unexpected token. Expected any of " + expected + "found " + translate::tk_str(curr_tok.type()));
+	err("unexpected token: " + translate::tk_str(curr_tok.type()) + "; expected any of " + expected);
 }
 
 
@@ -229,6 +229,10 @@ inline bool is_attr(const Token& tk) {
 			tk == TokenType::CONST;
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////      Helper Methods      /////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
 // attributes: PUB | PRIV | MUT | CONST
 Attributes Parser::attributes() {
 	Attributes attributes;
@@ -297,11 +301,12 @@ void Parser::generic_params() {
 	trace("generic_params");
 	expect('<');
 
-	type_or_lt();
-
-	while (curr_tok.type() != '>') {
-		bump();
+	if(curr_tok.type() != '>') {
 		type_or_lt();
+		while (curr_tok.type() == ',') {
+			bump();
+			type_or_lt();
+		}
 	}
 	
 	expect('>');
@@ -696,7 +701,7 @@ void Parser::expr() {
 //      | '(' ')'
 //      | '(' type (',' type)* ')'
 //      | ID
-//      | ...primitive...
+//      | ~primitive~
 void Parser::type() {
 	trace("type");
 
@@ -768,9 +773,9 @@ void Parser::type_or_lt() {
 
 	if (is_lifetime(curr_tok))
 		lifetime();
-	else try { 
+	else try {
 		type();
-	} catch (...) {
+	} catch (const InvalidToken& e) {
 		err("expected type or lifetime, found " + translate::tk_str(curr_tok.type()));
 	}
 

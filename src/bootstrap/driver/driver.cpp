@@ -3,7 +3,7 @@
 #include <iterator>
 
 SysConfig Session::cfg;
-bool Session::_verbose = false;
+Severity Session::_req_severity = Severity::MESSAGE;
 bool Session::_format = true;
 std::string Session::indent_prefix;
 
@@ -42,7 +42,7 @@ inline std::string dir_from_path(const std::string& path) {
 	return path.substr(0, last_slash_index + 1);
 }
 
-#if (false)
+#if (true)
 
 int main(int argc, char* argv[]) {
 
@@ -71,10 +71,31 @@ int main(int argc, char* argv[]) {
 				continue;
 			}
 
-			// Enable verbose logging
-			if (arg == "-v") {
-				Session::set_verbose(true);
+			// Enable trace messages
+			if (arg == "-trace") {
+				Session::enable_trace();
 				continue;
+			}
+
+			// Set required severity level for message writing
+			if (arg == "-require_sev") {
+				// If there are more options and the next one doesn't start with '-',
+				// set the requred severity limit
+				if (i + 1 <= argc && argv[i+1][0] != '-') {
+					arg = argv[++i];
+					if (arg == "trace")
+						Session::require_severity(TRACE);
+					else if (arg == "message")
+						Session::require_severity(MESSAGE);
+					else if (arg == "warning")
+						Session::require_severity(WARNING);
+					else if (arg == "error")
+						Session::require_severity(ERROR);
+					else 
+						Session::err("-require_sev invalid argument");
+					continue;
+				}
+				else Session::err("-require_sev requires an argument" + arg);
 			}
 
 			// Set output file

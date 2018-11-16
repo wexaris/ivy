@@ -10,8 +10,8 @@ enum class TokenType {
 
 	// Identifier
 	ID = 256,
-	STATIC_LF,		// 'a
-	LF,		// 'a
+	STATIC_LF,		// 'static
+	LF,				// 'a
 
 	// Documentation
 	DOC,

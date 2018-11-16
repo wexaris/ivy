@@ -66,6 +66,11 @@ private:
 	 */
 	[[noreturn]] inline void err(const std::string& msg) const {
 		Session::span_err(msg, curr_tok.span());
+		std::exit(2);
+	}
+
+	[[noreturn]] inline void fail(const std::string& msg) const {
+		Session::failure(msg);
 	}
 
 	/* Expects the current token to be of the provided type.
@@ -79,7 +84,7 @@ private:
 	/* Expects the current token to be any of the provided types.
 	 * Bumps if true, throws an error if false.
 	 */
-	void expect(const std::vector<int>& exp);
+	inline void expect(const std::vector<int>& exp);
 	/* Expects the current token to be any of the provided types.
 	 * Bumps if true, throws an error if false.
 	 */

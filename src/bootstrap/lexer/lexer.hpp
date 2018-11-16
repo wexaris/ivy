@@ -112,10 +112,6 @@ private:
 	Token next_token_inner();
 
 public:
-	/* Construct a lexer.
-	 * Since no file has been provided, the only tokens returned will be EOF.
-	 */
-	//Lexer() { load_keywords(); }
 	/* Construct a lexer to work on the provided SourceFile. */
 	explicit Lexer(SourceFile& file) : SourceReader(file) { load_keywords(); }
 
@@ -126,6 +122,7 @@ public:
 	 */
 	[[noreturn]] inline void err(const std::string& msg, const Span& sp) const {
 		Session::span_err(msg, sp);
+		std::exit(1);
 	}
 
 	/* Gets the next token.
