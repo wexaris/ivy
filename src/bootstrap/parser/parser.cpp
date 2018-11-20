@@ -693,6 +693,20 @@ void Parser::expr() {
 ////////////////////////////////////////////    Type    ///////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
+/* True if the provided token could be a primitive.
+ * ~could be~ because only the first token is checked.
+ * i.e. '*'(ptr) would pass as a type token, even though it could
+ * be followed by something else and be multiplication.
+ */
+inline bool is_type(const Token& tk) {
+	return tk.type() == '&' || tk.type() == '*' || tk.type() == '[' || tk.type() == '(' ||
+		tk == TokenType::ID || tk == TokenType::THING || tk == TokenType::STR || tk == TokenType::CHAR ||
+		tk == TokenType::INT ||
+		tk == TokenType::I64 || tk == TokenType::I32 || tk == TokenType::I16 || tk == TokenType::I8 ||
+		tk == TokenType::UINT ||
+		tk == TokenType::U64 || tk == TokenType::U32 || tk == TokenType::U16 || tk == TokenType::U8;
+}
+
 // type : '&' type
 //      | '*' type
 //      | '[' ']'
@@ -701,67 +715,65 @@ void Parser::expr() {
 //      | '(' ')'
 //      | '(' type (',' type)* ')'
 //      | ID
-//      | ~primitive~
+//      | primitive
 void Parser::type() {
 	trace("type");
 
-	// referance
-	if (curr_tok.type() == '&') {
-		bump();
-		type();								// '&' type
-	}
-
-	// pointer
-	else if (curr_tok.type() == '*') {
-		bump();
-		type();								// '*' type
-	}
-
-	// array
-	else if (curr_tok.type() == '[') {
-		bump();
-		if (curr_tok.type() == ']') {
-			bump();							// '[' ']'
-		}
-		else {
-			type();							// '[' type ']'
-			if (curr_tok.type() == ';') {
-				bump();
-				expr();						// '[' type ';' expr ']'
-			}
-			expect(']');
-		}
-	}
-
-	// tuple
-	else if (curr_tok.type() == '(') {
-		bump();
-		if (curr_tok.type() == ')') {
+	switch (curr_tok.type()) {
+		// referance type
+		case '&':
 			bump();
-			return;							// '(' ')'
-		}
-		else {
-			type();
-			while(curr_tok.type() == ',') {
-				bump();
-				type();						// '(' type (',' type)* ')'
+			type();								// '&' type
+			break;
+	
+		// pointer type
+		case '*':
+			bump();
+			type();								// '*' type
+			break;
+
+		// array type
+		case '[':
+			bump();
+			if (curr_tok.type() == ']') {
+				bump();							// '[' ']'
 			}
-			expect(')');
-		}
-	}
+			else {
+				type();							// '[' type ']'
+				if (curr_tok.type() == ';') {
+					bump();
+					expr();						// '[' type ';' expr ']'
+				}
+				expect(']');
+			}
+			break;
 
-	// custom
-	else if (curr_tok == TokenType::ID) {
-		auto type_name = curr_tok.lit();
-		ident();							// ID
-	}
+		// tuple type
+		case '(':
+			bump();
+			if (curr_tok.type() == ')') {
+				bump();
+				break;							// '(' ')'
+			}
+			else {
+				type();
+				while(curr_tok.type() == ',') {
+					bump();
+					type();						// '(' type (',' type)* ')'
+				}
+				expect(')');
+			}
+			break;
 
-	// primitive
-	else {
-		expect({TokenType::THING, TokenType::STR, TokenType::CHAR,
-				TokenType::INT, TokenType::I64, TokenType::I32, TokenType::I16, TokenType::I8,
-				TokenType::UINT, TokenType::U64, TokenType::U32, TokenType::U16, TokenType::U8,
-			});
+		// custom type
+		case static_cast<int>(TokenType::ID):
+			//std::string type_name = curr_tok.lit();
+			ident();							// ident
+			break;
+
+		// primitive type
+		default:
+			primitive();
 	}
 	
 	end_trace();
@@ -771,13 +783,9 @@ void Parser::type() {
 void Parser::type_or_lt() {
 	trace("type_or_lt");
 
-	if (is_lifetime(curr_tok))
-		lifetime();
-	else try {
-		type();
-	} catch (const InvalidToken& e) {
-		err("expected type or lifetime, found " + translate::tk_str(curr_tok.type()));
-	}
+	if (is_lifetime(curr_tok)) lifetime();
+	else if (is_type(curr_tok)) type();
+	else err("expected type or lifetime, found " + translate::tk_str(curr_tok));
 
 	end_trace();
 }
@@ -801,6 +809,19 @@ void Parser::type_sum() {
 		bump();
 		type();
 	}
+
+	end_trace();
+}
+
+// primitive : THING | STR | CHAR
+//			 | INT | I64 | I32 | I16 | I8
+//			 | UINT | U64 | U32 | U16 | U8
+void Parser::primitive() {
+	trace("primitive: " + translate::tk_str(curr_tok));
+
+	expect({ TokenType::THING, TokenType::STR, TokenType::CHAR,
+		TokenType::INT, TokenType::I64, TokenType::I32, TokenType::I16, TokenType::I8,
+		TokenType::UINT, TokenType::U64, TokenType::U32, TokenType::U16, TokenType::U8 });
 
 	end_trace();
 }

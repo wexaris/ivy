@@ -121,6 +121,7 @@ private:
 	void type_or_lt();
 	void type_with_lt();
 	void type_sum();
+	void primitive();
 
 	// file
 	void module_decl();
