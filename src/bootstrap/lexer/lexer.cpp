@@ -495,7 +495,7 @@ void Lexer::test_print_tokens() {
 	// Create the SourceFile with the test input
 	SourceFile source("fun main(args: String[]) -> int\n{\n\treturn 1;\n}");
 	// Create an auto Session and Lexer
-	Session::setup(SysConfig());
+	Session::set_sysconfig(SysConfig());
 	Lexer lex(source);
 
 	// Loop through and print all of the tokens
@@ -509,7 +509,7 @@ void Lexer::test_print_tokens() {
 void Lexer::test_read_without_source() {
 
 	// Create an auto Session and Lexer without target file
-	Session::setup(SysConfig());
+	Session::set_sysconfig(SysConfig());
 
 	SourceFile sf = SourceFile("");
 	Lexer lex(sf);

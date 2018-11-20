@@ -2,7 +2,7 @@
 #include "session.hpp"
 #include <iterator>
 
-SysConfig Session::cfg;
+SysConfig Session::cfg = SysConfig();
 Severity Session::_req_severity = Severity::MESSAGE;
 bool Session::_format = true;
 std::string Session::indent_prefix;
@@ -47,7 +47,7 @@ inline std::string dir_from_path(const std::string& path) {
 int main(int argc, char* argv[]) {
 
 	// TODO: Improve Config auto-generation
-	Session::setup(SysConfig());
+	Session::set_sysconfig(SysConfig());
 
 	std::vector<std::string> input_files;
 	std::string output_file;

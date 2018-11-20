@@ -124,13 +124,15 @@ class Session {
 	static SysConfig cfg;
 
 	/* The required severity level to print messages.
-	 * The requred level is MESSAGE by default. */
+	 * The requred level is MESSAGE by default.
+	 */
 	static Severity _req_severity;
 	/* Should trace messages be formatted.
-	 * True by default.  */
+	 * True by default.
+	 */
 	static bool _format;
 
-	/* Indentation amount on scoping */
+	/* CUrrent indentation amount for trace scoping */
 	static constexpr char INDENT[] = "  ";
 	/* Current indentation level */
 	static std::string indent_prefix;
@@ -141,29 +143,31 @@ class Session {
 	}
 
 	/* The main message logger. */
-	static inline void log(const Severity& sev, const std::string& msg) {
+	static void log(const Severity& sev, const std::string& msg) {
 		switch (sev) {
 			case Severity::MESSAGE:
-				printf("----%s\n", msg.c_str());
+				printf("---- %s\n", msg.c_str());
 				break;
 			case Severity::WARNING:
-				printf("\033[33m----%s\n\033[0m", msg.c_str());
+				printf("\033[33m---- %s\n\033[0m", msg.c_str());
 				break;
 			case Severity::ERROR:
-				printf("\033[1,31m----%s\n\033[0m", msg.c_str());
+				printf("\033[1;31m---- %s\n\033[0m", msg.c_str());
 				break;
 			case Severity::CRITICAL:
-				throw InvalidToken(msg);
+				printf("\033[1;35m---- %s\n\033[0m", msg.c_str());
+				std::exit(1);
+				break;
 
 			default:
-				printf("    %s%s\n", INDENT, msg.c_str());
+				printf("     %s\n", msg.c_str());
 		}
 	}
 
 	Session() {}
 
 public:
-	static void setup(const SysConfig& conf) {
+	static inline void set_sysconfig(const SysConfig& conf) {
 		cfg = conf;
 	}
 
@@ -199,17 +203,6 @@ public:
 			log(ERROR, std::string("error: ") + msg);
 	};
 
-	/* Emit an error with the provided message. */
-	[[noreturn]] static inline void failure(const std::string& msg) {
-		if (should_write(ERROR)) {
-			trace("FAILED");
-			end_trace();
-
-			log(ERROR, std::string("failure: ") + msg);
-			
-		}
-	};
-
 	/* Emit an error with the provided position and message.
 	 * Stops the compilation process.
 	 */
@@ -224,18 +217,34 @@ public:
 		}
 	};
 
+	/* Emit a critical error message and stop the compiler. */
+	[[noreturn]] static inline void failure(const std::string& msg) {
+		if (should_write(CRITICAL)) {
+			trace("FAILED");
+			end_trace();
+
+			log(CRITICAL, std::string("failure: ") + msg);
+		}
+	};
+
 	/* Emit an error about an internal compiler malfunction.
 	 * Stops the compilation process.
 	 */
 	[[noreturn]] static inline void bug(const std::string& msg) {
-		throw std::runtime_error("internal compiler error: " + msg);
+		log(CRITICAL, "internal compiler error: " + msg);
+		// Critical log should already exit, but we need to exit from here
+		// to make the [[noreturn]] work without errors
+		std::exit(1);
 	};
 
 	/* Emit an error about an unimplemented state.
 	 * Stops the compilation process.
 	 */
 	[[noreturn]] static inline void unimpl(const std::string& msg) {
-		throw std::runtime_error(msg + " not implemented yet");
+		log(CRITICAL, msg + " not implemented yet");
+		// Critical log should already exit, but we need to exit from here
+		// to make the [[noreturn]] work without errors
+		std::exit(1);
 	};
 
 	/* Limit the required severity for message writing. */
@@ -243,6 +252,6 @@ public:
 	static inline void enable_trace()							{ _req_severity = TRACE; };
 	static inline void enable_fmt(bool i)						{ _format = i; };
 
-	/* Returns a static reference to the Session's SysConfig. */
+	/* Returns a reference to the Session's SysConfig. */
 	static inline const SysConfig& conf() { return cfg; }
 };

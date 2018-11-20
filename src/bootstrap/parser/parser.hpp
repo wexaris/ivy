@@ -66,7 +66,7 @@ private:
 	 */
 	[[noreturn]] inline void err(const std::string& msg) const {
 		Session::span_err(msg, curr_tok.span());
-		std::exit(2);
+		std::exit(1);
 	}
 
 	[[noreturn]] inline void fail(const std::string& msg) const {
