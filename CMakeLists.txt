@@ -14,7 +14,7 @@ set( CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib/${BUILD_TYPE} )
 if( CMAKE_COMPILER_IS_GNUCXX )
 	message( "Setting GCC compile options" )
 
-	add_compile_options( -pedantic -Wall -Wextra -Werror -Weffc++ )
+	add_compile_options( -pedantic -Wall -Wextra -Werror )
 
 	# add debug / release compile options
 	if( ${CMAKE_BUILD_TYPE} EQUAL Debug )

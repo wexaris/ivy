@@ -2,8 +2,7 @@
 
 /* An enumeration of all the types of tokens.
  * Single character tokens are omitted since they can be specified with a character.
- * For this reason the enumeration starts at 256.
- */
+ * For this reason the enumeration starts at 256. */
 enum class TokenType {
 
 	END = 0,

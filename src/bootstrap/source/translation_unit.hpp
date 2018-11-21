@@ -2,42 +2,33 @@
 #include <string>
 #include <vector>
 
-class SourceFile {
+/* An item containing source code, ususally a file. 
+ * Stores the path to the file of origin and the source.
+ * Has a position inside the larger SourceMap. */
+class TranslationUnit {
 	
 private:
 	/* The path to the file from which the source code has been read */
-	std::string path;
+	const std::string path;
 	/* The full source code from a file */
-	std::string src;
+	const std::string src;
 
 	/* The indexes of newline characters.
-	 * Useful for quickly correlating line and absolute positions.
-	 */
-	std::vector<int> newline_pos;
+	 * Useful for getting a to line of code without re-reading the entire source. */
+	std::vector<size_t> newline_pos = std::vector<size_t>();
 
 	/* Start position in the CodeMap */
-	int start_position = 0;
-
-	/* The origin of the SourceFile' source code. */
-	enum Origin {
-		// SourceFile source is from a file on the system
-		FILE,
-		// SourceFile source is hand written, from the terminal, or elsewhere
-		RAW,
-	} src_origin;
+	int start_position;
 
 public:
-	/* Create a new SourceFile.
-	 * Assumed to be from a file.
-	 */
-	SourceFile(const std::string& path, const std::string& src, int start_pos) 
-		: path(std::move(path)), src(std::move(src)), newline_pos(), start_position(start_pos), src_origin(FILE) { }
-	/* Create a new SourceFile.
-	 * Assumed to be raw.
-	 * */
-	SourceFile(const std::string& src) 
-		: path(), src(std::move(src)), newline_pos(), src_origin(RAW) { }
+	/* Create a new Translation Unit. */
+	explicit TranslationUnit(const std::string& src) 
+		: src(src) {}
+	/* Create a new Translation Unit. */
+	TranslationUnit(const std::string& path, const std::string& src, size_t start_pos) 
+		: path(path), src(src), start_position(start_pos) {}
 
+	/* Returns the path to Translation Unit. */
 	inline std::string filepath() const			{ return path; }
 
 	/* Start position in the CodeMap. */
@@ -50,9 +41,6 @@ public:
 
 	/* Length of the source code in the file. */
 	inline size_t len() const					{ return src.length(); }
-
-	/* The source code's origin type. */
-	inline Origin origin() const				{ return src_origin; }
 
 	/* Save a index as a newline position.
 	 * Called when the source is being tokenized.

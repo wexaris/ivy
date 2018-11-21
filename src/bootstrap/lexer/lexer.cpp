@@ -9,9 +9,10 @@
 ////////////////////////////////////      SourceReader      ///////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-void SourceReader::reset(SourceFile& file) {
-	// Set internal SourceFile pointer to the new one
-	sf.emplace(SFContext{ file, file.source() });
+void SourceReader::reset(TranslationUnit* tu) {
+	// Set internal translation unit pointer to the new one
+	translation_unit = tu;
+	tu->source();
 
 	// Set the position tracking to the beginning of the file
 	index = SIZE_MAX;
@@ -19,7 +20,7 @@ void SourceReader::reset(SourceFile& file) {
 	curr_col = 1;
 
 	// Set the next character and bump it to the current one
-	// Bump because that updates the newline indexes in the SourceFile
+	// Bump because that updates the newline indexes in the Translation Unit
 	// Reset the column counter for it to correspond to the character 'curr'
 	next = read_next_char();
 	bump();
@@ -27,11 +28,11 @@ void SourceReader::reset(SourceFile& file) {
 
 char SourceReader::read_next_char() {
 	// If the current index is out of bounds, return '\0'
-	if (index >= sf->src.length())
+	if (index >= src.length())
 		return '\0';
 
 	// Return the next character
-	return sf->src[index++];
+	return src[index++];
 }
 
 void SourceReader::bump(int n) {
@@ -41,7 +42,7 @@ void SourceReader::bump(int n) {
 
 		// Increment reading position
 		if (curr == '\n') { 
-			sf->file.save_newline(static_cast<int>(bitpos()));
+			translation_unit->save_newline(static_cast<int>(bitpos()));
 			curr_col = 0;
 			curr_ln++;
 		} else {
@@ -93,7 +94,7 @@ void eat_ws_and_comments(Lexer* lex) {
 			while (true) {
 				// Throw an error if the block is not terminated at the end of the file
 				if (lex->curr_c() == '\0') { 
-					Span sp(lex->src(), lex->bitpos()-1, lex->lineno(), lex->colno()-1, lex->bitpos(), lex->lineno(), lex->colno());
+					Span sp(lex->trans_unit(), lex->bitpos()-1, lex->lineno(), lex->colno()-1, lex->bitpos(), lex->lineno(), lex->colno());
 					lex->err("unterminated block comment at end of file", sp);
 				}
 				if (lex->curr_c() == '*' && lex->next_c() == '/') { 
@@ -202,7 +203,7 @@ Token Lexer::next_token() {
 	// If not, make an EOF/END token
 	Token ret = is_valid((TokenType)curr) ? next_token_inner() : Token(TokenType::END);
 	// Set the token's source, position and length
-	ret.set_span(Span(sf->file, abs, ln, col, bitpos(), curr_ln, curr_col));
+	ret.set_span(Span(translation_unit, abs, ln, col, bitpos(), curr_ln, curr_col));
 
 	return ret;
 }
@@ -351,7 +352,7 @@ Token Lexer::next_token_inner() {
 					case 'U': c = scan_num_escape(this, 8); break;
 					default:
 						err("unknown character escape sequence: \\" + std::to_string(curr),
-							Span(sf->file,
+							Span(translation_unit,
 								bitpos() - 1,
 								lineno(),
 								colno() - 1,
@@ -365,7 +366,7 @@ Token Lexer::next_token_inner() {
 				bump();
 				if (curr != '\'') {
 					err("unterminated character literal", 
-						Span(sf->file,
+						Span(translation_unit,
 							bitpos() - 1,
 							lineno(),
 							colno() - 1,
@@ -383,7 +384,7 @@ Token Lexer::next_token_inner() {
 				// Throw an exception if the character is not terminated
 				if (curr != '\'') {
 					err("unterminated character literal", 
-						Span(sf->file, bitpos() - 1, lineno(), colno() - 1,
+						Span(translation_unit, bitpos() - 1, lineno(), colno() - 1,
 							bitpos(), lineno(), colno()));
 				}
 				bump();
@@ -394,7 +395,7 @@ Token Lexer::next_token_inner() {
 			// We presume it's an unterminated character literal
 			if (!range::is_alpha(c) && c != '_') {
 				err("unterminated character literal or invalid lifetime",
-					Span(sf->file, bitpos() - 1, lineno(), colno() - 1,
+					Span(translation_unit, bitpos() - 1, lineno(), colno() - 1,
 						bitpos(), lineno(), colno()));
 			}
 
@@ -424,7 +425,7 @@ Token Lexer::next_token_inner() {
 				// Throw an exception if the string is not terminated
 				if (curr == (int)TokenType::END) {
 					err("unterminated string literal", 
-						Span(sf->file,
+						Span(translation_unit,
 							start_byte,
 							start_line,
 							start_col,
@@ -453,7 +454,7 @@ Token Lexer::next_token_inner() {
 						case '\n': while (is_whitespace(curr) && curr != (int)TokenType::END) bump(); break;
 						default:
 							err("unknown string escape sequence: \\" + std::to_string(curr),
-							Span(sf->file,
+							Span(translation_unit,
 								bitpos() - 1,
 								lineno(),
 								colno() - 1,
@@ -473,7 +474,7 @@ Token Lexer::next_token_inner() {
 
 		default:
 			err("could not identify token with character '" + std::to_string(curr) + "'", 
-				Span(sf->file,
+				Span(translation_unit,
 					bitpos() - 1,
 					lineno(),
 					colno() - 1,
@@ -483,46 +484,4 @@ Token Lexer::next_token_inner() {
 				)
 			);
 	}
-}
-
-
-///////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////  Tests  //////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////////////
-
-void Lexer::test_print_tokens() {
-	// TODO: This should be moved to a test file
-	// Create the SourceFile with the test input
-	SourceFile source("fun main(args: String[]) -> int\n{\n\treturn 1;\n}");
-	// Create an auto Session and Lexer
-	Session::set_sysconfig(SysConfig());
-	Lexer lex(source);
-
-	// Loop through and print all of the tokens
-	Token tk = lex.next_token();
-	while (tk != TokenType::END) {
-		std::cout << translate::tk_str(tk) << std::endl;
-		tk = lex.next_token();
-	}
-}
-
-void Lexer::test_read_without_source() {
-
-	// Create an auto Session and Lexer without target file
-	Session::set_sysconfig(SysConfig());
-
-	SourceFile sf = SourceFile("");
-	Lexer lex(sf);
-
-	// Try to get a valid token
-	if (lex.next_token() == TokenType::END) {
-		printf("TEST_READ_WITHOUT_SOURCE completed\n");
-		return;
-	}
-
-	// The test failed
-	// The lexer retrieved a valid token even though there is no source code
-	// The lexer should have checked if the current token is valid before calling 'next_token_inner()', if it wasn't
-	// it should have assumed an empty file and returned an END token
-	throw std::runtime_error("TEST_READ_WITHOUT_SOURCE failed: Lexer retrieved a valid token without a SourceFile");
 }

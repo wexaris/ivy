@@ -147,8 +147,24 @@ int main(int argc, char* argv[]) {
 
 int main() {
 
-	Lexer::test_print_tokens();
-	Lexer::test_read_without_source();
+	// Set up a default Session
+	Session::set_sysconfig(SysConfig());
+
+	// Create a Lexer without prividing a valid source file
+	TranslationUnit tu = TranslationUnit("");
+	Lexer lex(&tu);
+
+	// Try to get a non-EOF token
+	if (lex.next_token() == TokenType::END) {
+		Session::msg("TEST_READ_WITHOUT_SOURCE completed");
+		return 0;
+	}
+
+	// The test failed
+	// The lexer retrieved a non-EOF token even though there is no source code
+	// The lexer should have checked if the current token is valid before calling 'next_token_inner()', and,
+	// since ir wouldn't be, it should have assumed it was an empty file and returned an END token.
+	Session::err("TEST_READ_WITHOUT_SOURCE failed: Lexer retrieved a valid token without a valid Translation Unit");
 }
 
 #endif

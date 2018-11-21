@@ -1,6 +1,5 @@
 #pragma once
-#include "parser/invalid_token_except.hpp"
-#include "source/source_file.hpp"
+#include "source/translation_unit.hpp"
 #include "util/span.hpp"
 #include <cstring>
 #include <string>
@@ -77,8 +76,7 @@ struct System {
 };
 
 /* The full system specification.
- * Contains OS, architecture and default variable sizes.
- */
+ * Contains OS, architecture and default variable sizes. */
 struct SysConfig {
 	OS os;
 	Arch arch;
@@ -104,8 +102,7 @@ struct SysConfig {
 };
 
 /* The levels of severity that a logged message might have.
- * The CRITICAL level is the only one that will throw an exception.
- */
+ * The CRITICAL level is the only one that will throw an exception. */
 enum Severity {
 	TRACE = 0,
 	MESSAGE,
@@ -116,20 +113,17 @@ enum Severity {
 
 /* The current compile session.
  * Stores the system's specification.
- * Provides output for compiler messages.
- * */
+ * Provides output for compiler messages. */
 class Session {
 	
 	/* Internal system configuration info */
 	static SysConfig cfg;
 
 	/* The required severity level to print messages.
-	 * The requred level is MESSAGE by default.
-	 */
+	 * The requred level is MESSAGE by default. */
 	static Severity _req_severity;
 	/* Should trace messages be formatted.
-	 * True by default.
-	 */
+	 * True by default. */
 	static bool _format;
 
 	/* CUrrent indentation amount for trace scoping */
@@ -173,8 +167,7 @@ public:
 
 	/* Emit a trace message.
 	 * Will not write messages unless tracing is enabled.
-	 * Will indent messages unless formatting is disabled.
-	 */
+	 * Will indent messages unless formatting is disabled. */
 	static inline void trace(const std::string& msg) {
 		if (should_write(TRACE)) {
 			if (_format)
@@ -184,8 +177,7 @@ public:
 	};
 
 	/* Removes the last level of indentation from trace messages. 
-	 * Should be called at the end of a trace level.
-	 */
+	 * Should be called at the end of a trace level. */
 	static inline void end_trace() {
 		if (should_write(TRACE) && _format)
 			indent_prefix.resize(indent_prefix.length() - strlen(INDENT));
@@ -204,14 +196,13 @@ public:
 	};
 
 	/* Emit an error with the provided position and message.
-	 * Stops the compilation process.
-	 */
+	 * Stops the compilation process. */
 	static inline void span_err(const std::string& msg, const Span& sp) {
 		if (should_write(ERROR)) {
 			trace("FAILED");
 			end_trace();
 		
-			std::string err = sp.sf.filepath() + ":" + std::to_string(sp.lo.line) + ":" + std::to_string(sp.lo.col)
+			std::string err = sp.tu->filepath() + ":" + std::to_string(sp.lo.line) + ":" + std::to_string(sp.lo.col)
 				 + " error: " + msg;
 			log(ERROR, err);
 		}
@@ -228,8 +219,7 @@ public:
 	};
 
 	/* Emit an error about an internal compiler malfunction.
-	 * Stops the compilation process.
-	 */
+	 * Stops the compilation process. */
 	[[noreturn]] static inline void bug(const std::string& msg) {
 		log(CRITICAL, "internal compiler error: " + msg);
 		// Critical log should already exit, but we need to exit from here
@@ -238,8 +228,7 @@ public:
 	};
 
 	/* Emit an error about an unimplemented state.
-	 * Stops the compilation process.
-	 */
+	 * Stops the compilation process. */
 	[[noreturn]] static inline void unimpl(const std::string& msg) {
 		log(CRITICAL, msg + " not implemented yet");
 		// Critical log should already exit, but we need to exit from here

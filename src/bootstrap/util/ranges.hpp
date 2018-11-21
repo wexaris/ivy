@@ -39,7 +39,7 @@ struct range {
 		if (in_range(c, 'a', 'f')) return c - 'a' + 10;
 		if (in_range(c, 'A', 'F')) return c - 'A' + 10;
 
-		Span sp(lex->src(), lex->bitpos()-1, lex->lineno(), lex->colno()-1, lex->bitpos(), lex->lineno(), lex->colno());
+		Span sp(lex->trans_unit(), lex->bitpos()-1, lex->lineno(), lex->colno()-1, lex->bitpos(), lex->lineno(), lex->colno());
 		lex->err("could not get hex value of '" + std::to_string(c) + "'", sp);
 	}
 };
