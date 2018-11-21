@@ -14,6 +14,10 @@ struct Attr {
 struct Attributes : std::vector<Attr> {
 
 	bool contains(TokenType ty);
+
+	inline bool none() {
+		return this->size() == 0;
+	}
 };
 
 /* A single part of a path. */
@@ -73,18 +77,18 @@ private:
 		Session::failure(msg);
 	}
 
+	/* Emits an 'expected token' message:
+	 * unexpected token: <curr_tok>; expected <expected>
+	 */
+	void expected_msg(const std::string& expected);
+
 	/* Expects the current token to be of the provided type.
 	 * Bumps if true, throws an error if false.
 	 */
 	void expect(int exp);
-	/* Expects the current token to be of the provided type.
-	 * Bumps if true, throws an error if false.
-	 */
-	inline void expect(TokenType exp) { expect((int)exp); }
-	/* Expects the current token to be any of the provided types.
-	 * Bumps if true, throws an error if false.
-	 */
-	inline void expect(const std::vector<int>& exp);
+	inline void expect(TokenType exp) {
+		expect((int)exp);
+	}
 	/* Expects the current token to be any of the provided types.
 	 * Bumps if true, throws an error if false.
 	 */
@@ -143,10 +147,13 @@ private:
 	void item_impl();
 
 	void struct_tuple_block();
-	void struct_tuple_item();
+	void struct_tuple_items();
 	void struct_decl_block();
 	void struct_decl_items();
 	void struct_decl_item();
+
+	void enum_defs();
+	void enum_def();
 
 	// expr
 	void expr();

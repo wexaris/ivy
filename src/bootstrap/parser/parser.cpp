@@ -13,29 +13,14 @@ bool Attributes::contains(TokenType ty) {
 /////////////////////////////////////////    Expects    ///////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-inline void Parser::expect(int exp) { 
-	if (curr_tok.type() != exp)
-		err("unexpected token: " + translate::tk_str(curr_tok.type()) + "; expected " + translate::tk_str(exp));
-	bump();
+void Parser::expected_msg(const std::string& expected) {
+	err("unexpected token: " + translate::tk_str(curr_tok.type()) + "; expected " + expected);
 }
 
-void Parser::expect(const std::vector<int>& exp) {
-	// Loop through vector of allowed tokens
-	// Check if the current token matches any of them
-	// Return on first match
-	for (auto i : exp) {
-		if (curr_tok.type() == i) {
-			bump();
-			return;
-		}
-	}
-
-	// Collect all of the acceptable types
-	std::string expected = translate::tk_str(exp[0]);
-	for (size_t i = 1; i < exp.size(); i++)
-		expected += std::string(", ") + translate::tk_str(i);
-
-	err("unexpected token: " + translate::tk_str(curr_tok.type()) + "; expected any of " + expected);
+inline void Parser::expect(int exp) { 
+	if (curr_tok.type() != exp)
+		expected_msg(translate::tk_str(exp));
+	bump();
 }
 
 void Parser::expect(const std::vector<TokenType>& exp) {
@@ -52,9 +37,9 @@ void Parser::expect(const std::vector<TokenType>& exp) {
 	// Collect all of the acceptable types
 	std::string expected = translate::tk_str(exp[0]);
 	for (size_t i = 1; i < exp.size(); i++)
-		expected += std::string(", ") + translate::tk_str(i);
+		expected += ", " + translate::tk_str(exp[i]);
 
-	err("unexpected token: " + translate::tk_str(curr_tok.type()) + "; expected any of " + expected);
+	expected_msg("one of " + expected);
 }
 
 
@@ -563,27 +548,33 @@ void Parser::item_struct() {
 	end_trace();
 }
 
-// struct_tuple_block : '(' struct_tuple_item? ')'
+// struct_tuple_block : '(' struct_tuple_items? ')'
 void Parser::struct_tuple_block() {
 	trace("struct_tuple_block");
 	expect('(');
 
 	if (curr_tok.type() != ')')
-		struct_tuple_item();
+		struct_tuple_items();
 
 	expect(')');
 	end_trace();
 }
 
-// struct_decl_item : attributes? type_with_lt
-void Parser::struct_tuple_item() {
-	trace("struct_tuple_item");
+// struct_decl_items : attributes? type (',' attributes? type)*
+//					 | attributes? type (',' attributes? type)* ','
+void Parser::struct_tuple_items() {
+	trace("struct_tuple_items");
 
-	Attributes attr;
-	if (is_attr(curr_tok))
-		Attributes attr = attributes();
+	Attributes attr = attributes();
+	type();
 
-	type_with_lt();
+	while (curr_tok.type() == ',') {
+		bump();
+		if (curr_tok.type() == ')')
+			break;
+		attr = attributes();
+		type();
+	}
 
 	end_trace();
 }
@@ -600,7 +591,7 @@ void Parser::struct_decl_block() {
 	end_trace();
 }
 
-// struct_decl_items : struct_decl_item (';' struct_decl_item)*
+// struct_decl_items : struct_decl_item*
 void Parser::struct_decl_items() {
 	trace("struct_decl_items");
 
@@ -616,9 +607,7 @@ void Parser::struct_decl_items() {
 void Parser::struct_decl_item() {
 	trace("struct_decl_item");
 
-	Attributes attr;
-	if (is_attr(curr_tok))
-		Attributes attr = attributes();
+	Attributes attr = attributes();
 
 	auto name = curr_tok.lit();
 	expect(TokenType::ID);
@@ -630,6 +619,8 @@ void Parser::struct_decl_item() {
 	end_trace();
 }
 
+// item_enum : attributes? ENUM ident generic_params? ';'
+//			 | attributes? ENUM ident generic_params? enum_defs
 void Parser::item_enum() {
 	trace("item_enum");
 	expect(TokenType::ENUM);
@@ -637,7 +628,58 @@ void Parser::item_enum() {
 	auto name = curr_tok.lit();
 	ident();
 
-	Session::unimpl("item_enum");
+	if (curr_tok.type() == '<')
+		generic_params();
+
+	if (curr_tok.type() == ';')
+		bump();
+	else if (curr_tok.type() == '{')
+		enum_defs();
+
+	end_trace();
+}
+
+// enum_defs : '{' '}'
+//			 | '{' enum_def (',' enum_def)*		'}'
+//			 | '{' enum_def (',' enum_def)* ',' '}'
+void Parser::enum_defs() {
+	trace("enum_defs");
+	expect('{');
+
+	if (curr_tok.type() != '}') {
+
+		enum_def();
+
+		// Keep looping as long as there are commas
+		while (curr_tok.type() == ',') {
+			bump();
+
+			// Handle dangling comma at end of definitions
+			if (curr_tok.type() == '}')
+				break;
+
+			enum_def();
+		}
+	}
+
+	expect('}');
+	end_trace();
+}
+
+void Parser::enum_def() {
+	trace("enum_def");
+
+	auto name = curr_tok.lit();
+	ident();
+
+	if (curr_tok.type() == '=') {
+		bump();
+		expr();
+	}
+	else if (curr_tok.type() == '(') {
+		bump();
+		Session::unimpl("enum unions");
+	}
 
 	end_trace();
 }
@@ -693,18 +735,23 @@ void Parser::expr() {
 ////////////////////////////////////////////    Type    ///////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-/* True if the provided token could be a primitive.
+/* True if the provided token is a primitive. */
+inline bool is_primitive(const Token& tk) {
+	return tk == TokenType::THING || tk == TokenType::STR || tk == TokenType::CHAR ||
+		tk == TokenType::INT ||
+		tk == TokenType::I64 || tk == TokenType::I32 || tk == TokenType::I16 || tk == TokenType::I8 ||
+		tk == TokenType::UINT ||
+		tk == TokenType::U64 || tk == TokenType::U32 || tk == TokenType::U16 || tk == TokenType::U8;
+}
+
+/* True if the provided token could be a type.
  * ~could be~ because only the first token is checked.
  * i.e. '*'(ptr) would pass as a type token, even though it could
  * be followed by something else and be multiplication.
  */
 inline bool is_type(const Token& tk) {
 	return tk.type() == '&' || tk.type() == '*' || tk.type() == '[' || tk.type() == '(' ||
-		tk == TokenType::ID || tk == TokenType::THING || tk == TokenType::STR || tk == TokenType::CHAR ||
-		tk == TokenType::INT ||
-		tk == TokenType::I64 || tk == TokenType::I32 || tk == TokenType::I16 || tk == TokenType::I8 ||
-		tk == TokenType::UINT ||
-		tk == TokenType::U64 || tk == TokenType::U32 || tk == TokenType::U16 || tk == TokenType::U8;
+		tk == TokenType::ID || is_primitive(tk);
 }
 
 // type : '&' type
@@ -773,13 +820,16 @@ void Parser::type() {
 
 		// primitive type
 		default:
+			if (!is_primitive(curr_tok))
+				expected_msg("a type");
 			primitive();
 	}
 	
 	end_trace();
 }
 
-// type_or_lt: type | lifetime
+// type_or_lt : type
+//			  | lifetime
 void Parser::type_or_lt() {
 	trace("type_or_lt");
 
@@ -790,7 +840,7 @@ void Parser::type_or_lt() {
 	end_trace();
 }
 
-// type_with_lt: lifetime? type
+// type_with_lt : lifetime? type
 void Parser::type_with_lt() {
 	trace("type_with_lt");
 
@@ -815,7 +865,7 @@ void Parser::type_sum() {
 
 // primitive : THING | STR | CHAR
 //			 | INT | I64 | I32 | I16 | I8
-//			 | UINT | U64 | U32 | U16 | U8
+//			 | UINT | U64 | U32 | U16 | U8 
 void Parser::primitive() {
 	trace("primitive: " + translate::tk_str(curr_tok));
 

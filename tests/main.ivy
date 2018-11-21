@@ -8,6 +8,16 @@ pub struct Pos<'a> {				// make public struct 'Pos'
 	pub y: 'a i32;
 }
 
+pub struct Int(i32,);
+
+pub enum Dir<'b> {
+	UP,
+	DOWN,
+	LEFT,
+	RIGHT,
+	SEQ = 4,
+}
+
 impl Pos {						// methods need to implemented seperately
 	pub fun new(x: i32, y: i32) -> Pos {
 		Pos { x: x, y: y }
