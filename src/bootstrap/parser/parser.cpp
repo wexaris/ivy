@@ -353,7 +353,7 @@ void Parser::item() {
 }
 
 // import_item : IMPORT MOD path
-//             : IMPORT PACKAGE path
+//             | IMPORT PACKAGE path
 void Parser::import_item() {
 	trace("import_item");
 	expect(TokenType::IMPORT);
@@ -380,10 +380,10 @@ void Parser::import_item() {
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 // stmt_item : item_static
-//           : item_const
-//           : item_type
-//           : view_item
-//           : block_item
+//           | item_const
+//           | item_type
+//           | view_item
+//           | block_item
 void Parser::stmt_item() {
 	trace("stmt_item");
 
@@ -470,11 +470,11 @@ void Parser::view_item() {
 }
 
 // block_item : item_fun
-//            : item_struct
-//            : item_enum
-//            : item_union
-//            : item_trait
-//            : item_impl
+//            | item_struct
+//            | item_enum
+//            | item_union
+//            | item_trait
+//            | item_impl
 void Parser::block_item() {
 	trace("block_item");
 
@@ -524,8 +524,8 @@ void Parser::item_fun() {
 }
 
 // item_struct : STRUCT ident generic_params? ';'
-// 			   | STRUCT ident generic_params? struct_tuple_block ';'
-// 			   | STRUCT ident generic_params? struct_decl_block
+//             | STRUCT ident generic_params? struct_tuple_block ';'
+//             | STRUCT ident generic_params? struct_decl_block
 void Parser::item_struct() {
 	trace("item_struct");
 	expect(TokenType::STRUCT);
@@ -561,7 +561,7 @@ void Parser::struct_tuple_block() {
 }
 
 // struct_decl_items : attributes? type (',' attributes? type)*
-//					 | attributes? type (',' attributes? type)* ','
+//                   | attributes? type (',' attributes? type)* ','
 void Parser::struct_tuple_items() {
 	trace("struct_tuple_items");
 
@@ -620,7 +620,7 @@ void Parser::struct_decl_item() {
 }
 
 // item_enum : attributes? ENUM ident generic_params? ';'
-//			 | attributes? ENUM ident generic_params? enum_defs
+//           | attributes? ENUM ident generic_params? enum_defs
 void Parser::item_enum() {
 	trace("item_enum");
 	expect(TokenType::ENUM);
@@ -640,8 +640,8 @@ void Parser::item_enum() {
 }
 
 // enum_defs : '{' '}'
-//			 | '{' enum_def (',' enum_def)*		'}'
-//			 | '{' enum_def (',' enum_def)* ',' '}'
+//           | '{' enum_def (',' enum_def)*		'}'
+//           | '{' enum_def (',' enum_def)* ',' '}'
 void Parser::enum_defs() {
 	trace("enum_defs");
 	expect('{');
@@ -829,7 +829,7 @@ void Parser::type() {
 }
 
 // type_or_lt : type
-//			  | lifetime
+//            | lifetime
 void Parser::type_or_lt() {
 	trace("type_or_lt");
 
@@ -864,8 +864,8 @@ void Parser::type_sum() {
 }
 
 // primitive : THING | STR | CHAR
-//			 | INT | I64 | I32 | I16 | I8
-//			 | UINT | U64 | U32 | U16 | U8 
+//           | INT | I64 | I32 | I16 | I8
+//           | UINT | U64 | U32 | U16 | U8 
 void Parser::primitive() {
 	trace("primitive: " + translate::tk_str(curr_tok));
 
