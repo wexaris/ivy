@@ -82,24 +82,15 @@ public:
 class Lexer : public SourceReader {
 
 private:
-	using KeywordMap = std::unordered_map<std::string, int>;
-
-	/* A map of all the keywords recognized by the compiler.
-	 * Maps a string to an integer that corresponds to a token type. */
-	KeywordMap keywords = KeywordMap();
-
-	/* Maps all of the recognised keywords to their corresponding string literals. */
-	void load_keywords();
-
 	/* The main identification pattern in the tokenization process.
 	 * Accumulates characters and builds tokens according to the language's syntax. */
 	Token next_token_inner();
 
 public:
 	/* Construct a lexer to work on the provided Translation Unit. */
-	explicit Lexer(TranslationUnit* file) : SourceReader(file) { load_keywords(); }
+	explicit Lexer(TranslationUnit* file) : SourceReader(file) {}
 
-	Lexer(const Lexer& other) : SourceReader(other.translation_unit) { load_keywords(); }
+	Lexer(const Lexer& other) : SourceReader(other.translation_unit) {}
 
 	/* Throws a spanned error through the current Session.
 	 * Does not return. */

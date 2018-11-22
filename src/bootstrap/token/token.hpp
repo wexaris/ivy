@@ -18,61 +18,45 @@ class Token {
 	 * If the token is a keyword, there's no point in storing it's literal.
 	 * Only identifiers and literal types are stored.
 	 * Will be empty otherwise. */
-	std::string str = "";
+	std::string raw_str;
 
 	/* Information about the location of the token. */
-	std::optional<Span> tk_span = std::nullopt;
+	std::optional<Span> tk_span;
 
 public:
+	explicit Token(char type) : ty(type), raw_str(std::to_string(type)) {}
 	/* Create an incomplete token.
-	 * Has a type, but no specified span.
-	 * Used in the Lexer, so we don't have to pass span positions around.
+	 * Has an EOF type, and no span.
+	 * Used in the Lexer, so that we don't have to pass spans around.
 	 * Span can and should be added later. */
 	explicit Token(TokenType type = TokenType::END) : ty((int)type) {}
 	/* Create a token from it's type and location.
 	 * Literal value will be left empty. */
-	Token(TokenType type, const Span& sp)
-		: ty((int)type),
-		tk_span(sp)
-	{}
+	//Token(TokenType type, const Span& sp)
+	//	: ty((int)type), tk_span(sp) {}
 	/* Create an incomplete token.
 	 * Has a type and string, but no specified span. */
 	Token(TokenType type, const std::string& str)
-		: ty((int)type),
-		str(str)
+		: ty((int)type), raw_str(str)
 	{}
 	/* Create a token from it's type, location
 	 * and store it's string literal. */
 	Token(TokenType type, const std::string& str, const Span& sp)
-		: ty((int)type),
-		str(str),
-		tk_span(sp)
+		: ty((int)type), raw_str(str), tk_span(sp)
 	{}
 
-	/* Create an incomplete token.
-	 * Has a type, but no specified span.
-	 * Used in the Lexer, so we don't have to pass span positions around.
-	 * Span can and should be added later. */
-	explicit Token(int type = (int)TokenType::END) : ty(type) {}
 	/* Create a token from it's type.
 	 * Literal value will be left empty. */
-	Token(int type, const Span& sp) 
-		: ty(type),
-		tk_span(sp)
-	{}
+	//Token(int type, const Span& sp) 
+	//	: ty(type), tk_span(sp) {}
 	/* Create an incomplete token.
 	 * Has a type and string, but no specified span. */
 	Token(int type, const std::string& str)
-		: ty(type),
-		str(str)
-	{}
+		: ty(type), raw_str(str) {}
 	/* Create a token from it's type, location and
 	 * store it's string literal. */
 	Token(int type, const std::string& str, const Span& sp)
-		: ty(type),
-		str(str),
-		tk_span(sp)
-	{}
+		: ty(type), raw_str(str), tk_span(sp) {}
 
 	/* Returns the type of the token.
 	 * If the return is 0, the file has reached EOF.
@@ -96,7 +80,7 @@ public:
 	/* Returns the literal string of text that the token was built from.
 	 * Only identifiers and literal types are stored.
 	 * Will be empty otherwise. */
-	inline const std::string& lit() const { return str; }
+	inline const std::string& raw() const { return raw_str; }
 
 	bool operator==(const TokenType& other) const {
 		return ty == (int)other;

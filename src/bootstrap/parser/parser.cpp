@@ -14,12 +14,12 @@ bool Attributes::contains(TokenType ty) {
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 void Parser::expected_msg(const std::string& expected) {
-	err("unexpected token: " + translate::tk_str(curr_tok.type()) + "; expected " + expected);
+	err("unexpected token: " + translate::tk_type(curr_tok) + "; expected " + expected);
 }
 
 inline void Parser::expect(int exp) { 
 	if (curr_tok.type() != exp)
-		expected_msg(translate::tk_str(exp));
+		expected_msg(translate::tk_type(exp));
 	bump();
 }
 
@@ -35,9 +35,9 @@ void Parser::expect(const std::vector<TokenType>& exp) {
 	}
 
 	// Collect all of the acceptable types
-	std::string expected = translate::tk_str(exp[0]);
+	std::string expected = translate::tk_type(exp[0]);
 	for (size_t i = 1; i < exp.size(); i++)
-		expected += ", " + translate::tk_str(exp[i]);
+		expected += ", " + translate::tk_type(exp[i]);
 
 	expected_msg("one of " + expected);
 }
@@ -252,12 +252,12 @@ Attributes Parser::attributes() {
 Path Parser::path() {
 	trace("path");
 
-	Path path = { SubPath{ curr_tok.lit(), curr_tok.span() } };
+	Path path = { SubPath{ curr_tok.raw(), curr_tok.span() } };
 	ident();
 
 	while (curr_tok == TokenType::SCOPE) {
 		bump();
-		path.push_back(SubPath{ curr_tok.lit(), curr_tok.span() });
+		path.push_back(SubPath{ curr_tok.raw(), curr_tok.span() });
 		ident();
 	}
 
@@ -267,14 +267,14 @@ Path Parser::path() {
 
 // ident : ID
 void Parser::ident() {
-	trace("ident: " + std::string(curr_tok.lit()));
+	trace("ident: " + std::string(curr_tok.raw()));
 	expect(TokenType::ID);
 	end_trace();
 }
 // lifetime : LF
 void Parser::lifetime() {
-	trace("lifetime: " + std::string(curr_tok.lit()));
-	auto name = { curr_tok.lit() };
+	trace("lifetime: " + std::string(curr_tok.raw()));
+	auto name = { curr_tok.raw() };
 	
 	if (curr_tok == TokenType::STATIC_LF) expect(TokenType::STATIC_LF);
 	else expect(TokenType::LF);
@@ -412,7 +412,7 @@ void Parser::item_static() {
 	trace("item_static");
 	expect(TokenType::STATIC);
 
-	auto name = curr_tok.lit();
+	auto name = curr_tok.raw();
 	ident();
 
 	expect(':');
@@ -430,7 +430,7 @@ void Parser::item_const() {
 	trace("item_const");
 	expect(TokenType::CONST);
 
-	auto name = curr_tok.lit();
+	auto name = curr_tok.raw();
 	ident();
 
 	expect(':');
@@ -448,7 +448,7 @@ void Parser::item_type() {
 	trace("item_type");
 	expect(TokenType::TYPE);
 
-	auto name = curr_tok.lit();
+	auto name = curr_tok.raw();
 	ident();
 
 	expect('=');
@@ -515,7 +515,7 @@ void Parser::item_fun() {
 	trace("item_fun");
 	expect(TokenType::FUN);
 
-	auto name = curr_tok.lit();
+	auto name = curr_tok.raw();
 	ident();
 
 	Session::unimpl("item_fun");
@@ -530,7 +530,7 @@ void Parser::item_struct() {
 	trace("item_struct");
 	expect(TokenType::STRUCT);
 
-	auto name = curr_tok.lit();
+	auto name = curr_tok.raw();
 	ident();
 
 	if (curr_tok.type() == '<')
@@ -609,7 +609,7 @@ void Parser::struct_decl_item() {
 
 	Attributes attr = attributes();
 
-	auto name = curr_tok.lit();
+	auto name = curr_tok.raw();
 	expect(TokenType::ID);
 
 	expect(':');
@@ -625,7 +625,7 @@ void Parser::item_enum() {
 	trace("item_enum");
 	expect(TokenType::ENUM);
 
-	auto name = curr_tok.lit();
+	auto name = curr_tok.raw();
 	ident();
 
 	if (curr_tok.type() == '<')
@@ -669,7 +669,7 @@ void Parser::enum_defs() {
 void Parser::enum_def() {
 	trace("enum_def");
 
-	auto name = curr_tok.lit();
+	auto name = curr_tok.raw();
 	ident();
 
 	if (curr_tok.type() == '=') {
@@ -688,7 +688,7 @@ void Parser::item_union() {
 	trace("item_union");
 	expect(TokenType::UNION);
 
-	auto name = curr_tok.lit();
+	auto name = curr_tok.raw();
 	ident();
 
 	Session::unimpl("item_union");
@@ -700,7 +700,7 @@ void Parser::item_trait() {
 	trace("item_trait");
 	expect(TokenType::TRAIT);
 
-	auto name = curr_tok.lit();
+	auto name = curr_tok.raw();
 	ident();
 
 	Session::unimpl("item_trait");
@@ -813,7 +813,7 @@ void Parser::type() {
 
 		// custom type
 		case static_cast<int>(TokenType::ID):
-			//std::string type_name = curr_tok.lit();
+			//std::string type_name = curr_tok.raw();
 			ident();							// ident
 			break;
 
@@ -834,7 +834,7 @@ void Parser::type_or_lt() {
 
 	if (is_lifetime(curr_tok)) lifetime();
 	else if (is_type(curr_tok)) type();
-	else err("expected type or lifetime, found " + translate::tk_str(curr_tok));
+	else err("expected type or lifetime, found " + translate::tk_type(curr_tok));
 
 	end_trace();
 }
@@ -866,7 +866,7 @@ void Parser::type_sum() {
 //           | INT | I64 | I32 | I16 | I8
 //           | UINT | U64 | U32 | U16 | U8 
 void Parser::primitive() {
-	trace("primitive: " + translate::tk_str(curr_tok));
+	trace("primitive: " + curr_tok.raw());
 
 	expect({ TokenType::THING, TokenType::STR, TokenType::CHAR,
 		TokenType::INT, TokenType::I64, TokenType::I32, TokenType::I16, TokenType::I8,

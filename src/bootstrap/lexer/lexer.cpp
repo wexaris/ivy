@@ -5,6 +5,68 @@
 #include "util/ranges.hpp"
 #include <iostream>
 
+/* A single keyword.
+ * Key - string
+ * Value - int (TokenType). */
+struct Keyword {
+	const char* key;
+	int value;
+};
+/* A map of keywords. */
+constexpr static const Keyword keywords[] = {
+	{ "thing",		(int)TokenType::THING },
+	{ "str",		(int)TokenType::STR },
+	{ "char",		(int)TokenType::CHAR },
+	{ "int",		(int)TokenType::INT },
+	{ "i8",			(int)TokenType::I8 },
+	{ "i16", 		(int)TokenType::I16 },
+	{ "i32",		(int)TokenType::I32 },
+	{ "i64",		(int)TokenType::I64 },
+	{ "uint",		(int)TokenType::UINT },
+	{ "u8",			(int)TokenType::U8 },
+	{ "u16",		(int)TokenType::U16 },
+	{ "u32",		(int)TokenType::U32 },
+	{ "u64",		(int)TokenType::U64 },
+	{ "float",		(int)TokenType::FLOAT },
+	{ "f32",		(int)TokenType::F32 },
+	{ "f64",		(int)TokenType::F64 },
+	{ "package",	(int)TokenType::PACKAGE },
+	{ "mod",		(int)TokenType::MOD },
+	{ "use",		(int)TokenType::USE },
+	{ "import",		(int)TokenType::IMPORT },
+	{ "export",		(int)TokenType::EXPORT },
+	{ "var",		(int)TokenType::VAR },
+	{ "fun",		(int)TokenType::FUN },
+	{ "struct",		(int)TokenType::STRUCT },
+	{ "enum",		(int)TokenType::ENUM },
+	{ "union",		(int)TokenType::UNION },
+	{ "macro",		(int)TokenType::MACRO },
+	{ "impl",		(int)TokenType::IMPL },
+	{ "const",		(int)TokenType::CONST },
+	{ "static",		(int)TokenType::STATIC },
+	{ "type",		(int)TokenType::TYPE },
+	{ "loop",		(int)TokenType::LOOP },
+	{ "while",		(int)TokenType::WHILE },
+	{ "do",			(int)TokenType::DO },
+	{ "for",		(int)TokenType::FOR },
+	{ "in",			(int)TokenType::IN },
+	{ "match",		(int)TokenType::MATCH },
+	{ "switch",		(int)TokenType::SWITCH },
+	{ "case",		(int)TokenType::CASE },
+	{ "where",		(int)TokenType::WHERE },
+	{ "return",		(int)TokenType::RETURN },
+	{ "pub",		(int)TokenType::PUB },
+	{ "priv",		(int)TokenType::PRIV },
+	{ "mut",		(int)TokenType::MUT }
+};
+
+constexpr const Keyword* key_find(const char* key) {
+	for (unsigned long i = 0; i < sizeof(keywords)/sizeof(*keywords); i++)
+		if (strcmp(keywords[i].key, key) == 0)
+			return &keywords[i];
+	return nullptr;
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////      SourceReader      ///////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -140,56 +202,6 @@ std::string read_number(Lexer* lex) {
 ////////////////////////////////////////      Lexer      //////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Lexer::load_keywords() {
-	keywords["thing"] 	= (int)TokenType::THING;
-	keywords["str"] 	= (int)TokenType::STR;
-	keywords["char"] 	= (int)TokenType::CHAR;
-	keywords["int"] 	= (int)TokenType::INT;
-	keywords["i8"] 		= (int)TokenType::I8;
-	keywords["i16"] 	= (int)TokenType::I16;
-	keywords["i32"] 	= (int)TokenType::I32;
-	keywords["i64"] 	= (int)TokenType::I64;
-	keywords["uint"] 	= (int)TokenType::UINT;
-	keywords["u8"] 		= (int)TokenType::U8;
-	keywords["u16"] 	= (int)TokenType::U16;
-	keywords["u32"] 	= (int)TokenType::U32;
-	keywords["u64"] 	= (int)TokenType::U64;
-	keywords["float"] 	= (int)TokenType::FLOAT;
-	keywords["f32"] 	= (int)TokenType::F32;
-	keywords["f64"] 	= (int)TokenType::F64;
-
-	keywords["package"] = (int)TokenType::PACKAGE;
-	keywords["mod"] 	= (int)TokenType::MOD;
-	keywords["use"] 	= (int)TokenType::USE;
-	keywords["import"] 	= (int)TokenType::IMPORT;
-	keywords["export"] 	= (int)TokenType::EXPORT;
-	keywords["var"] 	= (int)TokenType::VAR;
-	keywords["fun"] 	= (int)TokenType::FUN;
-	keywords["struct"] 	= (int)TokenType::STRUCT;
-	keywords["enum"] 	= (int)TokenType::ENUM;
-	keywords["union"] 	= (int)TokenType::UNION;
-	keywords["macro"] 	= (int)TokenType::MACRO;
-	keywords["impl"] 	= (int)TokenType::IMPL;
-	keywords["const"] 	= (int)TokenType::CONST;
-	keywords["static"] 	= (int)TokenType::STATIC;
-	keywords["type"] 	= (int)TokenType::TYPE;
-
-	keywords["loop"] 	= (int)TokenType::LOOP;
-	keywords["while"] 	= (int)TokenType::WHILE;
-	keywords["do"] 		= (int)TokenType::DO;
-	keywords["for"] 	= (int)TokenType::FOR;
-	keywords["in"] 		= (int)TokenType::IN;
-	keywords["match"] 	= (int)TokenType::MATCH;
-	keywords["switch"] 	= (int)TokenType::SWITCH;
-	keywords["case"] 	= (int)TokenType::CASE;
-	keywords["where"] 	= (int)TokenType::WHERE;
-	keywords["return"] 	= (int)TokenType::RETURN;
-
-	keywords["pub"] 	= (int)TokenType::PUB;
-	keywords["priv"] 	= (int)TokenType::PRIV;
-	keywords["mut"] 	= (int)TokenType::MUT;
-}
-
 Token Lexer::next_token() {
 	// Get rid of whitespace and comments
 	eat_ws_and_comments(this);
@@ -215,18 +227,19 @@ Token Lexer::next_token_inner() {
 		std::string build_str;
 
 		// Build string as long as alphanumeric or underscore
-		while (range::is_alnum(curr) || curr == '_') {
+		do {
 			build_str += curr;
 			bump();
-		}
+		} while (range::is_alnum(curr) || curr == '_');
+
 		// If only underscore, return
 		if (build_str == "_") return Token('_');
 
 		// Check if the identifier is a keyword
 		// If it is, return a keyword token
-		auto item = keywords.find(build_str);
-		if (item != keywords.end())
-			return Token(item->second);
+		auto item = key_find(build_str.c_str());
+		if (item != nullptr)
+			return Token(item->value, build_str);
 
 		// Return string as identifier
 		return Token(TokenType::ID, build_str);
@@ -255,82 +268,82 @@ Token Lexer::next_token_inner() {
 			if (next == '.') {
 				bump(2);
 				if (curr == '.') {
-					bump(); return Token(TokenType::DOTDOTDOT); }				// ...
-				return Token(TokenType::DOTDOT);								// ..
+					bump(); return Token(TokenType::DOTDOTDOT, "..."); }			// ...
+				return Token(TokenType::DOTDOT, "..");								// ..
 			}
 			if (!range::is_dec(next)) {
-				bump(); return Token('.');										// .
+				bump(); return Token('.');											// .
 			}
 			bump();
-			return Token(TokenType::LIT_NUMBER, "." + read_number(this));		// LIT_NUMBER
+			return Token(TokenType::LIT_NUMBER, "." + read_number(this));			// LIT_NUMBER
 
 		case ':':
-			if (next == ':') { bump(2); return Token(TokenType::SCOPE); }		// ::
-			bump(); return Token(':');											// :
+			if (next == ':') { bump(2); return Token(TokenType::SCOPE, "::"); }		// ::
+			bump(); return Token(':');												// :
 	
 		case '=':
-			if (next == '=') { bump(2); return Token(TokenType::EQEQ); }		// ==
-			if (next == '>') { bump(2); return Token(TokenType::FATARROW);	}	// =>
-			bump(); return Token('=');											// =
+			if (next == '=') { bump(2); return Token(TokenType::EQEQ, "=="); }			// ==
+			if (next == '>') { bump(2); return Token(TokenType::FATARROW, "=>");	}	// =>
+			bump(); return Token('=');													// =
 
 		case '!':
-			if (next == '=') { bump(2); return Token(TokenType::NE); }			// !=
-			bump(); return Token('!');											// !
+			if (next == '=') { bump(2); return Token(TokenType::NE, "!="); }		// !=
+			bump(); return Token('!');												// !
 
 		case '+':
-			if (next == '+') { bump(2); return Token(TokenType::PLUSPLUS); }	// ++
-			if (next == '=') { bump(2); return Token(TokenType::SUME); }		// +=
-			bump(); return Token('+');											// +
+			if (next == '+') { bump(2); return Token(TokenType::PLUSPLUS, "++"); }		// ++
+			if (next == '=') { bump(2); return Token(TokenType::SUME, "+="); }			// +=
+			bump(); return Token('+');													// +
 
 		case '-':
-			if (next == '-') { bump(2); return Token(TokenType::MINUSMINUS); }	// --
-			if (next == '>') { bump(2); return Token(TokenType::RARROW); }		// --
-			if (next == '=') { bump(2); return Token(TokenType::SUBE); }		// -=
-			bump(); return Token('-');											// -
+			if (next == '-') { bump(2); return Token(TokenType::MINUSMINUS, "--"); }	// --
+			if (next == '>') { bump(2); return Token(TokenType::RARROW, "->"); }		// ->
+			if (next == '=') { bump(2); return Token(TokenType::SUBE, "-="); }			// -=
+			bump(); return Token('-');													// -
 
 		case '*':
-			if (next == '=') { bump(2); return Token(TokenType::MULE); }		// *=
-			bump(); return Token('*');											// *
+			if (next == '=') { bump(2); return Token(TokenType::MULE, "*="); }		// *=
+			bump(); return Token('*');												// *
 
 		case '/':
-			if (next == '=') { bump(2); return Token(TokenType::DIVE); }		// /=
-			bump(); return Token('/');											// /
+			if (next == '=') { bump(2); return Token(TokenType::DIVE, "/="); }		// /=
+			bump(); return Token('/');												// /
 
 		case '%':
-			if (next == '=') { bump(2); return Token(TokenType::MODE); }		// %=
-			bump(); return Token('%');											// %
+			if (next == '=') { bump(2); return Token(TokenType::MODE, "%="); }		// %=
+			bump(); return Token('%');												// %
 
 		case '^':
-			if (next == '=') { bump(2); return Token(TokenType::CARE); }		// ^=
-			bump(); return Token('^');											// ^
+			if (next == '=') { bump(2); return Token(TokenType::CARE, "^="); }		// ^=
+			bump(); return Token('^');												// ^
 
 		case '&':
-			//if (next == '&') { bump(2); return Token(TokenType::AND); }			// &&
-			if (next == '=') { bump(2); return Token(TokenType::ANDE);	}		// &=
-			bump(); return Token('&');											// &
+			//if (next == '&') { bump(2); return Token(TokenType::AND, "&&"); }			// &&
+			if (next == '=') { bump(2); return Token(TokenType::ANDE, "&=");	}		// &=
+			bump(); return Token('&');													// &
 
 		case '|':
-			if (next == '|') { bump(2); return Token(TokenType::OR); }			// ||
-			if (next == '=') { bump(2); return Token(TokenType::ORE); }			// |=
-			bump(); return Token('|');											// |
+			if (next == '|') { bump(2); return Token(TokenType::OR, "||"); }		// ||
+			if (next == '=') { bump(2); return Token(TokenType::ORE, "|="); }		// |=
+			bump(); return Token('|');												// |
 
 		case '>':
 			switch (next) {
-				case '=': bump(2); return Token(TokenType::GE);			// >=
-				//case '>': bump(2); return Token(TokenType::SHR);		// >>
-				default:  bump(2); return Token('>');					// >
+				case '=': bump(2); return Token(TokenType::GE, ">=");			// >=
+				//case '>': bump(2); return Token(TokenType::SHR, ">>");		// >>
+				default:  bump(2); return Token('>');							// >
 			}
 			
 		case '<':
 			switch (next) {
-				case '=': bump(2); return Token(TokenType::LE);			// <=
+				case '=': bump(2); return Token(TokenType::LE, "<=");		// <=
 				case '-': bump(2);
 					if (curr == '>') { 
-						bump(); return Token(TokenType::DARROW);		// <->
+						bump(); return Token(TokenType::DARROW, "<->");		// <->
 					}
-					return Token(TokenType::LARROW);					// <-
-				case '<': bump(2); return Token(TokenType::SHL);		// <<
-				default:  bump(); return Token('<');					// <
+					return Token(TokenType::LARROW, "<-");					// <-
+				case '<': bump(2); return Token(TokenType::SHL, "<<");		// <<
+				default:  bump(); return Token('<');						// <
 			}
 
 		case '\'':

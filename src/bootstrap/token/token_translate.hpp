@@ -3,17 +3,19 @@
 
 namespace translate {
 
-	/* Returns the type of the token as a string.
-	 * Used mostly for debugging and error logging. */
-	std::string tk_str(int type);
+	/* Returns the type of the token as a string. */
+	std::string tk_type(int type);
 
-	/* Returns the type of the token as a string.
-	 * Used mostly for debugging and error logging. */
-	inline std::string tk_str(TokenType type) {
-		return tk_str((int)type);
+	/* Returns the type of the token as a string. */
+	inline std::string tk_type(TokenType type) {
+		return tk_type((int)type);
 	}
 
-	/* Returns the type of the token as a string.
-	 * Used mostly for debugging and error logging. */
-	std::string tk_str(Token tk);
+	/* Returns the type of the token as a string. */
+	inline std::string tk_type(const Token& tk) {
+		return tk_type(tk.type());
+	}
+
+	/* Returns the type and possibly. */
+	std::string tk_info(const Token& tk);
 }
