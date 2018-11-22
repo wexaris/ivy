@@ -1,9 +1,7 @@
 #pragma once
 #include "token_type.hpp"
 #include "util/span.hpp"
-#include <cstdint>
 #include <string>
-#include <optional>
 
 /* The token class.
  * Has a type and might contain a value.
@@ -21,7 +19,7 @@ class Token {
 	std::string raw_str;
 
 	/* Information about the location of the token. */
-	std::optional<Span> tk_span;
+	Span tk_span = Span(nullptr, 0, 0, 0, 0, 0, 0);
 
 public:
 	explicit Token(char type) : ty(type), raw_str(std::to_string(type)) {}
@@ -70,12 +68,12 @@ public:
 	 * Contains information about the origin file, absolute position,
 	 * as well as start and end position- line and col.
 	 * If the token's span hasn't been set, an exception is thrown. */
-	inline const Span& span() const { if (!tk_span.has_value()) throw std::exception(); return tk_span.value(); }
+	inline const Span& span() const { return tk_span; }
 
 	/* Set the location of the token.
 	 * Contains information about the origin file, absolute position,
 	 * as well as start and end position- line and col, */
-	inline void set_span(Span sp) { tk_span.emplace(sp); }
+	inline void set_span(Span sp) { tk_span = sp; }
 
 	/* Returns the literal string of text that the token was built from.
 	 * Only identifiers and literal types are stored.

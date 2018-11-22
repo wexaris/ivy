@@ -2,7 +2,7 @@
 #include "lexer/lexer.hpp"
 
 /* Struct used as namespace for inline range check functions. */
-struct range {
+namespace range {
 
 	/* Check if the value is within a certain range of numbers. */
 	static constexpr inline bool in_range(char c, char lo, char hi) {
@@ -42,4 +42,4 @@ struct range {
 		Span sp(lex->trans_unit(), lex->bitpos()-1, lex->lineno(), lex->colno()-1, lex->bitpos(), lex->lineno(), lex->colno());
 		lex->err("could not get hex value of '" + std::to_string(c) + "'", sp);
 	}
-};
+}

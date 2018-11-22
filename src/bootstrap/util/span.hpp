@@ -1,5 +1,5 @@
 #pragma once
-#include <optional>
+#include <cstddef>
 
 class TranslationUnit;
 
