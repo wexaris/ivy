@@ -15,6 +15,11 @@ private:
 	 * so source code reading will fail. */
 	size_t index = 0;
 
+	/* The current line position in the source file */
+	int curr_ln = 1;
+	/* The current column position in the source file */
+	int curr_col = 1;
+
 protected:
 	/* The file that is being read  */
 	TranslationUnit* translation_unit;
@@ -24,11 +29,6 @@ protected:
 	char curr;
 	/* The next character in the source file */
 	char next;
-
-	/* The current line position in the source file */
-	int curr_ln = 1;
-	/* The current column position in the source file */
-	int curr_col = 1;
 
 	/* Gets the next character.
 	 * Returns the next character as an integer.
@@ -58,22 +58,22 @@ public:
 	void bump(int n = 1);
 
 	/* A pointer to the current source file */
-	inline const TranslationUnit* trans_unit() const { return translation_unit; }
+	constexpr const TranslationUnit* trans_unit() const { return translation_unit; }
 
 	/* The current character in the source file */
-	constexpr inline char curr_c() const { return curr; }
+	constexpr char curr_c() const { return curr; }
 	/* The next character in the source file */
-	constexpr inline char next_c() const { return next; }
+	constexpr char next_c() const { return next; }
 
 	/* Current absolute position in the Translation Unit.
 	 * Coincides with the position of the character 'curr'. */
-	constexpr inline size_t bitpos() const { return index - 2; }
+	constexpr size_t bitpos() const { return index - 2; }
 	/* Current line number.
 	 * Coincides with the position of the character 'curr'. */
-	constexpr inline int lineno() const { return curr_ln; }
+	constexpr int lineno() const { return curr_ln; }
 	/* Current column number.
 	 * Coincides with the position of the character 'curr'. */
-	constexpr inline int colno() const { return curr_col; }
+	constexpr int colno() const { return curr_col; }
 };
 
 /* The object that is responsible for tokenizing source files.
@@ -85,6 +85,17 @@ private:
 	/* The main identification pattern in the tokenization process.
 	 * Accumulates characters and builds tokens according to the language's syntax. */
 	Token next_token_inner();
+
+	inline Span curr_span() const {
+		return Span(translation_unit, curr_start.abs, curr_start.ln, curr_start.col, bitpos(), lineno(), colno());
+	}
+
+public:
+	/* Saved start position of the current token. */
+	struct TokenPos {
+		size_t abs = 0;
+		int ln, col;
+	} curr_start;
 
 public:
 	/* Construct a lexer to work on the provided Translation Unit. */
@@ -103,4 +114,9 @@ public:
 	 * Tokens get marked with a type, location and value if necessary.
 	 * Once EOF has been reached, '\0' will be returned. */
 	Token next_token();
+
+	/* Returns all of the current token's positions in a struct. */
+	constexpr inline TokenPos curr_pos() const {
+		return TokenPos{ bitpos(), lineno(), colno() };
+	}
 };

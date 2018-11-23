@@ -48,7 +48,7 @@ private:
 
 	/* The last token provided by the lexer.
 	 * Stores a type, location and value, if necessary. */
-	Token curr_tok = Token(TokenType::END);
+	Token curr_tok = Token(TokenType::END, "", Span(nullptr, 0, 0, 0, 0, 0, 0));
 
 	/* Bumps the current token.
 	 * The current one becomes the previous one.

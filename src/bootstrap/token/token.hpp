@@ -22,21 +22,28 @@ class Token {
 	Span tk_span = Span(nullptr, 0, 0, 0, 0, 0, 0);
 
 public:
-	explicit Token(char type) : ty(type), raw_str(std::to_string(type)) {}
+	//explicit Token(char type) : ty(type), raw_str(std::to_string(type)) {}
+
+	/* */
+	Token(char type, const Span& sp) : ty(type), raw_str(std::to_string(type)), tk_span(sp) {}
+
 	/* Create an incomplete token.
 	 * Has an EOF type, and no span.
 	 * Used in the Lexer, so that we don't have to pass spans around.
 	 * Span can and should be added later. */
-	explicit Token(TokenType type = TokenType::END) : ty((int)type) {}
+	//explicit Token(TokenType type = TokenType::END) : ty((int)type) {}
+
 	/* Create a token from it's type and location.
 	 * Literal value will be left empty. */
 	//Token(TokenType type, const Span& sp)
 	//	: ty((int)type), tk_span(sp) {}
+
 	/* Create an incomplete token.
 	 * Has a type and string, but no specified span. */
-	Token(TokenType type, const std::string& str)
-		: ty((int)type), raw_str(str)
-	{}
+	//Token(TokenType type, const std::string& str)
+	//	: ty((int)type), raw_str(str)
+	//{}
+
 	/* Create a token from it's type, location
 	 * and store it's string literal. */
 	Token(TokenType type, const std::string& str, const Span& sp)
@@ -47,10 +54,12 @@ public:
 	 * Literal value will be left empty. */
 	//Token(int type, const Span& sp) 
 	//	: ty(type), tk_span(sp) {}
+	
 	/* Create an incomplete token.
 	 * Has a type and string, but no specified span. */
-	Token(int type, const std::string& str)
-		: ty(type), raw_str(str) {}
+	//Token(int type, const std::string& str)
+	//	: ty(type), raw_str(str) {}
+
 	/* Create a token from it's type, location and
 	 * store it's string literal. */
 	Token(int type, const std::string& str, const Span& sp)
