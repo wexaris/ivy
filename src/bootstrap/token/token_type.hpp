@@ -107,6 +107,8 @@ enum class TokenType {
 	PUB,
 	PRIV,
 	MUT,
+
+	UNKNOWN
 };
 
 bool operator==(int type, const TokenType& other);

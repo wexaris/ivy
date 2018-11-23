@@ -486,15 +486,6 @@ Token Lexer::next_token_inner() {
 		}
 
 		default:
-			err("could not identify token with character '" + std::to_string(curr) + "'", 
-				Span(translation_unit,
-					bitpos() - 1,
-					lineno(),
-					colno() - 1,
-					bitpos(),
-					lineno(),
-					colno()
-				)
-			);
+			return Token(TokenType::UNKNOWN, std::to_string(curr));
 	}
 }
