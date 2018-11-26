@@ -48,7 +48,7 @@ void Parser::expect(const std::vector<TokenType>& exp) {
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 /* Scans and adds characters to a string as long as their base is under the one specified. */
-std::string scan_digits(Lexer* lex, int base) {
+/*std::string scan_digits(Lexer* lex, int base) {
 	// String for storing digits
 	std::string ret;
 	// Get digits as long as they are hex
@@ -59,10 +59,10 @@ std::string scan_digits(Lexer* lex, int base) {
 		else break;
 	}
 	return ret;
-}
+}*/
 
 /* Scans and adds characters that correspond to an exponent. */
-std::string scan_exponent(Lexer* lex) {
+/*std::string scan_exponent(Lexer* lex) {
 	// String for storing exponent sign
 	std::string ret;
 	if (lex->curr_c() == 'e' || lex->curr_c() == 'E') {
@@ -82,7 +82,7 @@ std::string scan_exponent(Lexer* lex) {
 	}
 	// No exponent
 	return "";
-}
+}*/
 
 /* Responsible for constructing numbers from read characters. */
 /*Token scan_number(Lexer* lex) {
@@ -203,7 +203,7 @@ inline bool is_literal(const Token& tk) {
 
 /* True if the provided token's type is a lifetime. */
 inline bool is_lifetime(const Token& tk) {
-	return tk == TokenType::LF || tk == TokenType::STATIC_LF;
+	return tk == TokenType::LF;
 } 
 
 /* True is the provided token is an attribute. */
@@ -274,10 +274,10 @@ void Parser::ident() {
 // lifetime : LF
 void Parser::lifetime() {
 	trace("lifetime: " + std::string(curr_tok.raw()));
+
 	auto name = { curr_tok.raw() };
-	
-	if (curr_tok == TokenType::STATIC_LF) expect(TokenType::STATIC_LF);
-	else expect(TokenType::LF);
+	expect(TokenType::LF);
+
 	end_trace();
 }
 

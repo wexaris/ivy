@@ -1,26 +1,28 @@
 #include "token_translate.hpp"
 
 std::string translate::tk_info(const Token& tk) {
-	std::string info = "'";
 	switch (tk.type()) {
-		case (int)TokenType::ID:			info += tk.raw() + "'"; break;
-		case (int)TokenType::LF:		    info += tk.raw() + "'"; break;
-		case (int)TokenType::LIT_STRING:	info += tk.raw() + "'"; break;
-		case (int)TokenType::LIT_NUMBER:	info += tk.raw() + "'"; break;
-		case (int)TokenType::LIT_INT:	    info += tk.raw() + "'"; break;
-		case (int)TokenType::LIT_UINT:	    info += tk.raw() + "'"; break;
-		case (int)TokenType::LIT_FLOAT:	    info += tk.raw() + "'"; break;
-		// Fall back to type info since there is no meaningful value to report
-		default: 			                info += tk_type(tk.type());
+		case (int)TokenType::ID:			return "'" + tk.raw() + "'";
+		case (int)TokenType::LF:		    return "'" + tk.raw() + "'";
+		case (int)TokenType::LIT_STRING:	return "'" + tk.raw() + "'";
+		case (int)TokenType::LIT_CHAR:		return "'" + tk.raw() + "'";
+		case (int)TokenType::LIT_NUMBER:	return "'" + tk.raw() + "'";
+		case (int)TokenType::LIT_INT:	    return "'" + tk.raw() + "'";
+		case (int)TokenType::LIT_UINT:	    return "'" + tk.raw() + "'";
+		case (int)TokenType::LIT_FLOAT:	    return "'" + tk.raw() + "'";
+		default:
+			// If the type is 1-255, return the ASCII character
+			if (tk.type() > 0 && tk.type() <= 255)
+				return "'" + std::string(1, (char)tk.type()) + "'";
+
+			// Fall back to type info since there is no meaningful value to report
+			return tk_type(tk.type());
 	}
-	return info;
 }
 
 std::string translate::tk_type(int type) {
-	
-	// If the type is 1-255, return the ASCII character
-	if (type > 0 && type <= 255)
-		return std::string("'") + std::string(1, (char)type) + "'";
+
+	if (type > 0 && type <= 255)		return "symbol";
 
 	switch (type) {
 		// EOF
@@ -29,7 +31,6 @@ std::string translate::tk_type(int type) {
 		// Identifier
 		case (int)TokenType::ID:		return "identifier";
 		case (int)TokenType::LF:		return "lifetime";
-		case (int)TokenType::STATIC_LF:	return "static lifetime";
 
 		// Documentation
 		case (int)TokenType::DOC:		return "documentation";
@@ -82,6 +83,7 @@ std::string translate::tk_type(int type) {
 
 		// Literal
 		case (int)TokenType::LIT_STRING:	return "string literal";
+		case (int)TokenType::LIT_CHAR:		return "char literal";
 		case (int)TokenType::LIT_INT:		return "int literal";
 		case (int)TokenType::LIT_UINT:		return "uint literal";
 		case (int)TokenType::LIT_FLOAT:		return "float literal";
@@ -121,11 +123,4 @@ std::string translate::tk_type(int type) {
 
 		default: return "unknown";
 	}
-}
-
-bool operator==(int type, const TokenType& other) {
-	return type == (int)other;
-}
-bool operator!=(int type, const TokenType& other) {
-	return type != (int)other;
 }

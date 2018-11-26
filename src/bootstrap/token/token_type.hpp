@@ -9,7 +9,6 @@ enum class TokenType {
 
 	// Identifier
 	ID = 256,
-	STATIC_LF,		// 'static
 	LF,				// 'a
 
 	// Documentation
@@ -52,6 +51,7 @@ enum class TokenType {
 
 	// Literal
 	LIT_STRING,
+	LIT_CHAR,
 	LIT_NUMBER,		// For lexer. Actual type is decided when parsing.
 	LIT_INT,
 	LIT_UINT,
