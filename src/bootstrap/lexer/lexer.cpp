@@ -1,5 +1,4 @@
 #include "lexer.hpp"
-#include "source/source_map.hpp"
 #include "driver/session.hpp"
 #include "token/token_translate.hpp"
 #include "util/ranges.hpp"
@@ -130,13 +129,15 @@ inline bool is_whitespace(char c) {
 }
 
 /*	Returns true if the input token's type corresponds to EOF. */
-bool is_valid(Token tk) { return tk != TokenType::END; }
+bool is_valid(Token tk) { return tk.type() != (int)TokenType::END; }
 /*	Returns true if the input value corresponds to EOF. */
 bool is_valid(TokenType tk) { return tk != TokenType::END; }
+/*	Returns true if the input value corresponds to EOF. */
+bool is_valid(int tk) { return tk != (int)TokenType::END; }
 
 /*	Loops through whitespace and comments.
 	Works by bumping until the current character isn't a whitespace or comment. */
-void eat_ws_and_comments(Lexer* lex) {
+void eat_ws_and_comments(SourceReader* lex) {
 	// Eat all whitespace
 	while (is_whitespace(lex->curr_c()))
 		lex->bump();
@@ -157,7 +158,8 @@ void eat_ws_and_comments(Lexer* lex) {
 				// Throw an error if the block is not terminated at the end of the file
 				if (lex->curr_c() == '\0') { 
 					Span sp(lex->trans_unit(), lex->bitpos()-1, lex->lineno(), lex->colno()-1, lex->bitpos(), lex->lineno(), lex->colno());
-					lex->err("unterminated block comment at end of file", sp);
+					Session::span_err("unterminated block comment at end of file", sp);
+					std::exit(6);
 				}
 				if (lex->curr_c() == '*' && lex->next_c() == '/') { 
 					lex->bump(2);
@@ -171,7 +173,7 @@ void eat_ws_and_comments(Lexer* lex) {
 }
 
 /*	Scans and identifies numeric escape characters. */
-char scan_num_escape(Lexer* lex, int digit_num) {
+char scan_num_escape(SourceReader* lex, int digit_num) {
 	// Number to build
 	int build_num = 0;
 	// Loop until requested number of digits
@@ -186,7 +188,7 @@ char scan_num_escape(Lexer* lex, int digit_num) {
 }
 
 /*	Reads and extracts a number literal. */
-std::string read_number(Lexer* lex) {
+std::string read_number(SourceReader* lex) {
 	std::string num;
 	auto c = lex->curr_c();
 	while (!is_whitespace(c) && c != ';') {
@@ -206,26 +208,22 @@ Token Lexer::next_token() {
 	// Get rid of whitespace and comments
 	eat_ws_and_comments(this);
 
+	// If the current character is EOF, return an END token
+	// It's span is a singel position, since the file ends there
+	if (!is_valid(curr))
+		return Token(TokenType::END, "\\0", Span(translation_unit, bitpos(), lineno(), colno(), bitpos(), lineno(), colno()));
+
 	// Save file positions for token span
 	curr_start.abs = bitpos();
 	curr_start.ln = lineno();
 	curr_start.col = colno();
 
-	// If the current character is valid, build the next token
-	// If not, make an EOF/END token
-	return is_valid((TokenType)curr) ? next_token_inner() : 
-		Token(TokenType::END, "\\0",
-			Span(translation_unit, curr_start.abs, curr_start.ln, curr_start.col, bitpos(), lineno(), colno())
-		);
-	// Set the token's source, position and length
-	//ret.set_span(Span(translation_unit, curr_start.abs, curr_start.ln, curr_start.col, bitpos(), lineno(), colno()));
-
-	//return ret;
+	return next_token_inner();
 }
 
 Token Lexer::next_token_inner() {
 	// If alphanumeric, build a string, check for it being a keyword
-	if (range::is_alpha(curr) || curr == '_') {
+	if (range::is_ident_start(curr)) {
 		// String for building words
 		std::string build_str;
 
@@ -233,7 +231,7 @@ Token Lexer::next_token_inner() {
 		do {
 			build_str += curr;
 			bump();
-		} while (range::is_alnum(curr) || curr == '_');
+		} while (range::is_ident_cont(curr));
 
 		// If only underscore, return
 		if (build_str == "_") return Token('_', curr_span());
@@ -267,6 +265,8 @@ Token Lexer::next_token_inner() {
 		case '#': bump(); return Token('#', curr_span());
 		case '@': bump(); return Token('@', curr_span());
 
+		// Very messy cases
+		// Refer to the comments on the side
 		case '.': 
 			if (next == '.') {
 				bump(2);
@@ -351,11 +351,47 @@ Token Lexer::next_token_inner() {
 
 		case '\'':
 		{
-			// Save next character, so that we can stay on the character after the next one
+			// Save next character
 			char c = next;
+			bool valid = true;
 			bump(2);
 
-			// Handle character escape sequences
+			// Character literal is empty
+			if (c == '\'') {
+				valid = false;
+				Session::span_err("character must have a value", curr_span());
+			}
+
+			// If it starts like an indentifier and doesnt close,
+			// assume it's a lifetime
+			if (range::is_ident_start(c) || curr != '\'') {
+				std::string lf_str = std::string(1, c);
+
+				// Collect lifetime name
+				while (range::is_ident_cont(curr)) {
+					lf_str += curr;
+					bump();
+				}
+
+				// A lifetime should't end with a '
+				// In that case we assume it's an unterminated character literal
+				if (curr == '\'') {
+					bump();
+					Session::span_err("character literal may contain only one symbol", curr_span());
+					Session::warn("if you meant to create a string literal, use double quotes");
+					return Token(TokenType::LIT_STRING, "??", curr_span());
+				}
+
+				return Token(TokenType::LF, lf_str, curr_span());
+			}
+
+			// Newlines and tabs aren't allowed inside characters
+			if ((c == '\n' || c == '\r' || c == '\t') && curr == '\'') {
+				valid = false;
+				Session::span_err("special characters need to be escaped", curr_span());
+			}
+
+			// The character is an escape sequence
 			if (c == '\\') {
 				switch (curr) {
 					case 'n': c = '\n'; break;
@@ -367,93 +403,88 @@ Token Lexer::next_token_inner() {
 					case 'u': c = scan_num_escape(this, 4); break;
 					case 'U': c = scan_num_escape(this, 8); break;
 					default:
-						err("unknown character escape sequence: \\" + std::to_string(curr),
-							Span(translation_unit,
-								bitpos() - 1,
-								lineno(),
-								colno() - 1,
-								bitpos(),
-								lineno(),
-								colno()
-							)
-						);
-				}
-				// Throw an exception if the character is not terminated
-				bump();
-				if (curr != '\'') {
-					err("unterminated character literal", curr_span());
+						valid = false;
+						Session::span_err("unknown escape sequence: '\\" + std::string(1, curr) + "'", curr_span());
 				}
 				bump();
-				return Token(TokenType::LIT_INT, std::to_string(c), curr_span());
-			}
-			// If the character is in quotes or is a number, it's a literal
-			if (range::is_dec(c) || curr == '\'') {
-				// Throw an exception if the character is not terminated
-				if (curr != '\'') {
-					err("unterminated character literal", curr_span());
-				}
-				bump();
-				return Token(TokenType::LIT_INT, std::to_string(c), curr_span());
 			}
 
-			// If the first character isn't alpha or an underscore, it can't be a lifetime
-			// We presume it's an unterminated character literal
-			if (!range::is_alpha(c) && c != '_') {
-				err("unterminated character literal or invalid lifetime", curr_span());
-			}
+			// The character hasn't ended after one symbol
+			if (curr != '\'') {
+				std::string ch_str = std::string{ c, curr };
 
-			// If the character isn't in quotes and isn't a number, it's a lifetime
-			std::string build_str = std::string(1, c);
-			while (range::is_alnum(curr) || curr == '_') {
-				build_str += curr;
-				bump();
+				while (true) {
+					bump();
+					ch_str += curr;
+					// There are more than one symbols in the character literal
+					// Return it as a string literal
+					if (curr == '\'') {
+						bump();
+						Session::span_err("character literal may contain only one symbol", curr_span());
+						Session::warn("if you wanted a string literal, use double quotes");
+						return Token(TokenType::LIT_STRING, ch_str, curr_span());
+					}
+					// The character literal goes to EOF or newline
+					if (!is_valid(curr) || curr == '\n') {
+						// FIXME:  This is a critical failure
+						// We can't expect what to do with the missing quote
+						err("character literal missing end quote", curr_span());
+					}
+				}
 			}
-			// Since it's a lifetime, check if it's static
-			if (build_str == "static")
-				return Token(TokenType::STATIC_LF, build_str, curr_span());
-			return Token(TokenType::LF, build_str, curr_span());
+			bump(); // move off end quote
+
+			// Invalid characters are set to '0'
+			if (!valid) c = '0';
+
+			return Token(TokenType::LIT_CHAR, std::string(1, c), curr_span());
 		}
 
 		case '"':
 		{
-			// String for building words
+			bump();
+			bool valid = true;
 			std::string build_str;
 
-			bump();
 			while (curr != '"') {
-				// Throw an exception if the string is not terminated
-				if (curr == (int)TokenType::END)
-					err("unterminated string literal", curr_span());
+				if (curr == (int)TokenType::END) {
+					// FIXME:  This is a critical failure
+					// We can't know where the end quote was supposed to be
+					err("string literal missing end quote", curr_span());
+				}
 
-				// Save character, so that we stay on 'curr'
 				char c = curr;
 				bump();
 
-				// Handle string escape sequences
 				if (c == '\\') {
 					switch (curr) {
-						case 'n': build_str += '\n'; break;
-						case 'r': build_str += '\n'; break;
-						case 't': build_str += '\n'; break;
-						case '\\': build_str += '\n'; break;
-						case '"': build_str += '\n'; break;
-						case 'x': build_str += scan_num_escape(this, 2); break;
-						case 'u': build_str += scan_num_escape(this, 4); break;
-						case 'U': build_str += scan_num_escape(this, 8); break;
-						case '\n': while (is_whitespace(curr) && curr != (int)TokenType::END) bump(); break;
+						case 'n': c = '\n'; break;
+						case 'r': c = '\r'; break;
+						case 't': c = '\t'; break;
+						case '\\': c = '\\'; break;
+						case '\'': c = '\''; break;
+						case 'x': c = scan_num_escape(this, 2); break;
+						case 'u': c = scan_num_escape(this, 4); break;
+						case 'U': c = scan_num_escape(this, 8); break;
 						default:
-							err("unknown string escape sequence: \\" + std::to_string(curr), curr_span());
+							valid = false;
+							Session::span_err("unknown escape sequence: '\\" + std::string(1, curr) + "'", curr_span());
 					}
+					bump();
 				}
-				// Build string if character is not an escape sequence
-				else build_str += curr;
-				bump();
+
+				build_str += c;
 			}
+			bump(); // move off end quote
+
+			// Invalid strings are set to "??"
+			if (!valid) build_str = "??";
+
 			return Token(TokenType::LIT_STRING, build_str, curr_span());
 		}
 
 		default:
-			err("unrecognised character: " + std::to_string(curr), curr_span());
-			return Token(TokenType::UNKNOWN, std::to_string(curr), curr_span());
+			Session::span_err("unrecognised character: " + std::string(1, curr), curr_span());
+			return Token(TokenType::UNKNOWN, std::string(1, curr), curr_span());
 	}
 }

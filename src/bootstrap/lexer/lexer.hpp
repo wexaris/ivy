@@ -1,8 +1,6 @@
 #pragma once
 #include "driver/session.hpp"
-#include "source/translation_unit.hpp"
 #include "token/token.hpp"
-#include <unordered_map>
 
 /* The SourceReader is a class meant to be inherited by the Lexer.
  * Used for reading characters from a Translation Unit object. */
@@ -79,7 +77,7 @@ public:
 /* The object that is responsible for tokenizing source files.
  * Inherits the SourceReader class for character reading.
  * Use method 'next_token()' for building the next token from the source. */
-class Lexer : public SourceReader {
+class Lexer : protected SourceReader {
 
 private:
 	/* The main identification pattern in the tokenization process.
