@@ -14,6 +14,7 @@ include_directories( ${CURR_DIR} )
 # all of the source files to compile
 set( SRC_FILES
 		${CURR_DIR}/driver/driver.cpp
+		${CURR_DIR}/driver/session.cpp
 		${CURR_DIR}/parser/parser.cpp
 		${CURR_DIR}/lexer/lexer.cpp
 		${CURR_DIR}/source/source_map.cpp

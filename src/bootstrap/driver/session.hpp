@@ -16,41 +16,6 @@ enum class Arch {
 	x64,
 };
 
-namespace env {
-
-#ifdef _WIN64				// Check for Windows and it's architecture
-	constexpr const OS _OS = OS::Windows;
-	constexpr const Arch _ARCH = Arch::x64;
-#elif _WIN32
-	constexpr const OS _OS = OS::Windows;
-	constexpr const Arch _ARCH = Arch::x86;
-#elif __APPLE__				// Check for Apple MacOS
-	#if TARGET_OS_MAC
-		constexpr const OS _OS = OS::MacOS;
-	#else
-    	#error "Unrecognised OS"
-	#endif
-#elif __linux__				// Check for Linux
-	constexpr const OS _OS = OS::Linux;
-#else
-	#error "Unrecognised OS"
-#endif
-
-// Check GNU architecture
-#if __GNUC__
-	#if __x86_64__ || __ppc64__
-		constexpr const Arch _ARCH = Arch::x64;
-	#else 
-		constexpr const Arch _ARCH = Arch::x86;
-	#endif
-#else
-	#ifndef _WIN32
-		#error "Unrecognized architecture"
-	#endif
-#endif
-
-}
-
 /* Possible default variable sizes. */
 enum class SysType {
 	i8,
@@ -67,14 +32,6 @@ enum class SysType {
 	f64
 };
 
-struct System {
-	static constexpr inline OS get_os()				{ return env::_OS; }
-	static constexpr inline Arch get_arch() 		{ return env::_ARCH; }
-	static constexpr inline SysType get_isize() 	{ return env::_ARCH == Arch::x64 ? SysType::i64 : SysType::i32; }
-	static constexpr inline SysType get_usize() 	{ return env::_ARCH == Arch::x64 ? SysType::u64 : SysType::u32; }
-	static constexpr inline SysType get_fsize() 	{ return env::_ARCH == Arch::x64 ? SysType::f64 : SysType::f32; }
-};
-
 /* The full system specification.
  * Contains OS, architecture and default variable sizes. */
 struct SysConfig {
@@ -84,17 +41,10 @@ struct SysConfig {
 	SysType usize;
 	SysType fsize;
 
-	SysConfig()
-		: os(System::get_os()),
-		arch(System::get_arch()),
-		isize(System::get_isize()),
-		usize(System::get_usize()),
-		fsize(System::get_fsize())
-	{}
+	SysConfig();
 
 	SysConfig(OS os, Arch arch, SysType isize, SysType usize, SysType fsize) 
-		: os(os),
-		arch(arch),
+		: os(os), arch(arch),
 		isize(isize),
 		usize(usize),
 		fsize(fsize)
@@ -187,6 +137,12 @@ public:
 	static inline void msg(const std::string& msg) {
 		if (should_write(MESSAGE))
 			log(MESSAGE, msg);
+	};
+
+	/* Emit a compile time message. */
+	static inline void warn(const std::string& msg) {
+		if (should_write(WARNING))
+			log(WARNING, msg);
 	};
 
 	/* Emit an error with the provided message. */

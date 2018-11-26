@@ -1,11 +1,8 @@
+
+#if (false)
+
 #include "parser/parser.hpp"
 #include "session.hpp"
-#include <iterator>
-
-SysConfig Session::cfg = SysConfig();
-Severity Session::_req_severity = Severity::MESSAGE;
-bool Session::_format = true;
-std::string Session::indent_prefix;
 
 inline void warn_bad_compiler() { 
 	printf("This is the ivy-lang bootstrap compiler.\n");
@@ -41,8 +38,6 @@ inline std::string dir_from_path(const std::string& path) {
 			last_slash_index = i;
 	return path.substr(0, last_slash_index + 1);
 }
-
-#if (true)
 
 int main(int argc, char* argv[]) {
 
@@ -145,26 +140,28 @@ int main(int argc, char* argv[]) {
 
 #else
 
+#include "lexer/lexer_tests.hpp"
+#include "parser/parser.hpp"
+
+void print_main() {
+	SourceMap sm;
+	Lexer lex(sm.load_file("tests/main.ivy"));
+
+	Token tk = lex.next_token();
+	while (tk != TokenType::END) {
+		printf("%s\n", translate::tk_info(tk).c_str());
+		tk = lex.next_token();
+	}
+}
+
 int main() {
 
-	// Set up a default Session
-	Session::set_sysconfig(SysConfig());
+	//print_main();
 
-	// Create a Lexer without prividing a valid source file
-	TranslationUnit tu = TranslationUnit("");
-	Lexer lex(&tu);
-
-	// Try to get a non-EOF token
-	if (lex.next_token() == TokenType::END) {
-		Session::msg("TEST_READ_WITHOUT_SOURCE completed");
-		return 0;
-	}
-
-	// The test failed
-	// The lexer retrieved a non-EOF token even though there is no source code
-	// The lexer should have checked if the current token is valid before calling 'next_token_inner()', and,
-	// since ir wouldn't be, it should have assumed it was an empty file and returned an END token.
-	Session::err("TEST_READ_WITHOUT_SOURCE failed: Lexer retrieved a valid token without a valid Translation Unit");
+	tests::lexer::token_has_correct_absolute_pos();
+	tests::lexer::token_has_correct_line_pos();
+	tests::lexer::token_has_correct_column_pos();
+	tests::lexer::return_eof_without_translation_unit();
 }
 
 #endif
