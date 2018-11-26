@@ -27,6 +27,11 @@ namespace range {
 	/* Check if the value is alphanumeric. */
 	static constexpr inline bool is_alnum(char c) { return is_alpha(c) || is_dec(c); }
 
+	/* Check if the character can start an identifier. */
+	static constexpr inline bool is_ident_start(char c) { return is_alpha(c) || c == '_'; }
+	/* Check if the character can continue an identifier. */
+	static constexpr inline bool is_ident_cont(char c) { return is_alnum(c) || c == '_'; }
+
 	/* Get value of binary digit */
 	static constexpr inline int val_bin(char c) { return c == '0' ? 0 : 1; }
 	/* Get value of octal digit */
@@ -34,12 +39,14 @@ namespace range {
 	/* Get value of decimal digit */
 	static constexpr inline int val_dec(char c) { return c - '0'; }
 	/* Get value of hex digit */
-	static inline int val_hex(char c, Lexer* lex) {
+	static inline int val_hex(char c, SourceReader* lex) {
 		if (in_range(c, '0', '9')) return c - '0';
 		if (in_range(c, 'a', 'f')) return c - 'a' + 10;
 		if (in_range(c, 'A', 'F')) return c - 'A' + 10;
 
+		// FIXME:  Maybe don't use Session errors in such a basic function
 		Span sp(lex->trans_unit(), lex->bitpos()-1, lex->lineno(), lex->colno()-1, lex->bitpos(), lex->lineno(), lex->colno());
-		lex->err("could not get hex value of '" + std::to_string(c) + "'", sp);
+		Session::span_err("invalid hex number: '" + std::string(1, c) + "'", sp);
+		std::exit(5);
 	}
 }
