@@ -70,23 +70,6 @@ constexpr const Keyword* key_find(const char* key) {
 ////////////////////////////////////      SourceReader      ///////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-void SourceReader::reset(TranslationUnit* tu) {
-	// Set internal translation unit pointer to the new one
-	translation_unit = tu;
-	tu->source();
-
-	// Set the position tracking to the beginning of the file
-	index = SIZE_MAX;
-	curr_ln = 1;
-	curr_col = 1;
-
-	// Set the next character and bump it to the current one
-	// Bump because that updates the newline indexes in the Translation Unit
-	// Reset the column counter for it to correspond to the character 'curr'
-	next = read_next_char();
-	bump();
-}
-
 char SourceReader::read_next_char() {
 	// If the current index is out of bounds, return '\0'
 	if (index >= src.length())
@@ -102,8 +85,7 @@ void SourceReader::bump(int n) {
 		curr = next;
 
 		// Increment reading position
-		if (curr == '\n') { 
-			translation_unit->save_newline(static_cast<int>(bitpos()));
+		if (curr == '\n') {
 			curr_col = 0;
 			curr_ln++;
 		} else {
@@ -211,7 +193,7 @@ Token Lexer::next_token() {
 	// If the current character is EOF, return an END token
 	// It's span is a singel position, since the file ends there
 	if (!is_valid(curr))
-		return Token(TokenType::END, "\\0", Span(translation_unit, bitpos(), lineno(), colno(), bitpos(), lineno(), colno()));
+		return Token(TokenType::END, "\\0", Span(trans_unit(), bitpos(), lineno(), colno(), bitpos(), lineno(), colno()));
 
 	// Save file positions for token span
 	curr_start.abs = bitpos();

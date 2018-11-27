@@ -41,12 +41,4 @@ public:
 
 	/* Length of the source code in the file. */
 	inline size_t len() const					{ return src.length(); }
-
-	/* Save a index as a newline position.
-	 * Called when the source is being tokenized.
-	 * Newline indexing is used for error reporting,
-	 * as it provides a fast way to get to the needed line. */
-	inline void save_newline(const int& index) {
-		newline_pos.push_back(index);
-	}
 };
