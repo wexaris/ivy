@@ -140,7 +140,7 @@ int main(int argc, char* argv[]) {
 
 #else
 
-#include "lexer/lexer_tests.hpp"
+#include "tests/lexer_tests.hpp"
 #include "parser/parser.hpp"
 
 void print_main() {

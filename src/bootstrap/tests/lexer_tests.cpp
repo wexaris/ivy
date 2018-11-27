@@ -1,10 +1,8 @@
-#pragma once
-#include "lexer.hpp"
-#include "util/token_info.hpp"
+#include "lexer_tests.hpp"
 
 namespace tests {
 	namespace lexer {
-
+		
 		void token_has_correct_absolute_pos() {
 			// Give the Lexer a string of text
 			// The numbers should correspond to absolute positions in the TU
@@ -94,6 +92,5 @@ namespace tests {
 			Session::err("FAILED return_eof_without_translation_unit; Lexer retrieved a valid token without a valid Translation Unit (" \
 						+ translate::tk_type(tk) + ")");
 		}
-
 	}
 }
