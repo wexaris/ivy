@@ -4,6 +4,14 @@
 /* Struct used as namespace for inline range check functions. */
 namespace range {
 
+	/*	Check if the value is a whitespace. */
+	static constexpr inline bool is_whitespace(char c) {
+		return 	c == ' '	||
+				c == '\t'	||
+				c == '\r'	||
+				c == '\n';
+	}
+
 	/* Check if the value is within a certain range of numbers. */
 	static constexpr inline bool in_range(char c, char lo, char hi) {
 		return lo <= c && c <= hi;
@@ -39,7 +47,7 @@ namespace range {
 	/* Get value of decimal digit */
 	static constexpr inline int val_dec(char c) { return c - '0'; }
 	/* Get value of hex digit */
-	static inline int val_hex(char c, SourceReader* lex) {
+	static inline int val_hex(char c, const SourceReader* lex) {
 		if (in_range(c, '0', '9')) return c - '0';
 		if (in_range(c, 'a', 'f')) return c - 'a' + 10;
 		if (in_range(c, 'A', 'F')) return c - 'A' + 10;

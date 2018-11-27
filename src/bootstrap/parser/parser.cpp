@@ -308,7 +308,7 @@ void Parser::generic_params() {
 Node* Parser::parse() {
 	trace("parse");
 
-	// FIXME: Create appropriate root node type
+	// TODO: Create appropriate root node type
 	Node* ast = nullptr;
 
 	// Every file begins with a declaration of the module the file is part of

@@ -1,5 +1,5 @@
 
-#if (false)
+#if (true)
 
 #include "parser/parser.hpp"
 #include "session.hpp"
@@ -22,12 +22,12 @@ inline void usage(char* arg0) {
 }
 
 void compile(const std::vector<std::string>& input, const std::string& output) {
-	// FIXME: all of the input files need to be parsed
+	// TODO: all of the input files need to be parsed
 	Parser parser = Parser(input[0]);
 
 	Session::msg("output set to " + output);
 
-	// FIXME: Store the AST
+	// TODO: Store the AST
 	parser.parse();
 }
 

@@ -102,14 +102,6 @@ void SourceReader::bump(int n) {
 ///////////////////////////////////////      Helpers      /////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-/*	Check if the value is whitespace. */
-inline bool is_whitespace(char c) {
-	return 	c == ' '	||
-			c == '\t'	||
-			c == '\r'	||
-			c == '\n';
-}
-
 /*	Returns true if the input token's type corresponds to EOF. */
 bool is_valid(Token tk) { return tk.type() != (int)TokenType::END; }
 /*	Returns true if the input value corresponds to EOF. */
@@ -121,7 +113,7 @@ bool is_valid(int tk) { return tk != (int)TokenType::END; }
 	Works by bumping until the current character isn't a whitespace or comment. */
 void eat_ws_and_comments(SourceReader* lex) {
 	// Eat all whitespace
-	while (is_whitespace(lex->curr_c()))
+	while (range::is_whitespace(lex->curr_c()))
 		lex->bump();
 
 	// Eat comments
@@ -173,7 +165,7 @@ char scan_num_escape(SourceReader* lex, int digit_num) {
 std::string read_number(SourceReader* lex) {
 	std::string num;
 	auto c = lex->curr_c();
-	while (!is_whitespace(c) && c != ';') {
+	while (!range::is_whitespace(c) && c != ';') {
 		num += c;
 		lex->bump();
 		c = lex->curr_c();
@@ -408,7 +400,7 @@ Token Lexer::next_token_inner() {
 					}
 					// The character literal goes to EOF or newline
 					if (!is_valid(curr) || curr == '\n') {
-						// FIXME:  This is a critical failure
+						// This is a critical failure
 						// We can't expect what to do with the missing quote
 						err("character literal missing end quote", curr_span());
 					}
@@ -430,7 +422,7 @@ Token Lexer::next_token_inner() {
 
 			while (curr != '"') {
 				if (curr == (int)TokenType::END) {
-					// FIXME:  This is a critical failure
+					// This is a critical failure
 					// We can't know where the end quote was supposed to be
 					err("string literal missing end quote", curr_span());
 				}
