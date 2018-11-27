@@ -196,12 +196,13 @@ Token Lexer::next_token() {
 }
 
 Token Lexer::next_token_inner() {
-	// If alphanumeric, build a string, check for it being a keyword
+	// If it starts like an identifier,
+	// it's either an identifier or a keyword
 	if (range::is_ident_start(curr)) {
 		// String for building words
 		std::string build_str;
 
-		// Build string as long as alphanumeric or underscore
+		// Build string as long as it could make an identifier
 		do {
 			build_str += curr;
 			bump();
@@ -216,7 +217,7 @@ Token Lexer::next_token_inner() {
 		if (item != nullptr)
 			return Token(item->value, build_str, curr_span());
 
-		// Return string as identifier
+		// Return string as ab identifier
 		return Token(TokenType::ID, build_str, curr_span());
 	}
 

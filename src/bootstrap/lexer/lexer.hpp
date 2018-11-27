@@ -2,8 +2,11 @@
 #include "driver/session.hpp"
 #include "token/token.hpp"
 
-/* The SourceReader is a class meant to be inherited by the Lexer.
- * Used for reading characters from a Translation Unit object. */
+/* General Translation Unit reader. 
+ * Tracks current reading position.
+ * Use 'curr_c()' to get the current character.
+ * Use 'next_c()' to peek the next character.
+ * Bump the characters by calling 'bump()'. */
 class SourceReader {
 
 private:
@@ -70,9 +73,9 @@ public:
 	constexpr int colno() const { return curr_col; }
 };
 
-/* The object that is responsible for tokenizing source files.
- * Inherits from the SourceReader class for character reading.
- * Use method 'next_token()' for building the next token from the source. */
+/* Translation Unit lexer and tokenizer.
+ * Inherits from the SourceReader class.
+ * Use method 'next_token()' for getting the next token from the source. */
 class Lexer : protected SourceReader {
 
 private:
@@ -80,10 +83,17 @@ private:
 	 * Accumulates characters and builds tokens according to the language's syntax. */
 	Token next_token_inner();
 
-	/* Builds and returns the current token's span.
-	 * Relies on correctly set 'curr_start' position. */
+	/* Returns the current token's span.
+	 * Relies on a correctly set 'curr_start' position. */
 	inline Span curr_span() const {
 		return Span(trans_unit(), curr_start.abs, curr_start.ln, curr_start.col, bitpos(), lineno(), colno());
+	}
+
+	/* Throws a spanned error through the current Session.
+	 * Does not return. */
+	[[noreturn]] inline void err(const std::string& msg, const Span& sp) const {
+		Session::span_err(msg, sp);
+		std::exit(1);
 	}
 
 public:
@@ -99,20 +109,11 @@ public:
 	/* Copy constructor */
 	Lexer(const Lexer& other) : SourceReader(other.translation_unit) {}
 
-	/* Throws a spanned error through the current Session.
-	 * Does not return. */
-	[[noreturn]] inline void err(const std::string& msg, const Span& sp) const {
-		Session::span_err(msg, sp);
-		std::exit(1);
-	}
-
 	/* Gets the next token.
 	 * Tokens get marked with a type, location and value if necessary.
 	 * Once EOF has been reached, '\0' will be returned. */
 	Token next_token();
 
 	/* Returns all of the current token's positions in a struct. */
-	constexpr inline TokenPos curr_pos() const {
-		return TokenPos{ bitpos(), lineno(), colno() };
-	}
+	constexpr inline TokenPos curr_pos() const { return TokenPos{ bitpos(), lineno(), colno() }; }
 };
