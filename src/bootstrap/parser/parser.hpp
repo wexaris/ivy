@@ -48,7 +48,7 @@ private:
 
 	/* The last token provided by the lexer.
 	 * Stores a type, location and value, if necessary. */
-	Token curr_tok = Token(TokenType::END, "", Span(nullptr, 0, 0, 0, 0, 0, 0));
+	Token curr_tok;
 
 	/* Bumps the current token.
 	 * The current one becomes the previous one.
@@ -151,10 +151,9 @@ private:
 
 public:
 	/* Constructs a parser for the file at the provided location. */
-	Parser(const std::string& filepath) : lexer(source_map.load_file(filepath)) { 
-		// Bump to crate the first token
-		bump();
-	}
+	Parser(const std::string& filepath)
+		: lexer(source_map.load_file(filepath)), curr_tok(lexer.next_token())
+	{}
 
 	/* Begins the process of parsing the package.
 	 * Returns the root node of the abstract syntax tree. */

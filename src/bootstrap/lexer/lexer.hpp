@@ -20,8 +20,8 @@ private:
 
 protected:
 	/* The file that is being read  */
-	TranslationUnit* translation_unit;
-	const std::string& src;
+	const TranslationUnit& translation_unit;
+	std::string_view src;
 
 	/* The current character in the source file */
 	char curr;
@@ -35,7 +35,7 @@ protected:
 
 public:
 	/* Construct a new SourceReader given a Translation Unit. */
-	explicit SourceReader(TranslationUnit* tu) : translation_unit(tu), src(tu->source()) {
+	explicit SourceReader(const TranslationUnit& tu) : translation_unit(tu), src(tu.source()) {
 		// Set the next character and bump it to the current one
 		// Bump because that updates the newline indexes in the Translation Unit
 		// Reset the column counter for it to correspond to the character 'curr'
@@ -45,10 +45,6 @@ public:
 
 	virtual ~SourceReader() = default;
 
-	/* Swaps the current Translation Unit for a new one.
-	 * All positioning is reset to the default. */
-	void reset(TranslationUnit* trans_unit);
-
 	/* Bump characters.
 	 * The reader will move forward by 'n' amount of characters.
 	 * The 'curr' character is set to the value of the 'next' character.
@@ -56,7 +52,7 @@ public:
 	void bump(int n = 1);
 
 	/* A pointer to the current source file */
-	constexpr const TranslationUnit* trans_unit() const { return translation_unit; }
+	constexpr const TranslationUnit* trans_unit() const { return &translation_unit; }
 
 	/* The current character in the source file */
 	constexpr char curr_c() const { return curr; }
@@ -75,7 +71,7 @@ public:
 };
 
 /* The object that is responsible for tokenizing source files.
- * Inherits the SourceReader class for character reading.
+ * Inherits from the SourceReader class for character reading.
  * Use method 'next_token()' for building the next token from the source. */
 class Lexer : protected SourceReader {
 
@@ -84,8 +80,10 @@ private:
 	 * Accumulates characters and builds tokens according to the language's syntax. */
 	Token next_token_inner();
 
+	/* Builds and returns the current token's span.
+	 * Relies on correctly set 'curr_start' position. */
 	inline Span curr_span() const {
-		return Span(translation_unit, curr_start.abs, curr_start.ln, curr_start.col, bitpos(), lineno(), colno());
+		return Span(trans_unit(), curr_start.abs, curr_start.ln, curr_start.col, bitpos(), lineno(), colno());
 	}
 
 public:
@@ -97,8 +95,8 @@ public:
 
 public:
 	/* Construct a lexer to work on the provided Translation Unit. */
-	explicit Lexer(TranslationUnit* file) : SourceReader(file) {}
-
+	explicit Lexer(const TranslationUnit& file) : SourceReader(file) {}
+	/* Copy constructor */
 	Lexer(const Lexer& other) : SourceReader(other.translation_unit) {}
 
 	/* Throws a spanned error through the current Session.

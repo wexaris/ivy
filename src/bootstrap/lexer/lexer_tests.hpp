@@ -9,7 +9,7 @@ namespace tests {
 			// Give the Lexer a string of text
 			// The numbers should correspond to absolute positions in the TU
 			TranslationUnit tu = TranslationUnit("\n12345\n7\n9");
-			Lexer lex(&tu);
+			Lexer lex(tu);
 			
 			// Retrieve the first token
 			// Should be '12345'
@@ -32,7 +32,7 @@ namespace tests {
 			// Give the Lexer a string of text
 			// The numbers should correspond to absolute positions in the TU
 			TranslationUnit tu = TranslationUnit("\n12345\n7\n9");
-			Lexer lex(&tu);
+			Lexer lex(tu);
 			
 			// Retrieve the first token
 			// Should be '12345'
@@ -55,7 +55,7 @@ namespace tests {
 			// Give the Lexer a string of text
 			// The numbers should correspond to absolute positions in the TU
 			TranslationUnit tu = TranslationUnit("\n12345\n7\n9");
-			Lexer lex(&tu);
+			Lexer lex(tu);
 			
 			// Retrieve the first token
 			// Should be '12345'
@@ -77,7 +77,7 @@ namespace tests {
 		void return_eof_without_translation_unit() {
 			// Create a Lexer with no text in the TU
 			TranslationUnit tu = TranslationUnit("");
-			Lexer lex(&tu);
+			Lexer lex(tu);
 
 			// Retrieve the first token
 			Token tk = lex.next_token();

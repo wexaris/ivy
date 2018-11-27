@@ -32,16 +32,18 @@ private:
 	 * Managed by std::unique_ptrs. */
 	std::vector<std::unique_ptr<TranslationUnit>> translation_units;
 
-	/* Create a new Translation Unit and add it to the SourceMap.
+	/* Creates and returns a new Translation Unit.
+	 * It is automatically added to the SourceMap.
 	 * Does not guard against multiple insertions of the same file. */
-	TranslationUnit* new_translation_unit(const std::string& path, const std::string& src);
+	const TranslationUnit& new_translation_unit(const std::string& path, const std::string& src);
 
 public:
 	SourceMap() : translation_units() {}
 
 	/* Load a file at a given path into the SourceMap.
+	 * A reference to the new Translation Unit is returned.
 	 * Does not guard against multiple insertions of the same file. */
-	TranslationUnit* load_file(const std::string& path);
+	const TranslationUnit& load_file(const std::string& path);
 
 	/* The next free index in the SourceMap. */
 	inline size_t next_start_pos() const {
