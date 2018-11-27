@@ -1,5 +1,5 @@
 #pragma once
-#include "token.hpp"
+#include "token/token.hpp"
 
 namespace translate {
 

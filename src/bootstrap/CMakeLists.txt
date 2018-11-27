@@ -18,7 +18,7 @@ set( SRC_FILES
 		${CURR_DIR}/parser/parser.cpp
 		${CURR_DIR}/lexer/lexer.cpp
 		${CURR_DIR}/source/source_map.cpp
-		${CURR_DIR}/token/token_translate.cpp
+		${CURR_DIR}/util/token_info.cpp
 	)
 
 add_executable( ivy.out ${SRC_FILES} )

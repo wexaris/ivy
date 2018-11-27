@@ -1,7 +1,7 @@
 #include "lexer.hpp"
 #include "driver/session.hpp"
-#include "token/token_translate.hpp"
 #include "util/ranges.hpp"
+#include "util/token_info.hpp"
 #include <iostream>
 
 /* A single keyword.

@@ -1,5 +1,6 @@
 #include "parser.hpp"
 #include "util/ranges.hpp"
+#include "util/token_info.hpp"
 #include "ast/ast.hpp"
 
 bool Attributes::contains(TokenType ty) {
@@ -766,7 +767,7 @@ void Parser::type() {
 	trace("type");
 
 	switch (curr_tok.type()) {
-		// referance type
+		// reference type
 		case '&':
 			bump();
 			type();								// '&' type

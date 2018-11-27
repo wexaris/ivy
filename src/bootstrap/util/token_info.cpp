@@ -1,4 +1,4 @@
-#include "token_translate.hpp"
+#include "token_info.hpp"
 
 std::string translate::tk_info(const Token& tk) {
 	switch (tk.type()) {
