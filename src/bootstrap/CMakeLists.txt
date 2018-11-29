@@ -22,4 +22,18 @@ set( SRC_FILES
 		${CURR_DIR}/tests/lexer_tests.cpp
 	)
 
+# GNU GCC compile options
+if( CMAKE_COMPILER_IS_GNUCXX )
+	message( "Setting GCC compile options" )
+
+	add_compile_options( -pedantic -Wall -Wextra -Werror )
+
+	# add debug / release compile options
+	if( ${CMAKE_BUILD_TYPE} EQUAL Debug )
+		add_compile_options( -g -O0 )
+	else()
+		add_compile_options( -O3 )
+	endif()
+endif()
+
 add_executable( ivy.out ${SRC_FILES} )
