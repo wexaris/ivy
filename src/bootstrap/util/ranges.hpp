@@ -1,60 +1,80 @@
 #pragma once
 #include "lexer/lexer.hpp"
+#include <optional>
+#include <assert.h>
 
-/* Struct used as namespace for inline range check functions. */
 namespace range {
 
 	/*	Check if the value is a whitespace. */
-	static constexpr inline bool is_whitespace(char c) {
+	static inline bool is_whitespace(char c) {
 		return 	c == ' '	||
 				c == '\t'	||
 				c == '\r'	||
 				c == '\n';
 	}
 
+	/* Check if the given integer can be a chracter.  */
+	static inline bool is_char(uint i) {
+		return i < 256;
+	}
+
 	/* Check if the value is within a certain range of numbers. */
-	static constexpr inline bool in_range(char c, char lo, char hi) {
+	static inline bool in_range(char c, char lo, char hi) {
 		return lo <= c && c <= hi;
 	}
 
 	/* Check if the value is binary. */
-	static constexpr inline bool is_bin(char c) { return c == '0' || c == '1'; }
+	static inline bool is_bin(char c) { return c == '0' || c == '1'; }
 	/* Check if the value is octal. */
-	static constexpr inline bool is_oct(char c) { return in_range(c, '0', '7'); }
+	static inline bool is_oct(char c) { return in_range(c, '0', '7'); }
 	/* Check if the value is decimal. */
-	static constexpr inline bool is_dec(char c) { return in_range(c, '0', '9'); }
+	static inline bool is_dec(char c) { return in_range(c, '0', '9'); }
 	/* Check if the value is hexadecimal. */
-	static constexpr inline bool is_hex(char c) {
+	static inline bool is_hex(char c) {
 		return  in_range(c, '0', '9')	||
 				in_range(c, 'a', 'f')	||
 				in_range(c, 'A', 'F');
 	}
 
 	/* Check if the value is a character. */
-	static constexpr inline bool is_alpha(char c) { return in_range(c, 'a', 'z') || in_range(c, 'A', 'Z'); }
+	static inline bool is_alpha(char c) { return in_range(c, 'a', 'z') || in_range(c, 'A', 'Z'); }
 	/* Check if the value is alphanumeric. */
-	static constexpr inline bool is_alnum(char c) { return is_alpha(c) || is_dec(c); }
+	static inline bool is_alnum(char c) { return is_alpha(c) || is_dec(c); }
 
 	/* Check if the character can start an identifier. */
-	static constexpr inline bool is_ident_start(char c) { return is_alpha(c) || c == '_'; }
+	static inline bool is_ident_start(char c) { return is_alpha(c) || c == '_'; }
 	/* Check if the character can continue an identifier. */
-	static constexpr inline bool is_ident_cont(char c) { return is_alnum(c) || c == '_'; }
+	static inline bool is_ident_cont(char c) { return is_alnum(c) || c == '_'; }
 
-	/* Get value of binary digit */
-	static constexpr inline int val_bin(char c) { return c == '0' ? 0 : 1; }
-	/* Get value of octal digit */
-	static constexpr inline int val_oct(char c) { return c - '0'; }
-	/* Get value of decimal digit */
-	static constexpr inline int val_dec(char c) { return c - '0'; }
-	/* Get value of hex digit */
-	static inline int val_hex(char c, const SourceReader* lex) {
-		if (in_range(c, '0', '9')) return c - '0';
-		if (in_range(c, 'a', 'f')) return c - 'a' + 10;
-		if (in_range(c, 'A', 'F')) return c - 'A' + 10;
+	/* Attempts to get a number from a character.
+	 * Checks the character for the right base.
+	 * If the character can't be a number in the given base,
+	 * a 'nullopt' is retuned. */
+	static inline std::optional<uint> get_num(char c, uint base) {
+		assert(base <= 36);
 
-		// FIXME:  Maybe don't use Session errors in such a basic function
-		Span sp(lex->trans_unit(), lex->bitpos()-1, lex->lineno(), lex->colno()-1, lex->bitpos(), lex->lineno(), lex->colno());
-		Session::span_err("invalid hex number: '" + std::string(1, c) + "'", sp);
-		std::exit(5);
+		if (base == 10) {
+			if (is_dec(c))
+				return c - '0';
+			return std::nullopt;
+		}
+		uint val;
+		if (base < 10) {
+			if (is_dec(c))
+				val = c - '0';
+			else return std::nullopt;
+		}
+		else {
+			if (in_range(c, '0', '9'))
+				val =  c - '0';
+			else if (in_range(c, 'a', 'f'))
+				val = c - 'a' + 10;
+			else if (in_range(c, 'A', 'F'))
+				val = c - 'A' + 10;
+			else return std::nullopt;
+		}
+
+		if (val < base) return val;
+		else return std::nullopt;
 	}
 }

@@ -4,19 +4,16 @@
 #include <string>
 
 /* The token class.
- * Has a type and might contain a value.
- * Also stores the token's location. */
+ * Has a type and position.
+ * Also stores the string of text it originated from. */
 class Token {
 	/* The type of the token.
 	 * Assign with a character for simple types, e.g. '.' '+' '-'
 	 * Assign with a TokenType enumerator for complex types, e.g TokenType::ID */
 	int ty = (int)TokenType::END;
 
-	/* The literal string of text that the token was built from.
-	 * If the token is a keyword, there's no point in storing it's literal.
-	 * Only identifiers and literal types are stored.
-	 * Will be empty otherwise. */
-	std::string raw_str;
+	/* The literal string of text that the token was built from. */
+	std::string_view raw_str;
 
 	/* Information about the location of the token. */
 	Span tk_span;
@@ -28,12 +25,16 @@ public:
 
 	/* Create a token from it's type, location
 	 * and store it's string literal. */
-	Token(TokenType type, const std::string& str, const Span& sp)
+	//Token(TokenType type, const std::string& str, const Span& sp)
+	//	: ty((int)type), raw_str(str), tk_span(sp) {}
+	Token(TokenType type, std::string_view str, const Span& sp)
 		: ty((int)type), raw_str(str), tk_span(sp) {}
 
 	/* Create a token from it's type, location and
 	 * store it's string literal. */
-	Token(int type, const std::string& str, const Span& sp)
+	//Token(int type, const std::string& str, const Span& sp)
+	//	: ty(type), raw_str(str), tk_span(sp) {}
+	Token(int type, std::string_view str, const Span& sp)
 		: ty(type), raw_str(str), tk_span(sp) {}
 
 	/* Returns the type of the token.
@@ -50,10 +51,8 @@ public:
 	 * If the token's span hasn't been set, an exception is thrown. */
 	inline const Span& span() const { return tk_span; }
 
-	/* Returns the literal string of text that the token was built from.
-	 * Only identifiers and literal types are stored.
-	 * Will be empty otherwise. */
-	inline const std::string& raw() const { return raw_str; }
+	/* Returns the literal string of text that the token was built from. */
+	inline std::string_view raw() const { return raw_str; }
 
 	bool operator==(const TokenType& other) const {
 		return ty == (int)other;

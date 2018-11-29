@@ -11,7 +11,8 @@ struct Keyword {
 	const char* key;
 	int value;
 };
-/* A map of keywords. */
+/* A map of keywords.
+ * Matches a string to a keyword type. */
 constexpr static const Keyword keywords[] = {
 	{ "thing",		(int)TokenType::THING },
 	{ "str",		(int)TokenType::STR },
@@ -58,7 +59,8 @@ constexpr static const Keyword keywords[] = {
 	{ "priv",		(int)TokenType::PRIV },
 	{ "mut",		(int)TokenType::MUT }
 };
-
+/* Attempts to find the given key in the keyword array.
+ * If no keywords match, a nullptr is returned. */
 constexpr const Keyword* key_find(const char* key) {
 	for (unsigned long i = 0; i < sizeof(keywords)/sizeof(*keywords); i++)
 		if (strcmp(keywords[i].key, key) == 0)
@@ -72,11 +74,11 @@ constexpr const Keyword* key_find(const char* key) {
 
 char SourceReader::read_next_char() {
 	// If the current index is out of bounds, return '\0'
-	if (index >= src.length())
+ 	if (index >= src.length())
 		return '\0';
 
 	// Return the next character
-	return src[index++];
+	return src[index];
 }
 
 void SourceReader::bump(int n) {
@@ -94,6 +96,9 @@ void SourceReader::bump(int n) {
 
 		// Read the next character
 		next = read_next_char();
+		
+		if (curr != '\0')
+			index++;
 	}
 }
 
@@ -103,74 +108,176 @@ void SourceReader::bump(int n) {
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 /*	Returns true if the input token's type corresponds to EOF. */
-bool is_valid(Token tk) { return tk.type() != (int)TokenType::END; }
+inline bool is_valid(Token tk) { return tk.type() != (int)TokenType::END; }
 /*	Returns true if the input value corresponds to EOF. */
-bool is_valid(TokenType tk) { return tk != TokenType::END; }
+inline bool is_valid(TokenType tk) { return tk != TokenType::END; }
 /*	Returns true if the input value corresponds to EOF. */
-bool is_valid(int tk) { return tk != (int)TokenType::END; }
+inline bool is_valid(int tk) { return tk != (int)TokenType::END; }
 
-/*	Loops through whitespace and comments.
-	Works by bumping until the current character isn't a whitespace or comment. */
-void eat_ws_and_comments(SourceReader* lex) {
+void Lexer::consume_ws_and_comments() {
 	// Eat all whitespace
-	while (range::is_whitespace(lex->curr_c()))
-		lex->bump();
+	while (range::is_whitespace(curr))
+		bump();
 
 	// Eat comments
-	if (lex->curr_c() == '/') {
-		if (lex->next_c() == '/') {
+	if (curr == '/') {
+		if (next == '/') {
+			save_curr_pos();
+
 			// Eat comment until line ends or EOF
-			while (lex->curr_c() != '\n' && lex->curr_c() != '\0') 
-				lex->bump();
+			while (curr != '\n' && curr != '\0') 
+				bump();
 			// Go back and check for whitespace again
-			eat_ws_and_comments(lex);
+			consume_ws_and_comments();
 		}
-		else if (lex->next_c() == '*') {
-			lex->bump(2);
+		else if (next == '*') {
+			save_curr_pos();
+
+			bump(2);
 			// Eat block comment until closed
 			while (true) {
 				// Throw an error if the block is not terminated at the end of the file
-				if (lex->curr_c() == '\0') { 
-					Span sp(lex->trans_unit(), lex->bitpos()-1, lex->lineno(), lex->colno()-1, lex->bitpos(), lex->lineno(), lex->colno());
-					Session::span_err("unterminated block comment at end of file", sp);
+				if (curr == '\0') {
+					// This is a critiacal 
+					Session::span_err("unterminated block comment", curr_span());
 					std::exit(6);
 				}
-				if (lex->curr_c() == '*' && lex->next_c() == '/') { 
-					lex->bump(2);
+				if (curr == '*' && next == '/') { 
+					bump(2);
 					break;
 				}
-				lex->bump();
+				bump();
 			}
 		}
-		eat_ws_and_comments(lex);
+		consume_ws_and_comments();
 	}
 }
 
-/*	Scans and identifies numeric escape characters. */
-char scan_num_escape(SourceReader* lex, int digit_num) {
-	// Number to build
-	int build_num = 0;
-	// Loop until requested number of digits
-	for (; digit_num != 0; digit_num--) {
-		lex->bump();
-		// Throw an exception if the character is not hex
-		if (!range::is_hex(lex->curr_c())) throw std::runtime_error("Unknown numeric escape sequence : \\" + std::to_string(lex->curr_c()));
-		build_num *= 16;
-		build_num += range::val_hex(lex->curr_c(), lex);
+bool Lexer::scan_hex_escape(uint num, char delim) {
+	bool valid = true;
+	uint number = 0;
+
+	// Check 'num' amount of characters
+	for (uint i = 0; i < num; i++) {
+		// File EOF in escape
+		if (!is_valid(curr)) {
+			// Citical failure
+			// We can't guess how the literal was supposed to be terminated
+			Session::span_err("numeric escape is too short", curr_span());
+			std::exit(5);
+		}
+		// Escape is shorter than expected
+		if (curr == delim) {
+			Session::span_err("numeric escape is too short", curr_span());
+			valid = false;
+			break;
+		}
+		auto n = range::get_num(curr, 16);
+		number *= 16;
+		if (n.has_value())
+			number += n.value();
+		else {
+			valid = false;
+			Session::span_err("invalid character in numeric escape: " + std::string{curr}, curr_span());
+		}
+		bump();
 	}
-	return (char)build_num;
+
+	if (range::is_char(number)) return valid;
+	else return false;
 }
 
-/*	Reads and extracts a number literal. */
-std::string read_number(SourceReader* lex) {
-	std::string num;
-	auto c = lex->curr_c();
-	while (!range::is_whitespace(c) && c != ';') {
-		num += c;
-		lex->bump();
-		c = lex->curr_c();
+void Lexer::scan_exponent() {
+	if (curr == 'e' || curr == 'E') {
+		bump();
+
+		if (curr == '-' || curr == '+')
+			bump();
+
+		size_t digit_start = bitpos();
+		scan_digits(10, 10);
+		if (bitpos() == digit_start) {
+			Session::err("exponent expects at least one digit");
+			std::exit(7);
+		}
 	}
-	return num;
+}
+
+void Lexer::scan_digits(int base, int full_base) {
+	assert(full_base <= 36);
+	assert(base <= full_base);
+
+	while (true) {
+		if (range::get_num(curr, full_base).has_value()) {
+			if (!range::get_num(curr, base).has_value()) {
+				bump();
+				Session::span_err("invalid digit in base " + std::to_string(base) + " literal", curr_span());
+			}
+			bump();
+		}
+		else return;
+	}
+}
+
+Token Lexer::lex_number() {
+	int base = 10;
+	size_t start = bitpos();
+
+	// Possible binary, ocatal or hex numbers
+	if (curr == 0) {
+		bump();
+		switch (curr) {
+			case 'b':
+				bump();
+				base = 2;
+				scan_digits(2, 10);
+				break;
+			case 'o':
+				bump();
+				base = 8;
+				scan_digits(8, 10);
+				break;
+			case 'x':
+				bump();
+				base = 16;
+				scan_digits(16, 16);
+				break;
+			default:
+				if (range::is_dec(curr) || curr == '.' || curr == 'e' || curr == 'E') {
+					scan_digits(10, 10);
+				}
+				else return Token(TokenType::LIT_INTEGER, curr_src_view(), curr_span());
+		}
+	}
+	// Only decimal
+	else if (range::is_dec(curr))
+		scan_digits(10, 10);
+
+	// If there is a dot, it could be a float,
+	// but it could also be a range or followed by a function call
+	// '3.1415' or '0..9' or '42.foo()'
+	if (curr == '.' && range::is_dec(next)) {
+		scan_digits(10, 10);
+		scan_exponent();
+		if (base != 10) {
+			Session::span_err("only decimal float literals are supported", curr_span());
+		}
+	}
+
+	/* There were no numbers */
+	if (bitpos() == start) {
+		Session::span_err("no valid numbers", curr_span());
+		return Token(TokenType::LIT_INTEGER, "0", curr_span());
+	}
+
+	if (curr == 'e' || curr == 'E') {
+		scan_exponent();
+		if (base != 10) {
+			Session::span_err("exponent only supported for decimal numbers", curr_span());
+		}
+	}
+
+	return Token(TokenType::LIT_INTEGER, curr_src_view(), curr_span());
 }
 
 
@@ -180,17 +287,14 @@ std::string read_number(SourceReader* lex) {
 
 Token Lexer::next_token() {
 	// Get rid of whitespace and comments
-	eat_ws_and_comments(this);
+	consume_ws_and_comments();
 
 	// If the current character is EOF, return an END token
 	// It's span is a singel position, since the file ends there
 	if (!is_valid(curr))
 		return Token(TokenType::END, "\\0", Span(trans_unit(), bitpos(), lineno(), colno(), bitpos(), lineno(), colno()));
 
-	// Save file positions for token span
-	curr_start.abs = bitpos();
-	curr_start.ln = lineno();
-	curr_start.col = colno();
+	save_curr_pos();
 
 	return next_token_inner();
 }
@@ -209,36 +313,36 @@ Token Lexer::next_token_inner() {
 		} while (range::is_ident_cont(curr));
 
 		// If only underscore, return
-		if (build_str == "_") return Token('_', curr_span());
+		if (build_str == "_") return Token('_', curr_src_view(), curr_span());
 
 		// Check if the identifier is a keyword
 		// If it is, return a keyword token
 		auto item = key_find(build_str.c_str());
 		if (item != nullptr)
-			return Token(item->value, build_str, curr_span());
+			return Token(item->value, curr_src_view(), curr_span());
 
-		// Return string as ab identifier
-		return Token(TokenType::ID, build_str, curr_span());
+		// Return string as an identifier
+		return Token(TokenType::ID, curr_src_view(), curr_span());
 	}
 
 	// If decimal, build number
 	if (range::is_dec(curr))
-		return Token(TokenType::LIT_NUMBER, read_number(this), curr_span());
+		return lex_number();
 
 	// Check for symbol tokens
 	switch (curr) {
-		case ',': bump(); return Token(',', curr_span());
-		case ';': bump(); return Token(';', curr_span());
-		case '?': bump(); return Token('?', curr_span());
-		case '(': bump(); return Token('(', curr_span());
-		case ')': bump(); return Token(')', curr_span());
-		case '{': bump(); return Token('{', curr_span());
-		case '}': bump(); return Token('}', curr_span());
-		case '[': bump(); return Token('[', curr_span());
-		case ']': bump(); return Token(']', curr_span());
-		case '~': bump(); return Token('~', curr_span());
-		case '#': bump(); return Token('#', curr_span());
-		case '@': bump(); return Token('@', curr_span());
+		case ',': bump(); return Token(',', curr_src_view(), curr_span());
+		case ';': bump(); return Token(';', curr_src_view(), curr_span());
+		case '?': bump(); return Token('?', curr_src_view(), curr_span());
+		case '(': bump(); return Token('(', curr_src_view(), curr_span());
+		case ')': bump(); return Token(')', curr_src_view(), curr_span());
+		case '{': bump(); return Token('{', curr_src_view(), curr_span());
+		case '}': bump(); return Token('}', curr_src_view(), curr_span());
+		case '[': bump(); return Token('[', curr_src_view(), curr_span());
+		case ']': bump(); return Token(']', curr_src_view(), curr_span());
+		case '~': bump(); return Token('~', curr_src_view(), curr_span());
+		case '#': bump(); return Token('#', curr_src_view(), curr_span());
+		case '@': bump(); return Token('@', curr_src_view(), curr_span());
 
 		// Very messy cases
 		// Refer to the comments on the side
@@ -246,180 +350,257 @@ Token Lexer::next_token_inner() {
 			if (next == '.') {
 				bump(2);
 				if (curr == '.') {
-					bump(); return Token(TokenType::DOTDOTDOT, "...", curr_span()); }			// ...
-				return Token(TokenType::DOTDOT, "..", curr_span());								// ..
+					bump();
+					return Token(TokenType::DOTDOTDOT, curr_src_view(), curr_span());		// ...
+				}
+				return Token(TokenType::DOTDOT, curr_src_view(), curr_span());				// ..
 			}
-			if (!range::is_dec(next)) {
-				bump(); return Token('.', curr_span());											// .
+			else if (!range::is_dec(next)) {
+				bump();
+				return Token('.', curr_span());												// .
 			}
-			bump();
-			return Token(TokenType::LIT_NUMBER, "." + read_number(this), curr_span());			// LIT_NUMBER
+			return lex_number();															// Number
 
 		case ':':
-			if (next == ':') { bump(2); return Token(TokenType::SCOPE, "::", curr_span()); }	// ::
-			bump(); return Token(':', curr_span());												// :
+			if (next == ':') {
+				bump(2);
+				return Token(TokenType::SCOPE, curr_src_view(), curr_span());				// ::
+			}
+			bump();
+			return Token(':', curr_span());													// :
 	
 		case '=':
-			if (next == '=') { bump(2); return Token(TokenType::EQEQ, "==", curr_span()); }			// ==
-			if (next == '>') { bump(2); return Token(TokenType::FATARROW, "=>", curr_span());	}	// =>
-			bump(); return Token('=', curr_span());													// =
+			if (next == '=') {
+				bump(2);
+				return Token(TokenType::EQEQ, curr_src_view(), curr_span());				// ==
+			}
+			else if (next == '>') {
+				bump(2);
+				return Token(TokenType::FATARROW, curr_src_view(), curr_span());			// =>
+			}
+			bump();
+			return Token('=', curr_span());													// =
 
 		case '!':
-			if (next == '=') { bump(2); return Token(TokenType::NE, "!=", curr_span()); }		// !=
-			bump(); return Token('!', curr_span());												// !
+			if (next == '=') {
+				bump(2);
+				return Token(TokenType::NE, curr_src_view(), curr_span());					// !=
+			}
+			bump();
+			return Token('!', curr_span());													// !
 
 		case '+':
-			if (next == '+') { bump(2); return Token(TokenType::PLUSPLUS, "++", curr_span()); }		// ++
-			if (next == '=') { bump(2); return Token(TokenType::SUME, "+=", curr_span()); }			// +=
-			bump(); return Token('+', curr_span());													// +
+			if (next == '+') {
+				bump(2);
+				return Token(TokenType::PLUSPLUS, curr_src_view(), curr_span());			// ++
+			}
+			else if (next == '=') {
+				bump(2);
+				return Token(TokenType::SUME, curr_src_view(), curr_span());				// +=
+			}
+			bump();
+			return Token('+', curr_span());													// +
 
 		case '-':
-			if (next == '-') { bump(2); return Token(TokenType::MINUSMINUS, "--", curr_span()); }	// --
-			if (next == '>') { bump(2); return Token(TokenType::RARROW, "->", curr_span()); }		// ->
-			if (next == '=') { bump(2); return Token(TokenType::SUBE, "-=", curr_span()); }			// -=
-			bump(); return Token('-', curr_span());													// -
+			if (next == '-') {
+				bump(2);
+				return Token(TokenType::MINUSMINUS, curr_src_view(), curr_span());			// --
+			}
+			else if (next == '>') {
+				bump(2);
+				return Token(TokenType::RARROW, curr_src_view(), curr_span());				// ->
+			}
+			else if (next == '=') {
+				bump(2);
+				return Token(TokenType::SUBE, curr_src_view(), curr_span());				// -=
+			}
+			bump();
+			return Token('-', curr_span());													// -
 
 		case '*':
-			if (next == '=') { bump(2); return Token(TokenType::MULE, "*=", curr_span()); }		// *=
-			bump(); return Token('*', curr_span());												// *
+			if (next == '=') {
+				bump(2);
+				return Token(TokenType::MULE, curr_src_view(), curr_span());				// *=
+			}
+			bump();
+			return Token('*', curr_span());													// *
 
 		case '/':
-			if (next == '=') { bump(2); return Token(TokenType::DIVE, "/=", curr_span()); }		// /=
-			bump(); return Token('/', curr_span());												// /
+			if (next == '=') {
+				bump(2);
+				return Token(TokenType::DIVE, curr_src_view(), curr_span());				// /=
+			}
+			bump();
+			return Token('/', curr_span());													// /
 
 		case '%':
-			if (next == '=') { bump(2); return Token(TokenType::MODE, "%=", curr_span()); }		// %=
-			bump(); return Token('%', curr_span());												// %
+			if (next == '=') {
+				bump(2);
+				return Token(TokenType::MODE, curr_src_view(), curr_span());				// %=
+			}
+			bump();
+			return Token('%', curr_span());													// %
 
 		case '^':
-			if (next == '=') { bump(2); return Token(TokenType::CARE, "^=", curr_span()); }		// ^=
-			bump(); return Token('^', curr_span());												// ^
+			if (next == '=') {
+				bump(2);
+				return Token(TokenType::CARE, curr_src_view(), curr_span());				// ^=
+			}
+			bump();
+			return Token('^', curr_span());													// ^
 
 		case '&':
-			//if (next == '&') { bump(2); return Token(TokenType::AND, "&&", curr_span()); }		// &&
-			if (next == '=') { bump(2); return Token(TokenType::ANDE, "&=", curr_span());	}		// &=
-			bump(); return Token('&', curr_span());													// &
+			//if (next == '&') {
+			//	bump(2);
+			//	return Token(TokenType::AND, curr_src_view(), curr_span());					// &&
+			//}
+			if (next == '=') {
+				bump(2);
+				return Token(TokenType::ANDE, curr_src_view(), curr_span());				// &=
+			}
+			bump();
+			return Token('&', curr_span());													// &
 
 		case '|':
-			if (next == '|') { bump(2); return Token(TokenType::OR, "||", curr_span()); }		// ||
-			if (next == '=') { bump(2); return Token(TokenType::ORE, "|=", curr_span()); }		// |=
-			bump(); return Token('|', curr_span());												// |
+			if (next == '|') {
+				bump(2);
+				return Token(TokenType::OR, curr_src_view(), curr_span());					// ||
+			}
+			else if (next == '=') {
+				bump(2);
+				return Token(TokenType::ORE, curr_src_view(), curr_span());					// |=
+			}
+			bump();
+			return Token('|', curr_span());													// |
 
 		case '>':
-			switch (next) {
-				case '=': bump(2); return Token(TokenType::GE, ">=", curr_span());			// >=
-				//case '>': bump(2); return Token(TokenType::SHR, ">>", curr_span());		// >>
-				default:  bump(2); return Token('>', curr_span());							// >
+			if (next == '=') {
+				bump(2);
+				return Token(TokenType::GE, curr_src_view(), curr_span());					// >=
 			}
+			//else if (next == '>') {
+			//	bump(2);
+			//	return Token(TokenType::SHR, curr_src_view(), curr_span());					// >>
+			//}
+			bump(1);
+			return Token('>', curr_span());													// >
 			
 		case '<':
 			switch (next) {
-				case '=': bump(2); return Token(TokenType::LE, "<=", curr_span());		// <=
-				case '-': bump(2);
+				case '=':
+					bump(2);
+					return Token(TokenType::LE, curr_src_view(), curr_span());				// <=
+
+				case '-':
+					bump(2);
 					if (curr == '>') { 
-						bump(); return Token(TokenType::DARROW, "<->", curr_span());	// <->
+						bump();
+						return Token(TokenType::DARROW, curr_src_view(), curr_span());		// <->
 					}
-					return Token(TokenType::LARROW, "<-", curr_span());					// <-
-				case '<': bump(2); return Token(TokenType::SHL, "<<", curr_span());		// <<
-				default:  bump(); return Token('<', curr_span());						// <
+					return Token(TokenType::LARROW, curr_src_view(), curr_span());			// <-
+
+				case '<':
+					bump(2);
+					return Token(TokenType::SHL, curr_src_view(), curr_span());				// <<
+
+				default:
+					bump();
+					return Token('<', curr_span());											// <
 			}
 
 		case '\'':
 		{
-			// Save next character
-			char c = next;
+			bump();
+			char c = curr;
 			bool valid = true;
-			bump(2);
+			size_t start = bitpos();
+			bump();
 
 			// Character literal is empty
 			if (c == '\'') {
 				valid = false;
 				Session::span_err("character must have a value", curr_span());
 			}
+			else {
+				// If it starts like an indentifier and doesnt close,
+				// assume it's a lifetime
+				if (range::is_ident_start(c) && curr != '\'') {
 
-			// If it starts like an indentifier and doesnt close,
-			// assume it's a lifetime
-			if (range::is_ident_start(c) || curr != '\'') {
-				std::string lf_str = std::string(1, c);
+					// Collect lifetime name
+					while (range::is_ident_cont(curr)) {
+						bump();
+					}
 
-				// Collect lifetime name
-				while (range::is_ident_cont(curr)) {
-					lf_str += curr;
-					bump();
-				}
-
-				// A lifetime should't end with a '
-				// In that case we assume it's an unterminated character literal
-				if (curr == '\'') {
-					bump();
-					Session::span_err("character literal may contain only one symbol", curr_span());
-					Session::warn("if you meant to create a string literal, use double quotes");
-					return Token(TokenType::LIT_STRING, "??", curr_span());
-				}
-
-				return Token(TokenType::LF, lf_str, curr_span());
-			}
-
-			// Newlines and tabs aren't allowed inside characters
-			if ((c == '\n' || c == '\r' || c == '\t') && curr == '\'') {
-				valid = false;
-				Session::span_err("special characters need to be escaped", curr_span());
-			}
-
-			// The character is an escape sequence
-			if (c == '\\') {
-				switch (curr) {
-					case 'n': c = '\n'; break;
-					case 'r': c = '\r'; break;
-					case 't': c = '\t'; break;
-					case '\\': c = '\\'; break;
-					case '\'': c = '\''; break;
-					case 'x': c = scan_num_escape(this, 2); break;
-					case 'u': c = scan_num_escape(this, 4); break;
-					case 'U': c = scan_num_escape(this, 8); break;
-					default:
-						valid = false;
-						Session::span_err("unknown escape sequence: '\\" + std::string(1, curr) + "'", curr_span());
-				}
-				bump();
-			}
-
-			// The character hasn't ended after one symbol
-			if (curr != '\'') {
-				std::string ch_str = std::string{ c, curr };
-
-				while (true) {
-					bump();
-					ch_str += curr;
-					// There are more than one symbols in the character literal
-					// Return it as a string literal
+					// A lifetime should't end with a '
+					// In that case we assume it's an unterminated character literal
 					if (curr == '\'') {
 						bump();
 						Session::span_err("character literal may contain only one symbol", curr_span());
-						Session::warn("if you wanted a string literal, use double quotes");
-						return Token(TokenType::LIT_STRING, ch_str, curr_span());
+						Session::warn("if you meant to create a string literal, use double quotes");
+						return Token(TokenType::LIT_STRING, src.substr(start, bitpos() - start - 1), curr_span());
 					}
-					// The character literal goes to EOF or newline
-					if (!is_valid(curr) || curr == '\n') {
-						// This is a critical failure
-						// We can't expect what to do with the missing quote
-						err("character literal missing end quote", curr_span());
+
+					return Token(TokenType::LF, curr_src_view(), curr_span());
+				}
+
+				// Newlines and tabs aren't allowed inside characters
+				if ((c == '\n' || c == '\r' || c == '\t') && curr == '\'') {
+					valid = false;
+					Session::span_err("special characters need to be escaped", curr_span());
+				}
+
+				// The character is an escape sequence
+				if (c == '\\') {
+					switch (curr) {
+						case 'n': bump(); break;
+						case 'r': bump(); break;
+						case 't': bump(); break;
+						case '\\': bump(); break;
+						case '\'': bump(); break;
+						case 'x': bump(); valid &= scan_hex_escape(2, '\''); break;
+						case 'u': bump(); valid &= scan_hex_escape(4, '\''); break;
+						case 'U': bump(); valid &= scan_hex_escape(8, '\''); break;
+						default:
+							valid = false;
+							Session::span_err("unknown escape sequence: '\\" + std::string(1, curr) + "'", curr_span());
+							bump(); 
+					}
+				}
+
+				// The character hasn't ended after one symbol
+				if (curr != '\'') {
+					while (true) {
+						bump();
+						// There are more than one symbols in the character literal
+						// Return it as a string literal
+						if (curr == '\'') {
+							bump();
+							Session::span_err("character literal may contain only one symbol", curr_span());
+							Session::warn("if you wanted a string literal, use double quotes");
+							return Token(TokenType::LIT_STRING, src.substr(start, bitpos() - start - 1), curr_span());
+						}
+						// The character literal goes to EOF or newline
+						if (!is_valid(curr) || curr == '\n') {
+							// This is a critical failure
+							// We can't expect what to do with the missing quote
+							err("character literal missing end quote", curr_span());
+						}
 					}
 				}
 			}
-			bump(); // move off end quote
 
 			// Invalid characters are set to '0'
-			if (!valid) c = '0';
+			std::string_view ret = valid ? src.substr(start, bitpos() - start) : std::string_view("0");
 
-			return Token(TokenType::LIT_CHAR, std::string(1, c), curr_span());
+			bump(); // move off end quote
+			return Token(TokenType::LIT_CHAR, ret, curr_span());
 		}
 
 		case '"':
 		{
 			bump();
 			bool valid = true;
-			std::string build_str;
+			size_t start = bitpos();
 
 			while (curr != '"') {
 				if (curr == (int)TokenType::END) {
@@ -433,33 +614,32 @@ Token Lexer::next_token_inner() {
 
 				if (c == '\\') {
 					switch (curr) {
-						case 'n': c = '\n'; break;
-						case 'r': c = '\r'; break;
-						case 't': c = '\t'; break;
-						case '\\': c = '\\'; break;
-						case '\'': c = '\''; break;
-						case 'x': c = scan_num_escape(this, 2); break;
-						case 'u': c = scan_num_escape(this, 4); break;
-						case 'U': c = scan_num_escape(this, 8); break;
+						case 'n': bump(); break;
+						case 'r': bump(); break;
+						case 't': bump(); break;
+						case '\\': bump(); break;
+						case '\'': bump(); break;
+						case 'x': bump(); valid &= scan_hex_escape(2, '\"'); break;
+						case 'u': bump(); valid &= scan_hex_escape(4, '\"'); break;
+						case 'U': bump(); valid &= scan_hex_escape(8, '\"'); break;
 						default:
 							valid = false;
 							Session::span_err("unknown escape sequence: '\\" + std::string(1, curr) + "'", curr_span());
+							bump(); 
 					}
-					bump();
 				}
-
-				build_str += c;
 			}
-			bump(); // move off end quote
 
 			// Invalid strings are set to "??"
-			if (!valid) build_str = "??";
+			std::string_view ret = valid ? src.substr(start, bitpos() - start) : std::string_view("??");
 
-			return Token(TokenType::LIT_STRING, build_str, curr_span());
+			bump(); // move off end quote
+			return Token(TokenType::LIT_STRING, ret, curr_span());
 		}
 
 		default:
 			Session::span_err("unrecognised character: " + std::string(1, curr), curr_span());
-			return Token(TokenType::UNKNOWN, std::string(1, curr), curr_span());
+			bump();
+			return Token(TokenType::UNKNOWN, curr_src_view(), curr_span());
 	}
 }

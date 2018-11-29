@@ -52,10 +52,8 @@ enum class TokenType {
 	// Literal
 	LIT_STRING,
 	LIT_CHAR,
-	LIT_NUMBER,		// For lexer. Actual type is decided when parsing.
-	LIT_INT,
-	LIT_UINT,
-	LIT_FLOAT,
+	LIT_INTEGER,		// Unsigned. Lexing with a minus could cause lots of overlap while parsing
+	LIT_FLOAT,			// Unsigned
 
 	// Type
 	THING,

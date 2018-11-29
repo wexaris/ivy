@@ -195,10 +195,9 @@ void Parser::expect(const std::vector<TokenType>& exp) {
 
 /* True if the provided token's type is a literal. */
 inline bool is_literal(const Token& tk) {
-	return tk == TokenType::LIT_STRING	||
-			tk == TokenType::LIT_NUMBER	||
-			tk == TokenType::LIT_INT	||
-			tk == TokenType::LIT_UINT	||
+	return tk == TokenType::LIT_STRING		||
+			tk == TokenType::LIT_CHAR		||
+			tk == TokenType::LIT_INTEGER	||
 			tk == TokenType::LIT_FLOAT;
 }
 
@@ -276,7 +275,7 @@ void Parser::ident() {
 void Parser::lifetime() {
 	trace("lifetime: " + std::string(curr_tok.raw()));
 
-	auto name = { curr_tok.raw() };
+	//auto name = { curr_tok.raw() };
 	expect(TokenType::LF);
 
 	end_trace();
@@ -413,7 +412,7 @@ void Parser::item_static() {
 	trace("item_static");
 	expect(TokenType::STATIC);
 
-	auto name = curr_tok.raw();
+	//auto name = curr_tok.raw();
 	ident();
 
 	expect(':');
@@ -431,7 +430,7 @@ void Parser::item_const() {
 	trace("item_const");
 	expect(TokenType::CONST);
 
-	auto name = curr_tok.raw();
+	//auto name = curr_tok.raw();
 	ident();
 
 	expect(':');
@@ -449,7 +448,7 @@ void Parser::item_type() {
 	trace("item_type");
 	expect(TokenType::TYPE);
 
-	auto name = curr_tok.raw();
+	//auto name = curr_tok.raw();
 	ident();
 
 	expect('=');
@@ -516,7 +515,7 @@ void Parser::item_fun() {
 	trace("item_fun");
 	expect(TokenType::FUN);
 
-	auto name = curr_tok.raw();
+	//auto name = curr_tok.raw();
 	ident();
 
 	Session::unimpl("item_fun");
@@ -531,7 +530,7 @@ void Parser::item_struct() {
 	trace("item_struct");
 	expect(TokenType::STRUCT);
 
-	auto name = curr_tok.raw();
+	//auto name = curr_tok.raw();
 	ident();
 
 	if (curr_tok.type() == '<')
@@ -610,7 +609,7 @@ void Parser::struct_decl_item() {
 
 	Attributes attr = attributes();
 
-	auto name = curr_tok.raw();
+	//auto name = curr_tok.raw();
 	expect(TokenType::ID);
 
 	expect(':');
@@ -626,7 +625,7 @@ void Parser::item_enum() {
 	trace("item_enum");
 	expect(TokenType::ENUM);
 
-	auto name = curr_tok.raw();
+	//auto name = curr_tok.raw();
 	ident();
 
 	if (curr_tok.type() == '<')
@@ -670,7 +669,7 @@ void Parser::enum_defs() {
 void Parser::enum_def() {
 	trace("enum_def");
 
-	auto name = curr_tok.raw();
+	//auto name = curr_tok.raw();
 	ident();
 
 	if (curr_tok.type() == '=') {
@@ -689,7 +688,7 @@ void Parser::item_union() {
 	trace("item_union");
 	expect(TokenType::UNION);
 
-	auto name = curr_tok.raw();
+	//auto name = curr_tok.raw();
 	ident();
 
 	Session::unimpl("item_union");
@@ -701,7 +700,7 @@ void Parser::item_trait() {
 	trace("item_trait");
 	expect(TokenType::TRAIT);
 
-	auto name = curr_tok.raw();
+	//auto name = curr_tok.raw();
 	ident();
 
 	Session::unimpl("item_trait");
@@ -867,7 +866,7 @@ void Parser::type_sum() {
 //           | INT | I64 | I32 | I16 | I8
 //           | UINT | U64 | U32 | U16 | U8 
 void Parser::primitive() {
-	trace("primitive: " + curr_tok.raw());
+	trace("primitive: " + std::string(curr_tok.raw()));
 
 	expect({ TokenType::THING, TokenType::STR, TokenType::CHAR,
 		TokenType::INT, TokenType::I64, TokenType::I32, TokenType::I16, TokenType::I8,

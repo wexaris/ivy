@@ -2,14 +2,12 @@
 
 std::string translate::tk_info(const Token& tk) {
 	switch (tk.type()) {
-		case (int)TokenType::ID:			return "'" + tk.raw() + "'";
-		case (int)TokenType::LF:		    return "'" + tk.raw() + "'";
-		case (int)TokenType::LIT_STRING:	return "'" + tk.raw() + "'";
-		case (int)TokenType::LIT_CHAR:		return "'" + tk.raw() + "'";
-		case (int)TokenType::LIT_NUMBER:	return "'" + tk.raw() + "'";
-		case (int)TokenType::LIT_INT:	    return "'" + tk.raw() + "'";
-		case (int)TokenType::LIT_UINT:	    return "'" + tk.raw() + "'";
-		case (int)TokenType::LIT_FLOAT:	    return "'" + tk.raw() + "'";
+		case (int)TokenType::ID:			return "'" + std::string(tk.raw()) + "'";
+		case (int)TokenType::LF:		    return "'" + std::string(tk.raw()) + "'";
+		case (int)TokenType::LIT_STRING:	return "'" + std::string(tk.raw()) + "'";
+		case (int)TokenType::LIT_CHAR:		return "'" + std::string(tk.raw()) + "'";
+		case (int)TokenType::LIT_INTEGER:	return "'" + std::string(tk.raw()) + "'";
+		case (int)TokenType::LIT_FLOAT:	    return "'" + std::string(tk.raw()) + "'";
 		default:
 			// If the type is 1-255, return the ASCII character
 			if (tk.type() > 0 && tk.type() <= 255)
@@ -84,8 +82,7 @@ std::string translate::tk_type(int type) {
 		// Literal
 		case (int)TokenType::LIT_STRING:	return "string literal";
 		case (int)TokenType::LIT_CHAR:		return "char literal";
-		case (int)TokenType::LIT_INT:		return "int literal";
-		case (int)TokenType::LIT_UINT:		return "uint literal";
+		case (int)TokenType::LIT_INTEGER:	return "integer literal";
 		case (int)TokenType::LIT_FLOAT:		return "float literal";
 
 		// Keyword

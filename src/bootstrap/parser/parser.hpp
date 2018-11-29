@@ -25,7 +25,7 @@ struct Attributes : std::vector<Attr> {
 /* A single part of a path.
  * Has a string and Span. */
 struct SubPath {
-	std::string id;
+	std::string_view id;
 	Span span;
 };
 /* A vector of SubPaths. */
