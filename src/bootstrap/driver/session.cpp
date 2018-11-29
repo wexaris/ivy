@@ -37,11 +37,11 @@ std::string Session::indent_prefix;
 #endif
 
 struct System {
-	static constexpr inline OS get_os()				{ return _OS; }
-	static constexpr inline Arch get_arch() 		{ return _ARCH; }
-	static constexpr inline SysType get_isize() 	{ return _ARCH == Arch::x64 ? SysType::i64 : SysType::i32; }
-	static constexpr inline SysType get_usize() 	{ return _ARCH == Arch::x64 ? SysType::u64 : SysType::u32; }
-	static constexpr inline SysType get_fsize() 	{ return _ARCH == Arch::x64 ? SysType::f64 : SysType::f32; }
+	static inline OS get_os()				{ return _OS; }
+	static inline Arch get_arch() 		{ return _ARCH; }
+	static inline SysType get_isize() 	{ return _ARCH == Arch::x64 ? SysType::i64 : SysType::i32; }
+	static inline SysType get_usize() 	{ return _ARCH == Arch::x64 ? SysType::u64 : SysType::u32; }
+	static inline SysType get_fsize() 	{ return _ARCH == Arch::x64 ? SysType::f64 : SysType::f32; }
 };
 
 SysConfig::SysConfig()
