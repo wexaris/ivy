@@ -37,7 +37,7 @@ public:
 	inline size_t end_pos() const				{ return start_position + src.length(); }
 
 	/* A view into the file's source code. */
-	inline const std::string& source() const	{ return src; }
+	inline std::string_view source() const		{ return src; }
 
 	/* Length of the source code in the file. */
 	inline size_t len() const					{ return src.length(); }

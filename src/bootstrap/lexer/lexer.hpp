@@ -11,9 +11,7 @@ class SourceReader {
 
 private:
 	/* Current absolute position in the read file.
-	 * Coincides with the position of the character 'next'.
-	 * If no source file has been set, the index is invalid,
-	 * so source code reading will fail. */
+	 * Coincides with the position of the character 'next'. */
 	size_t index = 0;
 
 	/* The current line position in the source file */
@@ -24,26 +22,23 @@ private:
 protected:
 	/* The file that is being read  */
 	const TranslationUnit& translation_unit;
-	std::string_view src;
 
 	/* The current character in the source file */
-	char curr;
+	char curr = ' ';
 	/* The next character in the source file */
 	char next;
 
 	/* Gets the next character.
-	 * Once EOF has been reached, '\0' will be returned. */
+	 * Once EOF has been reached, '\0' will be returned.
+	 * This does not incremet the index.
+	 * The index is managed by 'bump()', which this is a part of. */
 	char read_next_char();
 
 public:
 	/* Construct a new SourceReader given a Translation Unit. */
-	explicit SourceReader(const TranslationUnit& tu) : translation_unit(tu), src(tu.source()) {
+	explicit SourceReader(const TranslationUnit& tu) : translation_unit(tu) {
 		// Set up the next character
 		next = read_next_char();
-		// 'read_next_char()' doesn't increase the index anymore,
-		// since that cut off the last two characters of the file
-		// because the 'curr' char was two positions behind the real read position
-		index++;
 		// Bump the next character to the current one
 		// Bump instead of reading again because we want positioning to be updated
 		bump();
@@ -67,7 +62,7 @@ public:
 
 	/* Current absolute position in the Translation Unit.
 	 * Coincides with the position of the character 'curr'. */
-	inline size_t bitpos() const { return index - 2; }
+	inline size_t bitpos() const { return index - 1; }
 	/* Current line number.
 	 * Coincides with the position of the character 'curr'. */
 	inline int lineno() const { return curr_ln; }
@@ -133,7 +128,7 @@ protected:
 	/* The current tokens's absolute length. */
 	inline size_t curr_length() { return bitpos() - curr_start.abs; }
 	/* Extract's the current token's view from the TU string.  */
-	inline std::string_view curr_src_view() { return src.substr(curr_start.abs, curr_length()); }
+	inline std::string_view curr_src_view() { return trans_unit()->source().substr(curr_start.abs, curr_length()); }
 
 public:
 	/* Saved start position of the current token. */

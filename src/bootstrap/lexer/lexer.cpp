@@ -74,31 +74,31 @@ constexpr const Keyword* key_find(const char* key) {
 
 char SourceReader::read_next_char() {
 	// If the current index is out of bounds, return '\0'
- 	if (index >= src.length())
+ 	if (index >= trans_unit()->source().length())
 		return '\0';
 
 	// Return the next character
-	return src[index];
+	return trans_unit()->source()[index];
 }
 
 void SourceReader::bump(int n) {
 	for (int i = 0; i < n; i++) {
-		// Move the next character up
-		curr = next;
-
 		// Increment reading position
 		if (curr == '\n') {
-			curr_col = 0;
+			curr_col = 1;
 			curr_ln++;
 		} else {
 			curr_col++;
 		}
 
-		// Read the next character
-		next = read_next_char();
-		
+		// Move the next character up
+		curr = next;
+
 		if (curr != '\0')
 			index++;
+
+		// Read the next character
+		next = read_next_char();
 	}
 }
 
@@ -537,7 +537,7 @@ Token Lexer::next_token_inner() {
 						bump();
 						Session::span_err("character literal may contain only one symbol", curr_span());
 						Session::warn("if you meant to create a string literal, use double quotes");
-						return Token(TokenType::LIT_STRING, src.substr(start, bitpos() - start - 1), curr_span());
+						return Token(TokenType::LIT_STRING, trans_unit()->source().substr(start, bitpos() - start - 1), curr_span());
 					}
 
 					return Token(TokenType::LF, curr_src_view(), curr_span());
@@ -577,7 +577,7 @@ Token Lexer::next_token_inner() {
 							bump();
 							Session::span_err("character literal may contain only one symbol", curr_span());
 							Session::warn("if you wanted a string literal, use double quotes");
-							return Token(TokenType::LIT_STRING, src.substr(start, bitpos() - start - 1), curr_span());
+							return Token(TokenType::LIT_STRING, trans_unit()->source().substr(start, bitpos() - start - 1), curr_span());
 						}
 						// The character literal goes to EOF or newline
 						if (!is_valid(curr) || curr == '\n') {
@@ -590,7 +590,7 @@ Token Lexer::next_token_inner() {
 			}
 
 			// Invalid characters are set to '0'
-			std::string_view ret = valid ? src.substr(start, bitpos() - start) : std::string_view("0");
+			std::string_view ret = valid ? trans_unit()->source().substr(start, bitpos() - start) : std::string_view("0");
 
 			bump(); // move off end quote
 			return Token(TokenType::LIT_CHAR, ret, curr_span());
@@ -631,7 +631,7 @@ Token Lexer::next_token_inner() {
 			}
 
 			// Invalid strings are set to "??"
-			std::string_view ret = valid ? src.substr(start, bitpos() - start) : std::string_view("??");
+			std::string_view ret = valid ? trans_unit()->source().substr(start, bitpos() - start) : std::string_view("??");
 
 			bump(); // move off end quote
 			return Token(TokenType::LIT_STRING, ret, curr_span());
