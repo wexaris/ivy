@@ -53,7 +53,7 @@ public:
 	void bump(int n = 1);
 
 	/* A pointer to the current source file */
-	inline const TranslationUnit* trans_unit() const { return &translation_unit; }
+	inline const TranslationUnit& trans_unit() const { return translation_unit; }
 
 	/* The current character in the source file */
 	inline char curr_c() const { return curr; }
@@ -128,7 +128,7 @@ protected:
 	/* The current tokens's absolute length. */
 	inline size_t curr_length() { return bitpos() - curr_start.abs; }
 	/* Extract's the current token's view from the TU string.  */
-	inline std::string_view curr_src_view() { return trans_unit()->source().substr(curr_start.abs, curr_length()); }
+	inline std::string_view curr_src_view() { return trans_unit().source().substr(curr_start.abs, curr_length()); }
 
 public:
 	/* Saved start position of the current token. */
