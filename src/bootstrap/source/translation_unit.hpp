@@ -27,6 +27,7 @@ public:
 	TranslationUnit(const std::string& path, const std::string& src, size_t start_pos) 
 		: path(path), src(src), start_position(start_pos) {}
 
+	/* An structure for passing around lines and columns. */
 	struct TextPos {
 		size_t line;
 		size_t col;

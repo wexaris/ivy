@@ -28,7 +28,7 @@ public:
 		: flags(flags), msg_hashes()
 	{}
 
-	inline Error new_error(ErrSeverity sev, std::string msg) const {
+	static inline Error new_error(ErrSeverity sev, std::string msg) {
 		return Error(sev, msg);
 	}
 
