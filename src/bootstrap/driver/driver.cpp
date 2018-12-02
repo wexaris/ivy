@@ -79,13 +79,13 @@ int main(int argc, char* argv[]) {
 				if (i + 1 <= argc && argv[i+1][0] != '-') {
 					arg = argv[++i];
 					if (arg == "trace")
-						Session::require_severity(TRACE);
+						Session::require_severity(Severity::TRACE);
 					else if (arg == "message")
-						Session::require_severity(MESSAGE);
+						Session::require_severity(Severity::MESSAGE);
 					else if (arg == "warning")
-						Session::require_severity(WARNING);
+						Session::require_severity(Severity::WARNING);
 					else if (arg == "error")
-						Session::require_severity(ERROR);
+						Session::require_severity(Severity::ERROR);
 					else 
 						Session::err("-require_sev invalid argument");
 					continue;
@@ -142,6 +142,7 @@ int main(int argc, char* argv[]) {
 
 #include "tests/lexer_tests.hpp"
 #include "parser/parser.hpp"
+#include "errors/handler.hpp"
 
 void print_main() {
 	SourceMap sm;
@@ -162,6 +163,18 @@ int main() {
 	tests::lexer::token_has_correct_line_pos();
 	tests::lexer::token_has_correct_column_pos();
 	tests::lexer::return_eof_without_translation_unit();
+
+	SourceMap sm;
+	Lexer lex(sm.load_file("tests/main.ivy"));
+	Token tk = lex.next_token();
+
+	ErrorHandler handler;
+	Error err = handler.new_error(ErrSeverity::ERROR, std::string(tk.raw()));
+	err.add_span(tk.span());
+	err.add_highlight();
+	err.add_help("if you wanted to import a module, use 'import mod'");
+	err.add_note("this is a fake error");
+	handler.emit(err);
 }
 
 #endif

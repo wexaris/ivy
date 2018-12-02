@@ -53,7 +53,7 @@ struct SysConfig {
 
 /* The levels of severity that a logged message might have.
  * The CRITICAL level is the only one that will throw an exception. */
-enum Severity {
+enum class Severity {
 	TRACE = 0,
 	MESSAGE,
 	WARNING,
@@ -119,7 +119,7 @@ public:
 	 * Will not write messages unless tracing is enabled.
 	 * Will indent messages unless formatting is disabled. */
 	static inline void trace(const std::string& msg) {
-		if (should_write(TRACE)) {
+		if (should_write(Severity::TRACE)) {
 			if (_format)
 				indent_prefix += INDENT;
 			printf("%s%s\n", indent_prefix.c_str(), msg.c_str());
@@ -129,55 +129,55 @@ public:
 	/* Removes the last level of indentation from trace messages. 
 	 * Should be called at the end of a trace level. */
 	static inline void end_trace() {
-		if (should_write(TRACE) && _format)
+		if (should_write(Severity::TRACE) && _format)
 			indent_prefix.resize(indent_prefix.length() - strlen(INDENT));
 	};
 
 	/* Emit a compile time message. */
 	static inline void msg(const std::string& msg) {
-		if (should_write(MESSAGE))
-			log(MESSAGE, msg);
+		if (should_write(Severity::MESSAGE))
+			log(Severity::MESSAGE, msg);
 	};
 
 	/* Emit a compile time message. */
 	static inline void warn(const std::string& msg) {
-		if (should_write(WARNING))
-			log(WARNING, msg);
+		if (should_write(Severity::WARNING))
+			log(Severity::WARNING, msg);
 	};
 
 	/* Emit an error with the provided message. */
 	static inline void err(const std::string& msg) {
-		if (should_write(ERROR))
-			log(ERROR, std::string("error: ") + msg);
+		if (should_write(Severity::ERROR))
+			log(Severity::ERROR, std::string("error: ") + msg);
 	};
 
 	/* Emit an error with the provided position and message.
 	 * Stops the compilation process. */
 	static inline void span_err(const std::string& msg, const Span& sp) {
-		if (should_write(ERROR)) {
+		if (should_write(Severity::ERROR)) {
 			trace("FAILED");
 			end_trace();
 		
 			std::string err = sp.tu->filepath() + ":" + std::to_string(sp.lo.line) + ":" + std::to_string(sp.lo.col)
 				 + " error: " + msg;
-			log(ERROR, err);
+			log(Severity::ERROR, err);
 		}
 	};
 
 	/* Emit a critical error message and stop the compiler. */
 	[[noreturn]] static inline void failure(const std::string& msg) {
-		if (should_write(CRITICAL)) {
+		if (should_write(Severity::CRITICAL)) {
 			trace("FAILED");
 			end_trace();
 
-			log(CRITICAL, std::string("failure: ") + msg);
+			log(Severity::CRITICAL, std::string("failure: ") + msg);
 		}
 	};
 
 	/* Emit an error about an internal compiler malfunction.
 	 * Stops the compilation process. */
 	[[noreturn]] static inline void bug(const std::string& msg) {
-		log(CRITICAL, "internal compiler error: " + msg);
+		log(Severity::CRITICAL, "internal compiler error: " + msg);
 		// Critical log should already exit, but we need to exit from here
 		// to make the [[noreturn]] work without errors
 		std::exit(1);
@@ -186,7 +186,7 @@ public:
 	/* Emit an error about an unimplemented state.
 	 * Stops the compilation process. */
 	[[noreturn]] static inline void unimpl(const std::string& msg) {
-		log(CRITICAL, msg + " not implemented yet");
+		log(Severity::CRITICAL, msg + " not implemented yet");
 		// Critical log should already exit, but we need to exit from here
 		// to make the [[noreturn]] work without errors
 		std::exit(1);
@@ -194,7 +194,7 @@ public:
 
 	/* Limit the required severity for message writing. */
 	static inline void require_severity(const Severity& sev)	{ _req_severity = sev; };
-	static inline void enable_trace()							{ _req_severity = TRACE; };
+	static inline void enable_trace()							{ _req_severity = Severity::TRACE; };
 	static inline void enable_fmt(bool i)						{ _format = i; };
 
 	/* Returns a reference to the Session's SysConfig. */
