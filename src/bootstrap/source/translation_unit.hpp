@@ -13,23 +13,22 @@ private:
 	/* The full source code from a file */
 	const std::string src;
 
-	/* The indexes of newline characters.
-	 * Useful for getting a to line of code without re-reading the entire source. */
-	std::vector<size_t> newline_pos = std::vector<size_t>();
-
-	/* Start position in the CodeMap */
-	int start_position;
+	/* This Translation Unit's start position in the CodeMap */
+	size_t start_position;
 
 public:
-	/* Create a new Translation Unit. */
 	explicit TranslationUnit(const std::string& src) 
 		: src(src) {}
-	/* Create a new Translation Unit. */
+
 	TranslationUnit(const std::string& path, const std::string& src, size_t start_pos) 
 		: path(path), src(src), start_position(start_pos) {}
 
+	/* Returns the line of source that the index was from.
+	 * Beginning and ending whitespace is removed. */
+	std::string this_source_line(size_t index) const;
+
 	/* Returns the path to Translation Unit. */
-	inline std::string filepath() const			{ return path; }
+	inline const std::string& filepath() const	{ return path; }
 
 	/* Start position in the CodeMap. */
 	inline int start_pos() const				{ return start_position; }

@@ -18,6 +18,7 @@ set( SRC_FILES
 		${CURR_DIR}/parser/parser.cpp
 		${CURR_DIR}/lexer/lexer.cpp
 		${CURR_DIR}/source/source_map.cpp
+		${CURR_DIR}/source/translation_unit.cpp
 		${CURR_DIR}/util/token_info.cpp
 		${CURR_DIR}/tests/lexer_tests.cpp
 	)
