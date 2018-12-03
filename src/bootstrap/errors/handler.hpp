@@ -28,10 +28,12 @@ public:
 		: flags(flags), msg_hashes()
 	{}
 
-	static inline Error new_error(ErrSeverity sev, std::string msg) {
+	/* Create a new basic error. */
+	static inline Error new_error(ErrSeverity sev, const std::string& msg) {
 		return Error(sev, msg);
 	}
 
+	/* Emit the given error. */
 	inline void emit(const Error& err) const {
 		Emitter::emit(err);
 	}
