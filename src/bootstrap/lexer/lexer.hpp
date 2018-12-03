@@ -21,7 +21,7 @@ private:
 
 protected:
 	/* The file that is being read  */
-	const TranslationUnit& translation_unit;
+	TranslationUnit& translation_unit;
 
 	/* The current character in the source file */
 	char curr = ' ';
@@ -36,7 +36,7 @@ protected:
 
 public:
 	/* Construct a new SourceReader given a Translation Unit. */
-	explicit SourceReader(const TranslationUnit& tu) : translation_unit(tu) {
+	explicit SourceReader(TranslationUnit& tu) : translation_unit(tu) {
 		// Set up the next character
 		next = read_next_char();
 		// Bump the next character to the current one
@@ -139,7 +139,7 @@ public:
 
 public:
 	/* Construct a lexer to work on the provided Translation Unit. */
-	explicit Lexer(const TranslationUnit& file) : SourceReader(file) {}
+	explicit Lexer(TranslationUnit& file) : SourceReader(file) {}
 	/* Copy constructor */
 	Lexer(const Lexer& other) : SourceReader(other.translation_unit) {}
 

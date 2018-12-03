@@ -85,6 +85,7 @@ void SourceReader::bump(int n) {
 	for (int i = 0; i < n; i++) {
 		// Increment reading position
 		if (curr == '\n') {
+			translation_unit.save_newline(index);
 			curr_col = 1;
 			curr_ln++;
 		} else {

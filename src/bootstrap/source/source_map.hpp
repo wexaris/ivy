@@ -35,7 +35,7 @@ private:
 	/* Creates and returns a new Translation Unit.
 	 * It is automatically added to the SourceMap.
 	 * Does not guard against multiple insertions of the same file. */
-	const TranslationUnit& new_translation_unit(const std::string& path, const std::string& src);
+	TranslationUnit& new_translation_unit(const std::string& path, const std::string& src);
 
 public:
 	SourceMap() : translation_units() {}
@@ -43,7 +43,7 @@ public:
 	/* Load a file at a given path into the SourceMap.
 	 * A reference to the new Translation Unit is returned.
 	 * Does not guard against multiple insertions of the same file. */
-	const TranslationUnit& load_file(const std::string& path);
+	TranslationUnit& load_file(const std::string& path);
 
 	/* The next free index in the SourceMap. */
 	inline size_t next_start_pos() const {

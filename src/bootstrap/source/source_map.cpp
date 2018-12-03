@@ -31,14 +31,14 @@ std::string FileLoader::read_file(const std::string& path) {
 	throw std::runtime_error(msg);
 }
 
-const TranslationUnit& SourceMap::new_translation_unit(const std::string& path, const std::string& src) {
+TranslationUnit& SourceMap::new_translation_unit(const std::string& path, const std::string& src) {
 	// Create unique_ptr to a new Translation Unit in the file vector
 	translation_units.push_back(std::make_unique<TranslationUnit>(path, src, next_start_pos()));
 	// Return the managed pointer
 	return *translation_units.back().get();
 }
 
-const TranslationUnit& SourceMap::load_file(const std::string& path) {
+TranslationUnit& SourceMap::load_file(const std::string& path) {
 	// Return text from file, if it opens
 	if (FileLoader::file_exists(path))
 		return new_translation_unit(path, FileLoader::read_file(path));
