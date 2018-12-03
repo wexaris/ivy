@@ -1,5 +1,6 @@
 #pragma once
 #include "source/translation_unit.hpp"
+#include "errors/handler.hpp"
 #include "util/span.hpp"
 #include <cstring>
 #include <string>
@@ -111,8 +112,16 @@ class Session {
 	Session() {}
 
 public:
-	static inline void set_sysconfig(const SysConfig& conf) {
+	static ErrorHandler handler;
+	
+	/* Set the system configuration. */
+	static inline void set_system_cfg(const SysConfig& conf) {
 		cfg = conf;
+	}
+
+	/* Pas flags to the ErrorHandler. */
+	static inline void set_error_flags(const HandlerFlags& flags) {
+		handler.flags = flags;
 	}
 
 	/* Emit a trace message.

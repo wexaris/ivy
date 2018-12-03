@@ -15,8 +15,6 @@ struct HandlerFlags {
 class ErrorHandler {
 
 private:
-	HandlerFlags flags;
-
 	size_t err_count = 0;
 
 	/* A hash of all of the error strings that will be emitted.
@@ -24,8 +22,10 @@ private:
 	std::unordered_set<std::string> msg_hashes;
 
 public:
+	HandlerFlags flags;
+
 	ErrorHandler(const HandlerFlags& flags = HandlerFlags())
-		: flags(flags), msg_hashes()
+		: msg_hashes(), flags(flags)
 	{}
 
 	/* Create a new basic error. */
