@@ -39,7 +39,7 @@ public:
 	 * Beginning and ending whitespace is removed. */
 	TextPos pos_from_index(size_t index) const;
 
-	std::string get_line(uint ln) const;
+	std::string get_line(size_t ln) const;
 
 	/* Returns the line of source that the index was from.
 	 * Beginning and ending whitespace is removed. */
