@@ -23,6 +23,8 @@ struct SubError {
 /* The severity of the error message.
  * 'FATAL' and 'BUG' automatically stop the compilation process. */
 enum ErrSeverity {
+	CANCELED,
+
 	WARNING,
 	ERROR,
 	FATAL,
@@ -52,6 +54,11 @@ public:
 	Error(ErrSeverity lvl, std::string msg, int code = 0)
 		: sev(lvl), msg(std::move(msg)), id(code)
 	{}
+
+	/* Disables the error.
+	 * Will not be emitted. */
+	inline void cancel()				{ sev = CANCELED; }
+	inline bool is_canceled() const		{ return sev == CANCELED; }
 
 	/* Returns a full formatted error message.
 	 * Compiles the sub-messages and adds coloring. */
