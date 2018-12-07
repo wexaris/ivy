@@ -49,6 +49,8 @@ private:
 	 * Stores a type, location and value, if necessary. */
 	Token curr_tok;
 
+	ErrorHandler& handler;
+
 	/* Bumps the current token.
 	 * The current one becomes the previous one.
 	 * A new token is read as the new one. */
@@ -146,12 +148,12 @@ private:
 	void expr();
 
 	/* There shouldn't be any reason to contstruct multiples of the same parser. */
-	Parser(const Parser& other) = default;
+	Parser(const Parser& other) = delete;
 
 public:
 	/* Constructs a parser for the file at the provided location. */
 	Parser(const std::string& filepath)
-		: lexer(source_map.load_file(filepath)), curr_tok(lexer.next_token())
+		: lexer(source_map.load_file(filepath)), curr_tok(lexer.next_token()), handler(Session::handler)
 	{}
 
 	/* Begins the process of parsing the package.
