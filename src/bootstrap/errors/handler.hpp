@@ -31,10 +31,14 @@ public:
 	/* Create a new basic error. */
 	static inline Error new_error(ErrSeverity sev, const std::string& msg) {
 		return Error(sev, msg);
+		// TODO:  Hash and save error message
 	}
 
 	/* Emit the given error. */
 	inline void emit(const Error& err) const {
 		Emitter::emit(err);
 	}
+
+	/* True is there have been any errors. */
+	inline bool has_errors() const			{ return err_count > 0; }
 };
