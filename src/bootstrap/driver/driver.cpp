@@ -143,6 +143,7 @@ int main(int argc, char* argv[]) {
 #include "tests/lexer_tests.hpp"
 #include "parser/parser.hpp"
 #include "errors/handler.hpp"
+#include "util/token_info.hpp"
 
 void print_main() {
 	SourceMap sm;

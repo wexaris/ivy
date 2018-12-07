@@ -1,6 +1,4 @@
 #pragma once
-#include "lexer/lexer.hpp"
-#include "util/token_info.hpp"
 
 namespace tests {
 	namespace lexer {
