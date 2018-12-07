@@ -15,8 +15,8 @@ struct Span {
 	 * as well as the line and column. */
 	struct LinePos {
 		size_t bit;
-		uint line;
-		uint col;
+		size_t line;
+		size_t col;
 	} lo, hi;
 
 	Span(const TranslationUnit& tu, size_t lo_bit, uint lo_line, uint lo_col, size_t hi_bit, uint hi_line, uint hi_col)
