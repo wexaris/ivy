@@ -140,9 +140,7 @@ void Lexer::consume_ws_and_comments() {
 				// Throw an error if the block is not terminated at the end of the file
 				if (!is_valid(curr)) {
 					// This is a critiacal 
-					auto err = Session::handler.new_error(FATAL, "unterminated block comment");
-					err.add_span(curr_span());
-					err.add_highlight();
+					auto err = Session::handler.fatal_higligted("unterminated block comment", curr_span());
 					err.emit();
 				}
 				if (curr == '*' && next == '/') { 
