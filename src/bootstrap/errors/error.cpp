@@ -57,7 +57,7 @@ std::string Error::format() const {
 						index + line.length();				// FALSE
 					
 					build_err.resize(new_len, ' ');
-					
+
 					// Add arrows under the bad code
 					for (; index <= new_len; index++)
 						build_err[index] = '^';
@@ -77,7 +77,8 @@ std::string Error::format() const {
 				break;
 
 			default:
-				break;
+				Error err(BUG, "failed to create error message; invalid error type", 999);
+				err.emit();
 		}
 	}
 	return build_err;
