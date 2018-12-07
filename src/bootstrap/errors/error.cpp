@@ -41,20 +41,26 @@ std::string Error::format() const {
 			case HIGHLIGHT:
 				{
 					auto pos = sp.tu->pos_from_index(sp.lo.bit);
+					auto line = sp.tu->get_line(pos.line);
 
-					build_err += "  |\n";
-					build_err += "  | " + sp.tu->get_line(pos.line) + "\n";
-					build_err += "  | ";
+					// TODO:  Multi line spans still look quite stupid.
+					std::string linenum_str = std::to_string(pos.line);
+					build_err += std::string(linenum_str.length(), ' ') + " |\n";
+					build_err += linenum_str + " | " + line + "\n";
+					build_err += std::string(linenum_str.length(), ' ') + " | ";
 
-					// The current span start pos in the error message
-					size_t index = build_err.length() + sp.lo.col;
+					// The current span's start pos in the error message
+					size_t index = build_err.length();
 					// The final length of the error message
-					size_t new_len = index + sp.hi.col - sp.lo.col;
-					build_err.resize(new_len - 1, ' ');
+					size_t new_len = sp.lo.line == sp.hi.line ?
+						index + (sp.hi.bit - sp.lo.bit) :	// TRUE
+						index + line.length();				// FALSE
+					
+					build_err.resize(new_len, ' ');
 					
 					// Add arrows under the bad code
-					for (; index < new_len; index++)
-						build_err[index-1] = '^';
+					for (; index <= new_len; index++)
+						build_err[index] = '^';
 
 					build_err += "\033[0m\n";
 					break;
