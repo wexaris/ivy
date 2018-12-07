@@ -239,7 +239,7 @@ Attributes Parser::attributes() {
 				break;
 
 			default:
-				Session::bug("attribute parser could't identify an attribute");
+				handler.emit_fatal_bug("the parser has an inconsistent definition of an 'attribute'");
 		}
 		bump();
 	}
@@ -518,7 +518,7 @@ void Parser::item_fun() {
 	//auto name = curr_tok.raw();
 	ident();
 
-	Session::unimpl("item_fun");
+	handler.emit_fatal_unimpl("item_fun");
 
 	end_trace();
 }
@@ -678,7 +678,7 @@ void Parser::enum_def() {
 	}
 	else if (curr_tok.type() == '(') {
 		bump();
-		Session::unimpl("enum unions");
+		handler.emit_fatal_unimpl("enum unions");
 	}
 
 	end_trace();
@@ -691,7 +691,7 @@ void Parser::item_union() {
 	//auto name = curr_tok.raw();
 	ident();
 
-	Session::unimpl("item_union");
+	handler.emit_fatal_unimpl("item_union");
 
 	end_trace();
 }
@@ -703,7 +703,7 @@ void Parser::item_trait() {
 	//auto name = curr_tok.raw();
 	ident();
 
-	Session::unimpl("item_trait");
+	handler.emit_fatal_unimpl("item_trait");
 
 	end_trace();
 }
@@ -712,7 +712,7 @@ void Parser::item_impl() {
 	trace("item_impl");
 	expect(TokenType::IMPL);
 
-	Session::unimpl("item_impl");
+	handler.emit_fatal_unimpl("item_impl");
 
 	end_trace();
 }
@@ -725,7 +725,7 @@ void Parser::item_impl() {
 void Parser::expr() {
 	trace("expr");
 
-	Session::unimpl("expressions");
+	handler.emit_fatal_unimpl("expressions");
 
 	end_trace();
 }
