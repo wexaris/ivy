@@ -138,10 +138,12 @@ void Lexer::consume_ws_and_comments() {
 			// Eat block comment until closed
 			while (true) {
 				// Throw an error if the block is not terminated at the end of the file
-				if (curr == '\0') {
+				if (!is_valid(curr)) {
 					// This is a critiacal 
-					Session::span_err("unterminated block comment", curr_span());
-					std::exit(6);
+					auto err = Session::handler.new_error(FATAL, "unterminated block comment");
+					err.add_span(curr_span());
+					err.add_highlight();
+					err.emit();
 				}
 				if (curr == '*' && next == '/') { 
 					bump(2);
