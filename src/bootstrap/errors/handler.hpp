@@ -29,8 +29,9 @@ public:
 	{}
 
 	/* Create a new basic error. */
-	static inline Error new_error(ErrSeverity sev, const std::string& msg) {
+	inline Error new_error(ErrSeverity sev, const std::string& msg) {
 		return Error(sev, msg);
+		err_count++;
 		// TODO:  Hash and save error message
 	}
 
