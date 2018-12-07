@@ -31,17 +31,33 @@ TranslationUnit::TextPos TranslationUnit::pos_from_index(size_t index) const {
 
 std::string TranslationUnit::get_line(size_t ln) const {
 
+	std::string str;
+
 	// File has no newlines or it hasn't been entirely lexed
-	if (newlines.empty())
-		return src;
-
+	if (newlines.empty()) {
+		str = src;
+	}
 	// We know when the next line begins
-	if (newlines.size() > ln)
-		return src.substr(newlines[ln - 1], newlines[ln] - newlines[ln - 1] - 1);
+	else if (newlines.size() > ln) {
+		str = src.substr(newlines[ln - 1], newlines[ln] - newlines[ln - 1] - 1);
+	}
+	else {
+		// Find end of line
+		size_t i = 1;
+		while (src.length() > newlines[ln - 1] + i && src[newlines[ln - 1] + i] != '\n')
+			i++;
 
-	size_t i = 1;
-	while (src.length() > newlines[ln - 1] + i && src[newlines[ln - 1] + i] != '\n')
-		i++;
+		// Get the line in a string
+		str = src.substr(newlines[ln - 1], i);
+	}
 
-	return src.substr(newlines[ln - 1], i);
+	// Replace '\t' with four spaces
+	// Makes debugging message lengths consistent 
+	size_t pos = 0;
+	while ((pos = str.find("\t")) != str.npos) {
+		str.replace(pos, 1, "    ");
+		pos += 4;
+	}
+
+	return str;
 }
