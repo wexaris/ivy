@@ -60,9 +60,10 @@ public:
 	inline void cancel()				{ sev = CANCELED; }
 	inline bool is_canceled() const		{ return sev == CANCELED; }
 
-	/* Returns a full formatted error message.
-	 * Compiles the sub-messages and adds coloring. */
-	std::string format() const;
+	/* Get the error code of the error. */
+	inline int code() const				{ return id; }
+	/* Give the error an error code. */
+	inline void set_code(int code)		{ id = code; }
 
 	/* Add a span to the error. */
 	inline Error& add_span(const Span& span) {
@@ -97,8 +98,6 @@ public:
 
 	/* Get the main error message. */
 	inline const std::string& message() const	{ return msg; }
-	/* Get the error code of the error. */
-	inline int code() const						{ return id; }
 	inline ErrSeverity severity() const			{ return sev; }
 	inline const Span& span() const				{ return sp; }
 
