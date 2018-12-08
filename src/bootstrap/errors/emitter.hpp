@@ -14,10 +14,14 @@ public:
 			return;
 
 		// Format and print error
-		printf(err.format().c_str());
+		printf(format_error(err).c_str());
 		
 		// Throw an excpetion if error is fatal
 		if (err.is_fatal())
 			throw std::exception();
 	}
+
+	/* Returns a fully formatted error message.
+	 * Compiles the sub-messages and adds coloring. */
+	static std::string format_error(const Error&);
 };
