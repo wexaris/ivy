@@ -40,16 +40,14 @@ public:
 		Emitter::emit(err);
 	}
 
-	/* True is there have been any errors. */
-	inline bool has_errors() const			{ return err_count > 0; }
+	/* Emit all of the backed up errors if there are any. */
+	inline void emit_delayed() const {
+		for (const auto& err : delayed_errors)
+			Emitter::emit(err);
+	}
 
 	/* True is there have been any errors. */
-	inline Error fatal_higligted(const std::string& msg, const Span& sp) {
-		auto err = new_error(FATAL, msg);
-		err.add_span(sp);
-		err.add_highlight();
-		return err;
-	}
+	inline bool has_errors() const					{ return err_count > 0; }
 
 	/* Creates and emits an internal compiler failure error message.
 	 * Will be fatal. */

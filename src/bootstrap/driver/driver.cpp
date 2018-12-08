@@ -24,6 +24,10 @@ void compile(const std::vector<std::string>& input, const std::string& output) {
 	// TODO: all of the input files need to be parsed
 	Parser parser = Parser(input[0]);
 
+	if (Session::handler.has_errors()) {
+		Session::handler.emit_delayed();
+	}
+
 	Session::msg("output set to " + output);
 
 	// TODO: Store the AST
