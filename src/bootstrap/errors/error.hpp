@@ -101,6 +101,9 @@ public:
 	inline ErrSeverity severity() const			{ return sev; }
 	inline const Span& span() const				{ return sp; }
 
+	/* Get a vector of all of the sub-errors of this 'Error'. */
+	inline const std::vector<SubError>& children() const	{ return sub_err; }
+
 	/* Emits the error via the 'Emitter'. */
 	void emit() const;
 };
