@@ -1,4 +1,5 @@
 #pragma once
+#include "errors/handler.hpp"
 #include <string>
 #include <vector>
 
@@ -8,6 +9,9 @@
 class TranslationUnit {
 	
 private:
+	/* The Session's ErrorHandler */
+	ErrorHandler* handler;
+
 	/* The path to the file from which the source code has been read */
 	const std::string path;
 	/* The full source code from a file */
@@ -21,11 +25,11 @@ private:
 	std::vector<size_t> newlines;
 
 public:
-	explicit TranslationUnit(const std::string& src) 
-		: src(src) {}
+	explicit TranslationUnit(ErrorHandler& handler, const std::string& src) 
+		: handler(&handler), src(src) {}
 
-	TranslationUnit(const std::string& path, const std::string& src, size_t start_pos) 
-		: path(path), src(src), start_position(start_pos) {}
+	TranslationUnit(ErrorHandler& handler, const std::string& path, const std::string& src, size_t start_pos) 
+		: handler(&handler), path(path), src(src), start_position(start_pos) {}
 
 	/* An structure for passing around lines and columns. */
 	struct TextPos {

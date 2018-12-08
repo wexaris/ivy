@@ -1,6 +1,7 @@
 #pragma once
-#include "source/translation_unit.hpp"
 #include <cstddef>
+
+class TranslationUnit;
 
 /* A position in a file.
  * Keeps a pointer to the file of origin,
@@ -19,7 +20,9 @@ struct Span {
 		size_t col;
 	} lo, hi;
 
-	Span(const TranslationUnit& tu, size_t lo_bit, uint lo_line, uint lo_col, size_t hi_bit, uint hi_line, uint hi_col)
+	Span() : tu(nullptr), lo(LinePos{ 0, 0, 0 }), hi(LinePos{ 0, 0, 0 }) {}
+
+	Span(const TranslationUnit& tu, size_t lo_bit, size_t lo_line, size_t lo_col, size_t hi_bit, size_t hi_line, size_t hi_col)
 		: tu(&tu),
 		lo(LinePos{ lo_bit, lo_line, lo_col }),
 		hi(LinePos{ hi_bit, hi_line, hi_col })

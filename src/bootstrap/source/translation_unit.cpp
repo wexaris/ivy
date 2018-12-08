@@ -24,8 +24,7 @@ TranslationUnit::TextPos TranslationUnit::pos_from_index(size_t index) const {
 		}
 	}
 
-	auto err = ErrorHandler::new_error(ErrSeverity::BUG, "failed to find the line that character " + std::to_string(index) + " is on");
-	Emitter::emit(err);
+	handler->emit_fatal_bug("failed to retrieve the line corresponding to index " + std::to_string(index));
 	return pos;
 }
 

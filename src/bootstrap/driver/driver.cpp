@@ -2,7 +2,6 @@
 #if (true)
 
 #include "parser/parser.hpp"
-#include "session.hpp"
 
 inline void warn_bad_compiler() { 
 	printf("This is the ivy-lang bootstrap compiler.\n");
@@ -142,11 +141,11 @@ int main(int argc, char* argv[]) {
 
 #include "tests/lexer_tests.hpp"
 #include "parser/parser.hpp"
-#include "errors/handler.hpp"
 #include "util/token_info.hpp"
 
 void print_main() {
-	SourceMap sm;
+	ErrorHandler handler;
+	SourceMap sm(handler);
 	Lexer lex(sm.load_file("tests/main.ivy"));
 
 	Token tk = lex.next_token();
@@ -158,18 +157,18 @@ void print_main() {
 
 int main() {
 
-	//print_main();
+	print_main();
 
 	tests::lexer::token_has_correct_absolute_pos();
 	tests::lexer::token_has_correct_line_pos();
 	tests::lexer::token_has_correct_column_pos();
 	tests::lexer::return_eof_without_translation_unit();
 
-	SourceMap sm;
+	ErrorHandler handler;
+	SourceMap sm(handler);
 	Lexer lex(sm.load_file("tests/main.ivy"));
 	Token tk = lex.next_token();
 
-	ErrorHandler handler;
 	Error err = handler.new_error(ErrSeverity::ERROR, std::string(tk.raw()));
 	err.add_span(tk.span());
 	err.add_highlight();

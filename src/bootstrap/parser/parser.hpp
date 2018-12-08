@@ -37,6 +37,9 @@ using Path = std::vector<SubPath>;
 class Parser {
 
 private:
+	/* The Session's ErrorHandler */
+	ErrorHandler& handler;
+
 	/* A complete source code map of the package being parsed. */
 	SourceMap source_map;
 
@@ -48,8 +51,6 @@ private:
 	/* The last token provided by the lexer.
 	 * Stores a type, location and value, if necessary. */
 	Token curr_tok;
-
-	ErrorHandler& handler;
 
 	/* Bumps the current token.
 	 * The current one becomes the previous one.
@@ -153,7 +154,7 @@ private:
 public:
 	/* Constructs a parser for the file at the provided location. */
 	Parser(const std::string& filepath)
-		: lexer(source_map.load_file(filepath)), curr_tok(lexer.next_token()), handler(Session::handler)
+		: handler(Session::handler), source_map(handler), lexer(source_map.load_file(filepath)), curr_tok(lexer.next_token())
 	{}
 
 	/* Begins the process of parsing the package.

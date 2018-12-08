@@ -28,6 +28,8 @@ public:
 class SourceMap {
 
 private:
+	ErrorHandler& handler;
+
 	/* All of the Translation Units in the SourceMap.
 	 * Managed by std::unique_ptrs. */
 	std::vector<std::unique_ptr<TranslationUnit>> translation_units;
@@ -38,7 +40,7 @@ private:
 	TranslationUnit& new_translation_unit(const std::string& path, const std::string& src);
 
 public:
-	SourceMap() : translation_units() {}
+	SourceMap(ErrorHandler& handler) : handler(handler), translation_units() {}
 
 	/* Load a file at a given path into the SourceMap.
 	 * A reference to the new Translation Unit is returned.

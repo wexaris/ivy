@@ -40,7 +40,7 @@ private:
 	ErrSeverity sev;
 	std::string msg;
 	int id;
-	Span sp = Span(TranslationUnit(""), 0, 0, 0, 0, 0, 0);
+	Span sp;
 
 	std::vector<SubError> sub_err;
 

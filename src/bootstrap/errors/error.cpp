@@ -1,5 +1,6 @@
 #include "error.hpp"
 #include "emitter.hpp"
+#include "source/translation_unit.hpp"
 
 std::string Error::format() const {
 	std::string build_err;

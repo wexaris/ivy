@@ -1,5 +1,4 @@
 #include "source_map.hpp"
-
 #include <memory>
 
 bool FileLoader::file_exists(const std::string& path) {
@@ -33,7 +32,7 @@ std::string FileLoader::read_file(const std::string& path) {
 
 TranslationUnit& SourceMap::new_translation_unit(const std::string& path, const std::string& src) {
 	// Create unique_ptr to a new Translation Unit in the file vector
-	translation_units.push_back(std::make_unique<TranslationUnit>(path, src, next_start_pos()));
+	translation_units.push_back(std::make_unique<TranslationUnit>(handler, path, src, next_start_pos()));
 	// Return the managed pointer
 	return *translation_units.back().get();
 }

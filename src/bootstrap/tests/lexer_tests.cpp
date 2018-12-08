@@ -8,7 +8,8 @@ namespace tests {
 		void token_has_correct_absolute_pos() {
 			// Give the Lexer a string of text
 			// The numbers should correspond to absolute positions in the TU
-			TranslationUnit tu = TranslationUnit("\n12345\n7\n9");
+			ErrorHandler handler;
+			TranslationUnit tu = TranslationUnit(handler, "\n12345\n7\n9");
 			Lexer lex(tu);
 			
 			// Retrieve the first token
@@ -30,7 +31,8 @@ namespace tests {
 		void token_has_correct_line_pos() {
 			// Give the Lexer a string of text
 			// The numbers should correspond to absolute positions in the TU
-			TranslationUnit tu = TranslationUnit("\n12345\n7\n9");
+			ErrorHandler handler;
+			TranslationUnit tu = TranslationUnit(handler, "\n12345\n7\n9");
 			Lexer lex(tu);
 			
 			// Retrieve the first token
@@ -52,7 +54,8 @@ namespace tests {
 		void token_has_correct_column_pos() {
 			// Give the Lexer a string of text
 			// The numbers should correspond to absolute positions in the TU
-			TranslationUnit tu = TranslationUnit("\n12345\n7\n9");
+			ErrorHandler handler;
+			TranslationUnit tu = TranslationUnit(handler, "\n12345\n7\n9");
 			Lexer lex(tu);
 			
 			// Retrieve the first token
@@ -73,7 +76,8 @@ namespace tests {
 
 		void return_eof_without_translation_unit() {
 			// Create a Lexer with no text in the TU
-			TranslationUnit tu = TranslationUnit("");
+			ErrorHandler handler;
+			TranslationUnit tu = TranslationUnit(handler, "");
 			Lexer lex(tu);
 
 			// Retrieve the first token
