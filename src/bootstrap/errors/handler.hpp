@@ -17,6 +17,9 @@ class ErrorHandler {
 private:
 	size_t err_count = 0;
 
+	/* All of the errors that are still yet to be emitted. */
+	std::vector<Error> delayed_errors;
+
 	/* A hash of all of the error strings that will be emitted.
 	 * Used to avoid emitting the same error multiple times. */
 	std::unordered_set<std::string> msg_hashes;
@@ -49,18 +52,20 @@ public:
 	/* True is there have been any errors. */
 	inline bool has_errors() const					{ return err_count > 0; }
 
+	Error error_spanned(const std::string& msg, const Span& sp, int code = 0);
+	Error error_higligted(const std::string& msg, const Span& sp, int code = 0);
+	Error fatal_spanned(const std::string& msg, const Span& sp, int code = 0);
+	Error fatal_higligted(const std::string& msg, const Span& sp, int code = 0);
+
 	/* Creates and emits an internal compiler failure error message.
 	 * Will be fatal. */
-	inline void emit_fatal_bug(const std::string& msg) {
-		auto err = new_error(BUG, msg);
-		err.emit();
-	}
+	void emit_fatal_bug(const std::string& msg);
+	void emit_fatal_bug(const std::string& msg, int code);
 
 	/* Creates and emits an internal compiler failure error message about
 	 * a missing feature.
 	 * Will be fatal.
 	 * A wrapper around 'fatal_bug()'. */
-	inline void emit_fatal_unimpl(const std::string& msg) {
-		emit_fatal_bug(msg + " not implemented yet");
-	}
+	void emit_fatal_unimpl(const std::string& msg);
+	void emit_fatal_unimpl(const std::string& msg, int code);
 };
