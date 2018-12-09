@@ -39,8 +39,8 @@ class Error {
 private:
 	ErrSeverity sev;
 	std::string msg;
-	int id;
 	Span sp;
+	int id;
 
 	std::vector<SubError> sub_err;
 
@@ -53,6 +53,9 @@ private:
 public:
 	Error(ErrSeverity lvl, std::string msg, int code = 0)
 		: sev(lvl), msg(std::move(msg)), id(code)
+	{}
+	Error(ErrSeverity lvl, std::string msg, const Span& sp, int code = 0)
+		: sev(lvl), msg(std::move(msg)), sp(sp), id(code)
 	{}
 
 	/* Disables the error.
