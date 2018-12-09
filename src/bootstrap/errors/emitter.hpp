@@ -14,7 +14,7 @@ public:
 			return;
 
 		// Format and print error
-		printf(format_error(err).c_str());
+		printf("%s\n", format_error(err).c_str());
 		
 		// Throw an excpetion if error is fatal
 		if (err.is_fatal())
