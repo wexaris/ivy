@@ -1,5 +1,21 @@
 #include "handler.hpp"
 
+size_t ErrorHandler::emit_delayed() const {
+	size_t failures = 0;
+	// Emit all of the delayed errors
+	// Count how many of them fail the compilation session
+	for (const auto& err : delayed_errors) {
+		if (!err.is_canceled()) {
+			try {
+				emit(err);
+			} catch (const std::exception& e) {
+				failures++;
+			}
+		}
+	}
+	return failures;
+}
+
 size_t ErrorHandler::recount_errors() {
 	if (!has_errors())
 		return 0;

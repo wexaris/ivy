@@ -44,11 +44,9 @@ public:
 		Emitter::emit(err);
 	}
 
-	/* Emit all of the backed up errors if there are any. */
-	inline void emit_delayed() const {
-		for (const auto& err : delayed_errors)
-			Emitter::emit(err);
-	}
+	/* Emit all of the backed up errors if there are any.
+	 * Return the cumber of errors that would have failed the compilation. */
+	size_t emit_delayed() const;
 
 	/* Recounts the delayed errors.
 	 * Removes errors that have been cancelled.
