@@ -24,14 +24,22 @@ void compile(const std::vector<std::string>& input, const std::string& output) {
 	// TODO: all of the input files need to be parsed
 	Parser parser = Parser(input[0]);
 
-	if (Session::handler.has_errors()) {
-		Session::handler.emit_delayed();
-	}
-
 	Session::msg("output set to " + output);
 
-	// TODO: Store the AST
-	parser.parse();
+	try {
+		// TODO:  Store the AST
+		// FIXME:  This is in a try-catch because 'expressions not implemented yet'
+		try { parser.parse(); }
+		catch (...) {}
+
+		if (Session::handler.recount_errors() > 0) {
+			auto fail_num = Session::handler.emit_delayed();
+			if (fail_num > 0)
+				Session::err("build failed due to " + std::to_string(fail_num) + " errors\n");
+		}
+	// If 'parse()' throwed an exception, it was most likely a 'bug' or 'unimpl'
+	// In this case the user doesn't really need to know more than what was given in the error message
+	} catch ( ... /*  FIXME:  Use custom exception types for 'bug' an 'unimpl' */) {}
 }
 
 inline std::string dir_from_path(const std::string& path) {
