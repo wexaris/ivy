@@ -21,7 +21,7 @@ class Token {
 public:
 	/* Create a token from a symbol character and location.
 	 * The token's string literal is set to the character.*/
-	Token(char type, const Span& sp) : ty(type), raw_str(std::to_string(type)), tk_span(sp) {}
+	Token(char type, const Span& sp) : ty(type), raw_str(std::string(1, type)), tk_span(sp) {}
 
 	/* Create a token from it's type, location
 	 * and store it's string literal. */
