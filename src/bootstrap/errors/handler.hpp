@@ -20,15 +20,11 @@ private:
 	/* All of the errors that are still yet to be emitted. */
 	std::vector<Error> delayed_errors;
 
-	/* A hash of all of the error strings that will be emitted.
-	 * Used to avoid emitting the same error multiple times. */
-	std::unordered_set<std::string> msg_hashes;
-
 public:
 	HandlerFlags flags;
 
 	ErrorHandler(const HandlerFlags& flags = HandlerFlags())
-		: msg_hashes(), flags(flags)
+		: flags(flags)
 	{}
 
 	/* Create a new basic error. */
