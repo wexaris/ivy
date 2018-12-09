@@ -1,36 +1,31 @@
 #include "handler.hpp"
 
-Error ErrorHandler::error_spanned(const std::string& msg, const Span& sp, int code) {
-	auto err = new_error(ERROR, msg);
-	err.add_span(sp);
-	err.set_code(code);
-	return err;
-}
-Error ErrorHandler::error_higligted(const std::string& msg, const Span& sp, int code) {
-	auto err = new_error(ERROR, msg);
-	err.add_span(sp);
-	err.add_highlight();
-	err.set_code(code);
-	return err;
-}
-Error ErrorHandler::fatal_spanned(const std::string& msg, const Span& sp, int code) {
-	auto err = new_error(FATAL, msg);
-	err.add_span(sp);
-	err.set_code(code);
-	return err;
-}
-Error ErrorHandler::fatal_higligted(const std::string& msg, const Span& sp, int code) {
-	auto err = new_error(FATAL, msg);
-	err.add_span(sp);
-	err.add_highlight();
-	err.set_code(code);
-	return err;
+size_t ErrorHandler::recount_errors() {
+	if (!has_errors())
+		return 0;
+
+	std::list<Error> checked_erros;
+	for (auto& err : delayed_errors) {
+		if (!err.is_canceled())
+			checked_erros.push_back(std::move(err));
+	}
+	delayed_errors = checked_erros;
+	return delayed_errors.size();
 }
 
-void ErrorHandler::emit_fatal_bug(const std::string& msg) {
-	auto err = new_error(BUG, msg);
-	err.emit();
+Error* ErrorHandler::error_spanned(const std::string& msg, const Span& sp, int code) {
+	delayed_errors.push_back(new_error(ERROR, msg, sp, code));
+	return &*(--delayed_errors.end());
 }
-void ErrorHandler::emit_fatal_unimpl(const std::string& msg) {
-	emit_fatal_bug(msg + " not implemented yet");
+Error* ErrorHandler::error_higligted(const std::string& msg, const Span& sp, int code) {
+	delayed_errors.push_back(new_error(ERROR, msg, sp, code).add_highlight());
+	return &*(--delayed_errors.end());
+}
+Error* ErrorHandler::fatal_spanned(const std::string& msg, const Span& sp, int code) {
+	delayed_errors.push_back(new_error(FATAL, msg, sp, code));
+	return &*(--delayed_errors.end());
+}
+Error* ErrorHandler::fatal_higligted(const std::string& msg, const Span& sp, int code) {
+	delayed_errors.push_back(new_error(FATAL, msg, sp, code).add_highlight());
+	return &*(--delayed_errors.end());
 }

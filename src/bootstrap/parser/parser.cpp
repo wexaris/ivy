@@ -10,39 +10,6 @@ bool Attributes::contains(TokenType ty) {
 	return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////    Expects    ///////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////////////
-
-void Parser::expected_msg(const std::string& expected) {
-	err("unexpected token: " + translate::tk_type(curr_tok) + "; expected " + expected);
-}
-
-inline void Parser::expect(int exp) { 
-	if (curr_tok.type() != exp)
-		expected_msg(translate::tk_type(exp));
-	bump();
-}
-
-void Parser::expect(const std::vector<TokenType>& exp) {
-	// Loop through vector of allowed tokens
-	// Check if the current token matches any of them
-	// Return on first match
-	for (auto i : exp) {
-		if (curr_tok == i) {
-			bump();
-			return;
-		}
-	}
-
-	// Collect all of the acceptable types
-	std::string expected = translate::tk_type(exp[0]);
-	for (size_t i = 1; i < exp.size(); i++)
-		expected += ", " + translate::tk_type(exp[i]);
-
-	expected_msg("one of " + expected);
-}
-
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////      Helper Functions      ////////////////////////////////////
@@ -193,6 +160,15 @@ void Parser::expect(const std::vector<TokenType>& exp) {
 	//return Token(LIT_INT, (intmax_t)parsed);
 }*/
 
+/* True if the provided token is a primitive. */
+inline bool is_primitive(const Token& tk) {
+	return tk == TokenType::THING || tk == TokenType::STR || tk == TokenType::CHAR ||
+		tk == TokenType::INT ||
+		tk == TokenType::I64 || tk == TokenType::I32 || tk == TokenType::I16 || tk == TokenType::I8 ||
+		tk == TokenType::UINT ||
+		tk == TokenType::U64 || tk == TokenType::U32 || tk == TokenType::U16 || tk == TokenType::U8;
+}
+
 /* True if the provided token's type is a literal. */
 inline bool is_literal(const Token& tk) {
 	return tk == TokenType::LIT_STRING		||
@@ -214,9 +190,98 @@ inline bool is_attr(const Token& tk) {
 			tk == TokenType::CONST;
 }
 
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////    Expects    ///////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+inline Error* Parser::err_expected(const std::string& found, const std::string& expected, int code) { 
+	return handler.error_higligted("unexpected token: " + found + "; expected " + expected, curr_tok.span(), code);
+}
+
+inline Error* Parser::expect_symbol(char sym) {
+	if (curr_tok.type() == (int)sym) {
+		bump();
+		return nullptr;
+	}
+	std::string found = curr_tok.type() < 256 ?
+		std::string{ (char)curr_tok.type() } :		// TRUE
+		translate::tk_type(curr_tok);				// FALSE
+	return err_expected(found, "'" + std::string{sym} + "'");
+}
+
+inline Error* Parser::expect_primitive() {
+	if (is_primitive(curr_tok))
+	{
+		bump();
+		return nullptr;
+	}
+	return err_expected(translate::tk_type(curr_tok), "a primitive type");
+}
+
+inline Error* Parser::expect_lifetime() {
+	if (is_lifetime(curr_tok)) {
+		bump();
+		return nullptr;
+	}
+	return err_expected(translate::tk_type(curr_tok), "a lifetime");
+}
+
+inline Error* Parser::expect_keyword(TokenType ty) {
+	if (curr_tok == ty) {
+		bump();
+		return nullptr;
+	}
+	return err_expected(translate::tk_type(curr_tok), "the keyword '" + translate::tk_type(ty) + "'");
+}
+
+inline Error* Parser::expect_mod_or_package() {
+	if (curr_tok == TokenType::MOD || curr_tok == TokenType::PACKAGE) {
+		bump();
+		return nullptr;
+	}
+	return err_expected(translate::tk_type(curr_tok), "either 'mod' or 'package'");
+}
+
+inline Error* Parser::expect_block_item_decl() {
+	if (curr_tok == TokenType::FUN ||
+		curr_tok == TokenType::STRUCT ||
+		curr_tok == TokenType::ENUM ||
+		curr_tok == TokenType::UNION ||
+		curr_tok == TokenType::TRAIT ||
+		curr_tok == TokenType::IMPL)
+	{
+		bump();
+		return nullptr;
+	}
+	return err_expected(translate::tk_type(curr_tok), "one of 'fun', 'struct', 'enum', 'union', 'trait' or 'impl'");
+}
+
+inline void Parser::bug(const std::string& msg) {
+	handler.new_error(BUG, msg, 0).emit();
+}
+
+inline void Parser::unimpl(const std::string& msg) {
+	handler.new_error(BUG, msg + " not implemented yet", 0).emit();
+}
+
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////      Helper Methods      /////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////
+
+/* Can interfere with normal token tree parsing,
+ * so && is built on demand. */
+inline void Parser::AND() {
+	expect_symbol('&');
+	expect_symbol('&');
+}
+/* Can interfere with normal token tree parsing,
+ * so >> is built on demand. */ 
+inline void Parser::SHR() {
+	expect_symbol('>');
+	expect_symbol('>');
+}
 
 // attributes: PUB | PRIV | MUT | CONST
 Attributes Parser::attributes() {
@@ -239,7 +304,7 @@ Attributes Parser::attributes() {
 				break;
 
 			default:
-				handler.emit_fatal_bug("the parser has an inconsistent definition of an 'attribute'");
+				bug("the parser has an inconsistent definition of an 'attribute'");
 		}
 		bump();
 	}
@@ -268,7 +333,7 @@ Path Parser::path() {
 // ident : ID
 void Parser::ident() {
 	trace("ident: " + std::string(curr_tok.raw()));
-	expect(TokenType::ID);
+	expect_keyword(TokenType::ID);
 	end_trace();
 }
 // lifetime : LF
@@ -276,7 +341,7 @@ void Parser::lifetime() {
 	trace("lifetime: " + std::string(curr_tok.raw()));
 
 	//auto name = { curr_tok.raw() };
-	expect(TokenType::LF);
+	expect_lifetime();
 
 	end_trace();
 }
@@ -284,7 +349,7 @@ void Parser::lifetime() {
 // generic_params : '<' type_or_lt (',' type_or_lt)* '>'
 void Parser::generic_params() {
 	trace("generic_params");
-	expect('<');
+	expect_symbol('<');
 
 	if(curr_tok.type() != '>') {
 		type_or_lt();
@@ -294,7 +359,7 @@ void Parser::generic_params() {
 		}
 	}
 	
-	expect('>');
+	expect_symbol('>');
 	end_trace();
 }
 
@@ -327,9 +392,9 @@ Node* Parser::parse() {
 void Parser::module_decl() {
 	trace("module_decl");
 
-	expect(TokenType::MOD);
+	expect_keyword(TokenType::MOD);
 	Path mod_path = path();
-	expect(';');
+	expect_symbol(';');
 
 	end_trace();
 }
@@ -356,19 +421,19 @@ void Parser::item() {
 //             | IMPORT PACKAGE path
 void Parser::import_item() {
 	trace("import_item");
-	expect(TokenType::IMPORT);
+	expect_keyword(TokenType::IMPORT);
 
 	switch (curr_tok.type()) {
 		case (int)TokenType::MOD:
 			this->path();
-			expect(';');
+			expect_symbol(';');
 			break;
 		case (int)TokenType::PACKAGE:
 			this->path();
-			expect(';');
+			expect_symbol(';');
 			break;
 		default:
-			expect({TokenType::MOD, TokenType::PACKAGE});
+			expect_mod_or_package();
 	}
 
 	end_trace();
@@ -410,51 +475,51 @@ void Parser::stmt_item() {
 // item_static : STATIC ident ':' type '=' expr ';'
 void Parser::item_static() {
 	trace("item_static");
-	expect(TokenType::STATIC);
+	expect_keyword(TokenType::STATIC);
 
 	//auto name = curr_tok.raw();
 	ident();
 
-	expect(':');
+	expect_symbol(':');
 	type();
 
-	expect('=');
+	expect_symbol('=');
 	expr();
 
-	expect(';');
+	expect_symbol(';');
 	end_trace();
 }
 
 // item_const : CONST ident ':' type '=' expr ';'
 void Parser::item_const() {
 	trace("item_const");
-	expect(TokenType::CONST);
+	expect_keyword(TokenType::CONST);
 
 	//auto name = curr_tok.raw();
 	ident();
 
-	expect(':');
+	expect_symbol(':');
 	type();
 
-	expect('=');
+	expect_symbol('=');
 	expr();
 
-	expect(';');
+	expect_symbol(';');
 	end_trace();
 }
 
 // item_type : TYPE ident ''=' type_sum ';'
 void Parser::item_type() {
 	trace("item_type");
-	expect(TokenType::TYPE);
+	expect_keyword(TokenType::TYPE);
 
 	//auto name = curr_tok.raw();
 	ident();
 
-	expect('=');
+	expect_symbol('=');
 	type();
 
-	expect(';');
+	expect_symbol(';');
 	end_trace();
 }
 
@@ -462,10 +527,10 @@ void Parser::item_type() {
 void Parser::view_item() {
 	trace("view_item");
 
-	expect(TokenType::USE);
+	expect_keyword(TokenType::USE);
 	auto path = this->path();
 
-	expect(';');
+	expect_symbol(';');
 	end_trace();
 }
 
@@ -498,14 +563,7 @@ void Parser::block_item() {
 			item_impl();
 			break;
 		default:
-			expect({
-				TokenType::FUN,
-				TokenType::STRUCT,
-				TokenType::ENUM,
-				TokenType::UNION,
-				TokenType::TRAIT,
-				TokenType::IMPL
-			});
+			expect_block_item_decl();
 	}
 
 	end_trace();
@@ -513,12 +571,12 @@ void Parser::block_item() {
 
 void Parser::item_fun() {
 	trace("item_fun");
-	expect(TokenType::FUN);
+	expect_keyword(TokenType::FUN);
 
 	//auto name = curr_tok.raw();
 	ident();
 
-	handler.emit_fatal_unimpl("item_fun");
+	unimpl("item_fun");
 
 	end_trace();
 }
@@ -528,7 +586,7 @@ void Parser::item_fun() {
 //             | STRUCT ident generic_params? struct_decl_block
 void Parser::item_struct() {
 	trace("item_struct");
-	expect(TokenType::STRUCT);
+	expect_keyword(TokenType::STRUCT);
 
 	//auto name = curr_tok.raw();
 	ident();
@@ -540,7 +598,7 @@ void Parser::item_struct() {
 		bump();
 	else if (curr_tok.type() == '(') {
 		struct_tuple_block();
-		expect(';');
+		expect_symbol(';');
 	}
 	else if (curr_tok.type() == '{')
 		struct_decl_block();
@@ -551,12 +609,12 @@ void Parser::item_struct() {
 // struct_tuple_block : '(' struct_tuple_items? ')'
 void Parser::struct_tuple_block() {
 	trace("struct_tuple_block");
-	expect('(');
+	expect_symbol('(');
 
 	if (curr_tok.type() != ')')
 		struct_tuple_items();
 
-	expect(')');
+	expect_symbol(')');
 	end_trace();
 }
 
@@ -582,12 +640,12 @@ void Parser::struct_tuple_items() {
 // struct_decl_block : '{' struct_decl_items? '}'
 void Parser::struct_decl_block() {
 	trace("struct_decl_block");
-	expect('{');
+	expect_symbol('{');
 
 	if (curr_tok.type() != '}')
 		struct_decl_items();
 
-	expect('}');
+	expect_symbol('}');
 	end_trace();
 }
 
@@ -595,7 +653,6 @@ void Parser::struct_decl_block() {
 void Parser::struct_decl_items() {
 	trace("struct_decl_items");
 
-	struct_decl_item();
 	while (curr_tok.type() != '}') {
 		struct_decl_item();
 	}
@@ -610,12 +667,12 @@ void Parser::struct_decl_item() {
 	Attributes attr = attributes();
 
 	//auto name = curr_tok.raw();
-	expect(TokenType::ID);
+	expect_keyword(TokenType::ID);
 
-	expect(':');
+	expect_symbol(':');
 	type_with_lt();
 
-	expect(';');
+	expect_symbol(';');
 	end_trace();
 }
 
@@ -623,7 +680,7 @@ void Parser::struct_decl_item() {
 //           | attributes? ENUM ident generic_params? enum_defs
 void Parser::item_enum() {
 	trace("item_enum");
-	expect(TokenType::ENUM);
+	expect_keyword(TokenType::ENUM);
 
 	//auto name = curr_tok.raw();
 	ident();
@@ -644,7 +701,7 @@ void Parser::item_enum() {
 //           | '{' enum_def (',' enum_def)* ',' '}'
 void Parser::enum_defs() {
 	trace("enum_defs");
-	expect('{');
+	expect_symbol('{');
 
 	if (curr_tok.type() != '}') {
 
@@ -662,7 +719,7 @@ void Parser::enum_defs() {
 		}
 	}
 
-	expect('}');
+	expect_symbol('}');
 	end_trace();
 }
 
@@ -678,7 +735,7 @@ void Parser::enum_def() {
 	}
 	else if (curr_tok.type() == '(') {
 		bump();
-		handler.emit_fatal_unimpl("enum unions");
+		unimpl("enum unions");
 	}
 
 	end_trace();
@@ -686,33 +743,33 @@ void Parser::enum_def() {
 
 void Parser::item_union() {
 	trace("item_union");
-	expect(TokenType::UNION);
+	expect_keyword(TokenType::UNION);
 
 	//auto name = curr_tok.raw();
 	ident();
 
-	handler.emit_fatal_unimpl("item_union");
+	unimpl("item_union");
 
 	end_trace();
 }
 
 void Parser::item_trait() {
 	trace("item_trait");
-	expect(TokenType::TRAIT);
+	expect_keyword(TokenType::TRAIT);
 
 	//auto name = curr_tok.raw();
 	ident();
 
-	handler.emit_fatal_unimpl("item_trait");
+	unimpl("item_trait");
 
 	end_trace();
 }
 
 void Parser::item_impl() {
 	trace("item_impl");
-	expect(TokenType::IMPL);
+	expect_keyword(TokenType::IMPL);
 
-	handler.emit_fatal_unimpl("item_impl");
+	unimpl("item_impl");
 
 	end_trace();
 }
@@ -725,7 +782,7 @@ void Parser::item_impl() {
 void Parser::expr() {
 	trace("expr");
 
-	handler.emit_fatal_unimpl("expressions");
+	unimpl("expressions");
 
 	end_trace();
 }
@@ -734,15 +791,6 @@ void Parser::expr() {
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////    Type    ///////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-
-/* True if the provided token is a primitive. */
-inline bool is_primitive(const Token& tk) {
-	return tk == TokenType::THING || tk == TokenType::STR || tk == TokenType::CHAR ||
-		tk == TokenType::INT ||
-		tk == TokenType::I64 || tk == TokenType::I32 || tk == TokenType::I16 || tk == TokenType::I8 ||
-		tk == TokenType::UINT ||
-		tk == TokenType::U64 || tk == TokenType::U32 || tk == TokenType::U16 || tk == TokenType::U8;
-}
 
 /* True if the provided token could be a type.
  * ~could be~ because only the first token is checked.
@@ -790,7 +838,7 @@ void Parser::type() {
 					bump();
 					expr();						// '[' type ';' expr ']'
 				}
-				expect(']');
+				expect_symbol(']');
 			}
 			break;
 
@@ -807,7 +855,7 @@ void Parser::type() {
 					bump();
 					type();						// '(' type (',' type)* ')'
 				}
-				expect(')');
+				expect_symbol(')');
 			}
 			break;
 
@@ -819,9 +867,10 @@ void Parser::type() {
 
 		// primitive type
 		default:
-			if (!is_primitive(curr_tok))
-				expected_msg("a type");
-			primitive();
+			if (is_primitive(curr_tok))
+				primitive();
+			else
+				err_expected(translate::tk_type(curr_tok), "a type", 0);
 	}
 	
 	end_trace();
@@ -834,7 +883,7 @@ void Parser::type_or_lt() {
 
 	if (is_lifetime(curr_tok)) lifetime();
 	else if (is_type(curr_tok)) type();
-	else err("expected type or lifetime, found " + translate::tk_type(curr_tok));
+	else err_expected(translate::tk_type(curr_tok), "a type or lifetime", 0);
 
 	end_trace();
 }
@@ -868,9 +917,7 @@ void Parser::type_sum() {
 void Parser::primitive() {
 	trace("primitive: " + std::string(curr_tok.raw()));
 
-	expect({ TokenType::THING, TokenType::STR, TokenType::CHAR,
-		TokenType::INT, TokenType::I64, TokenType::I32, TokenType::I16, TokenType::I8,
-		TokenType::UINT, TokenType::U64, TokenType::U32, TokenType::U16, TokenType::U8 });
+	expect_primitive();
 
 	end_trace();
 }

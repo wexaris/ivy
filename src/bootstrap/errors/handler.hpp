@@ -50,23 +50,17 @@ public:
 			Emitter::emit(err);
 	}
 
-	/* True is there have been any errors. */
+	/* Recounts the delayed errors.
+	 * Removes errors that have been cancelled.
+	 * Returns the new error count. */
+	size_t recount_errors();
+
+	/* True is there have been any errors.
+	 * Does not recount the delayed errors. */
 	inline bool has_errors() const					{ return err_count > 0; }
 
-	Error error_spanned(const std::string& msg, const Span& sp, int code = 0);
-	Error error_higligted(const std::string& msg, const Span& sp, int code = 0);
-	Error fatal_spanned(const std::string& msg, const Span& sp, int code = 0);
-	Error fatal_higligted(const std::string& msg, const Span& sp, int code = 0);
-
-	/* Creates and emits an internal compiler failure error message.
-	 * Will be fatal. */
-	void emit_fatal_bug(const std::string& msg);
-	void emit_fatal_bug(const std::string& msg, int code);
-
-	/* Creates and emits an internal compiler failure error message about
-	 * a missing feature.
-	 * Will be fatal.
-	 * A wrapper around 'fatal_bug()'. */
-	void emit_fatal_unimpl(const std::string& msg);
-	void emit_fatal_unimpl(const std::string& msg, int code);
+	Error* error_spanned(const std::string& msg, const Span& sp, int code = 0);
+	Error* error_higligted(const std::string& msg, const Span& sp, int code = 0);
+	Error* fatal_spanned(const std::string& msg, const Span& sp, int code = 0);
+	Error* fatal_higligted(const std::string& msg, const Span& sp, int code = 0);
 };

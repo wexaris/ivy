@@ -67,37 +67,33 @@ private:
 	inline void end_trace() const { Session::end_trace(); }
 
 	/* Throws a spanned error through the current Session. */
-	[[noreturn]] inline void err(const std::string& msg) const {
-		Session::span_err(msg, curr_tok.span());
-		std::exit(1);
-	}
+	//[[noreturn]] inline void err(const std::string& msg) const {
+	//	Session::span_err(msg, curr_tok.span());
+	//	std::exit(1);
+	//}
+	inline Error* err_expected(const std::string& found, const std::string& expected, int code = 0);
 
-	/* Emits an 'expected token' message:
-	 * unexpected token: <curr_tok>; expected <expected> */
-	void expected_msg(const std::string& expected);
+	inline Error* expect_symbol(char exp);
+	inline Error* expect_primitive();
+	inline Error* expect_lifetime();
+	inline Error* expect_keyword(TokenType ty);
+	inline Error* expect_mod_or_package();
+	inline Error* expect_block_item_decl();
 
-	/* Expects the current token to be of the provided type.
-	 * Bumps if true, throws an error if false. */
-	inline void expect(TokenType exp) { expect((int)exp); }
-	/* Expects the current token to be of the provided type.
-	 * Bumps if true, throws an error if false. */
-	void expect(int exp);
-	/* Expects the current token to be any of the provided types.
-	 * Bumps if true, throws an error if false. */
-	void expect(const std::vector<TokenType>& exp);
+	/* Creates and emits an internal compiler failure error message.
+	 * Will be fatal. */
+	inline void bug(const std::string& msg);
+
+	/* Creates and emits an internal compiler failure error message about a missing feature.
+	 * Will be fatal. */
+	inline void unimpl(const std::string& msg);
 
 	/* Can interfere with normal token tree parsing,
 	 * so && is built on demand. */
-	inline void AND() {
-		expect('&');
-		expect('&');
-	}
+	inline void AND();
 	/* Can interfere with normal token tree parsing,
 	 * so >> is built on demand. */ 
-	inline void SHR() {
-		expect('>');
-		expect('>');
-	}
+	inline void SHR();
 
 // Parsing functions based on BNFs
 private:
