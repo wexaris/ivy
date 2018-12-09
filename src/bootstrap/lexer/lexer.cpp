@@ -483,7 +483,7 @@ Token Lexer::next_token_inner() {
 			//	bump(2);
 			//	return Token(TokenType::SHR, curr_src_view(), curr_span());					// >>
 			//}
-			bump(1);
+			bump();
 			return Token('>', curr_span());													// >
 			
 		case '<':
