@@ -33,6 +33,11 @@ public:
 		err_count++;
 		return Error(sev, msg, code);
 	}
+	/* Create a new spanned error. */
+	inline Error new_error(ErrSeverity sev, const std::string& msg, const Span& sp, int code) {
+		err_count++;
+		return Error(sev, msg, sp, code);
+	}
 
 	/* Emit the given error. */
 	inline void emit(const Error& err) const {
