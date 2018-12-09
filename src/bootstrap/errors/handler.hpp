@@ -1,5 +1,6 @@
 #pragma once
 #include <unordered_set>
+#include <list>
 #include <string>
 #include "emitter.hpp"
 
@@ -18,7 +19,7 @@ private:
 	size_t err_count = 0;
 
 	/* All of the errors that are still yet to be emitted. */
-	std::vector<Error> delayed_errors;
+	std::list<Error> delayed_errors;
 
 public:
 	HandlerFlags flags;
