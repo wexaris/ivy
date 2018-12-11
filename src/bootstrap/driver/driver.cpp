@@ -25,7 +25,6 @@ bool compile(const std::vector<std::string>& input, const std::string& output) {
 	Parser parser = Parser(input[0]);
 
 	Session::msg("output set to " + output);
-	// FIXME::::::::: FIXME::::::::: 'Error' types aren't actually counted as errors since they don't throw exceptions when emitted
 
 	try {
 		// TODO:  Store the AST
