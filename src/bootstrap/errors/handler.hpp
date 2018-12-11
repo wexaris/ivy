@@ -55,7 +55,7 @@ public:
 
 	/* True is there have been any errors.
 	 * Does not recount the delayed errors. */
-	inline bool has_errors() const					{ return err_count > 0; }
+	inline bool has_errors() const			{ return err_count > 0; }
 
 	Error* error_spanned(const std::string& msg, const Span& sp, int code = 0);
 	Error* error_higligted(const std::string& msg, const Span& sp, int code = 0);
