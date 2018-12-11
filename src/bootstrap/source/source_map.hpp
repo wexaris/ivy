@@ -1,7 +1,6 @@
 #pragma once
 #include "translation_unit.hpp"
 #include <fstream>
-#include <sstream>
 #include <memory>
 
 /* A static class with functions to check if a file exists

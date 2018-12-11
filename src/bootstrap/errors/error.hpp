@@ -1,6 +1,5 @@
 #pragma once
 #include "util/span.hpp"
-#include <optional>
 #include <vector>
 #include <string>
 

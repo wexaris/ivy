@@ -1,5 +1,4 @@
 #pragma once
-#include "lexer/lexer.hpp"
 #include <optional>
 #include <assert.h>
 

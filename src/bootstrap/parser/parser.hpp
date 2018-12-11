@@ -2,7 +2,6 @@
 #include "driver/session.hpp"
 #include "source/source_map.hpp"
 #include "lexer/lexer.hpp"
-#include <algorithm>
 
 struct Node;
 

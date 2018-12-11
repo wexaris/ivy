@@ -1,8 +1,8 @@
 #pragma once
+#include "emitter.hpp"
 #include <unordered_set>
 #include <list>
 #include <string>
-#include "emitter.hpp"
 
 struct HandlerFlags {
 	bool no_warnings;

@@ -1,7 +1,7 @@
 #pragma once
-#include <string>
 #include "error.hpp"
 #include "exceptions.hpp"
+#include <string>
 
 /* A small wrapper around formatting and printing error strings. */
 class Emitter {
