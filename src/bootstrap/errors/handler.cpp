@@ -40,11 +40,9 @@ Error* ErrorHandler::error_higligted(const std::string& msg, const Span& sp, int
 	delayed_errors.push_back(new_error(ERROR, msg, sp, code).add_highlight());
 	return &*(--delayed_errors.end());
 }
-Error* ErrorHandler::fatal_spanned(const std::string& msg, const Span& sp, int code) {
-	delayed_errors.push_back(new_error(FATAL, msg, sp, code));
-	return &*(--delayed_errors.end());
+Error ErrorHandler::fatal_spanned(const std::string& msg, const Span& sp, int code) {
+	return std::move(new_error(FATAL, msg, sp, code));
 }
-Error* ErrorHandler::fatal_higligted(const std::string& msg, const Span& sp, int code) {
-	delayed_errors.push_back(new_error(FATAL, msg, sp, code).add_highlight());
-	return &*(--delayed_errors.end());
+Error ErrorHandler::fatal_higligted(const std::string& msg, const Span& sp, int code) {
+	return std::move(new_error(FATAL, msg, sp, code).add_highlight());
 }

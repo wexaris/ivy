@@ -59,6 +59,6 @@ public:
 
 	Error* error_spanned(const std::string& msg, const Span& sp, int code = 0);
 	Error* error_higligted(const std::string& msg, const Span& sp, int code = 0);
-	Error* fatal_spanned(const std::string& msg, const Span& sp, int code = 0);
-	Error* fatal_higligted(const std::string& msg, const Span& sp, int code = 0);
+	Error fatal_spanned(const std::string& msg, const Span& sp, int code = 0);
+	Error fatal_higligted(const std::string& msg, const Span& sp, int code = 0);
 };

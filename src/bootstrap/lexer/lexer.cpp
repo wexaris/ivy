@@ -141,7 +141,7 @@ void Lexer::consume_ws_and_comments() {
 				if (!is_valid(curr)) {
 					// This is a critiacal 
 					auto err = Session::handler.fatal_higligted("unterminated block comment", curr_span());
-					err->emit();
+					err.emit();
 				}
 				if (curr == '*' && next == '/') { 
 					bump(2);
