@@ -94,10 +94,12 @@ public:
 		return *this;
 	}
 
-	/* True if the error will stop the compilation session. */
-	inline bool is_fatal() const {
-		return sev == FATAL || sev == BUG;
-	}
+	/* True if this is a standard error. */
+	inline bool is_error() const	{ return sev == ERROR; }
+	/* True if this is a fatal error. */
+	inline bool is_fatal() const	{ return sev == FATAL; }
+	/* True if this is an internal compiler error. */
+	inline bool is_bug() const		{ return sev == BUG; }
 
 	/* Get the main error message. */
 	inline const std::string& message() const	{ return msg; }
