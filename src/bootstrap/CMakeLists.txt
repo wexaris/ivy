@@ -34,7 +34,7 @@ if( CMAKE_COMPILER_IS_GNUCXX )
 
 	# add debug / release compile options
 	if( ${CMAKE_BUILD_TYPE} EQUAL Debug )
-		add_compile_options( -g -O0 )
+		add_compile_options( -g3 -O0 )
 	else()
 		add_compile_options( -O3 )
 	endif()
