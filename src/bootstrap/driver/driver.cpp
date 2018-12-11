@@ -20,26 +20,32 @@ inline void usage(char* arg0) {
 	std::exit(0);
 }
 
-void compile(const std::vector<std::string>& input, const std::string& output) {
+bool compile(const std::vector<std::string>& input, const std::string& output) {
 	// TODO: all of the input files need to be parsed
 	Parser parser = Parser(input[0]);
 
 	Session::msg("output set to " + output);
+	// FIXME::::::::: FIXME::::::::: 'Error' types aren't actually counted as errors since they don't throw exceptions when emitted
 
 	try {
 		// TODO:  Store the AST
 		// FIXME:  This is in a try-catch because 'expressions not implemented yet'
 		try { parser.parse(); }
-		catch (...) {}
+		catch (const InternalException& e) {}
 
 		if (Session::handler.recount_errors() > 0) {
 			auto fail_num = Session::handler.emit_delayed();
 			if (fail_num > 0)
 				Session::err("build failed due to " + std::to_string(fail_num) + " errors\n");
 		}
-	// If 'parse()' throwed an exception, it was most likely a 'bug' or 'unimpl'
-	// In this case the user doesn't really need to know more than what was given in the error message
-	} catch ( ... /*  FIXME:  Use custom exception types for 'bug' an 'unimpl' */) {}
+	// If anything throwed an exception, it was most likely a 'bug' or 'unimpl'
+	// Return bad compilation
+	} catch (const InternalException& e) {
+		return false;
+	}
+	// No unhandled exceptions
+	// Return success
+	return true;
 }
 
 inline std::string dir_from_path(const std::string& path) {
@@ -146,7 +152,7 @@ int main(int argc, char* argv[]) {
 	else if (output_file[0] == '.' && output_file[1] == '/')
 		output_file = dir_from_path(curr_path) + output_file.substr(2);
 
-	compile(input_files, output_file);
+	return compile(input_files, output_file);
 }
 
 #else
