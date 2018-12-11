@@ -8,9 +8,12 @@ size_t ErrorHandler::emit_delayed() const {
 		if (!err.is_canceled()) {
 			try {
 				emit(err);
-			} catch (const std::exception& e) {
+			} catch (const ErrorException& e) {
 				failures++;
-			}
+			} // Fatal exceptions should have been emitted during parsing
+			catch (const FatalException& e) {
+				emit(Error(BUG, "delayed fatal error; fatal errors should be emitted duiring the parse session", 0));
+			} // Don't catch 'InternalExpection' as it's a sign of someting going wring in the compiler itself
 		}
 	}
 	return failures;
