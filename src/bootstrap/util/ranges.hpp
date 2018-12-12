@@ -1,6 +1,6 @@
 #pragma once
+#include "driver/session.hpp"
 #include <optional>
-#include <assert.h>
 
 namespace range {
 
@@ -50,7 +50,8 @@ namespace range {
 	 * If the character can't be a number in the given base,
 	 * a 'nullopt' is retuned. */
 	static inline std::optional<uint> get_num(char c, uint base) {
-		assert(base <= 36);
+		if (base > 36)
+			Session::handler.make_bug("tried to get number in base " + std::to_string(base)).emit();
 
 		if (base == 10) {
 			if (is_dec(c))

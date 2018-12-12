@@ -204,8 +204,10 @@ void Lexer::scan_exponent() {
 }
 
 void Lexer::scan_digits(int base, int full_base) {
-	assert(full_base <= 36);
-	assert(base <= full_base);
+	if (full_base > 36)
+		handler.make_bug("tried to scan number in base " + std::to_string(full_base));
+	if (base > full_base)
+		handler.make_bug("tried to scan number with a base larger than the total range");
 
 	while (true) {
 		if (range::get_num(curr, full_base).has_value()) {
