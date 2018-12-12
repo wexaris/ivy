@@ -57,8 +57,13 @@ public:
 	 * Does not recount the delayed errors. */
 	inline bool has_errors() const			{ return err_count > 0; }
 
-	Error* error_spanned(const std::string& msg, const Span& sp, int code = 0);
-	Error* error_higligted(const std::string& msg, const Span& sp, int code = 0);
-	Error fatal_spanned(const std::string& msg, const Span& sp, int code = 0);
-	Error fatal_higligted(const std::string& msg, const Span& sp, int code = 0);
+	Error* make_warning(const std::string& msg, int code = 0);
+	Error* make_warning_spanned(const std::string& msg, const Span& sp, int code = 0);
+	Error* make_warning_higligted(const std::string& msg, const Span& sp, int code = 0);
+	Error* make_error(const std::string& msg, int code = 0);
+	Error* make_error_spanned(const std::string& msg, const Span& sp, int code = 0);
+	Error* make_error_higligted(const std::string& msg, const Span& sp, int code = 0);
+	Error make_fatal(const std::string& msg, int code = 0);
+	Error make_fatal_spanned(const std::string& msg, const Span& sp, int code = 0);
+	Error make_fatal_higligted(const std::string& msg, const Span& sp, int code = 0);
 };

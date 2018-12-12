@@ -32,17 +32,62 @@ size_t ErrorHandler::recount_errors() {
 	return delayed_errors.size();
 }
 
-Error* ErrorHandler::error_spanned(const std::string& msg, const Span& sp, int code) {
-	delayed_errors.push_back(new_error(ERROR, msg, sp, code));
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////// Warnings //////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+Error* ErrorHandler::make_warning(const std::string& msg, int code) {
+	auto err = new_error(WARNING, msg, code);
+	delayed_errors.push_back(std::move(err));
 	return &*(--delayed_errors.end());
 }
-Error* ErrorHandler::error_higligted(const std::string& msg, const Span& sp, int code) {
-	delayed_errors.push_back(new_error(ERROR, msg, sp, code).add_highlight());
+Error* ErrorHandler::make_warning_spanned(const std::string& msg, const Span& sp, int code) {
+	auto err = new_error(WARNING, msg, sp, code);
+	delayed_errors.push_back(std::move(err));
 	return &*(--delayed_errors.end());
 }
-Error ErrorHandler::fatal_spanned(const std::string& msg, const Span& sp, int code) {
-	return std::move(new_error(FATAL, msg, sp, code));
+Error* ErrorHandler::make_warning_higligted(const std::string& msg, const Span& sp, int code) {
+	auto err = new_error(WARNING, msg, sp, code).add_highlight();
+	delayed_errors.push_back(std::move(err));
+	return &*(--delayed_errors.end());
 }
-Error ErrorHandler::fatal_higligted(const std::string& msg, const Span& sp, int code) {
-	return std::move(new_error(FATAL, msg, sp, code).add_highlight());
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////// Errors //////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+Error* ErrorHandler::make_error(const std::string& msg, int code) {
+	auto err = new_error(ERROR, msg, code);
+	delayed_errors.push_back(std::move(err));
+	return &*(--delayed_errors.end());
+}
+Error* ErrorHandler::make_error_spanned(const std::string& msg, const Span& sp, int code) {
+	auto err = new_error(ERROR, msg, sp, code);
+	delayed_errors.push_back(std::move(err));
+	return &*(--delayed_errors.end());
+}
+Error* ErrorHandler::make_error_higligted(const std::string& msg, const Span& sp, int code) {
+	auto err = new_error(ERROR, msg, sp, code).add_highlight();
+	delayed_errors.push_back(std::move(err));
+	return &*(--delayed_errors.end());
+}
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////// Fatal //////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+Error ErrorHandler::make_fatal(const std::string& msg, int code) {
+	auto err = new_error(FATAL, msg, code);
+	return std::move(std::move(err));
+}
+Error ErrorHandler::make_fatal_spanned(const std::string& msg, const Span& sp, int code) {
+	auto err = new_error(FATAL, msg, sp, code);
+	return std::move(std::move(err));
+}
+Error ErrorHandler::make_fatal_higligted(const std::string& msg, const Span& sp, int code) {
+	auto err = new_error(FATAL, msg, sp, code).add_highlight();
+	return std::move(std::move(err));
 }

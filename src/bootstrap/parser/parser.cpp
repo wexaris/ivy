@@ -196,7 +196,7 @@ inline bool is_attr(const Token& tk) {
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 inline Error* Parser::err_expected(const std::string& found, const std::string& expected, int code) { 
-	return handler.error_higligted("unexpected token: " + found + "; expected " + expected, curr_tok.span(), code);
+	return handler.make_error_higligted("unexpected token: " + found + "; expected " + expected, curr_tok.span(), code);
 }
 
 inline Error* Parser::expect_symbol(char sym) {
