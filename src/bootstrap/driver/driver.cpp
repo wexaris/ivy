@@ -161,9 +161,10 @@ int main(int argc, char* argv[]) {
 #include "util/token_info.hpp"
 
 void print_main() {
-	ErrorHandler handler;
+	Emitter emitter;
+	ErrorHandler handler(emitter);
 	SourceMap sm(handler);
-	Lexer lex(sm.load_file("tests/main.ivy"));
+	Lexer lex(sm.load_file("tests/main.ivy"), handler);
 
 	Token tk = lex.next_token();
 	while (tk != TokenType::END) {
@@ -181,17 +182,20 @@ int main() {
 	tests::lexer::token_has_correct_column_pos();
 	tests::lexer::return_eof_without_translation_unit();
 
-	ErrorHandler handler;
+	Emitter emitter;
+	ErrorHandler handler(emitter);
 	SourceMap sm(handler);
-	Lexer lex(sm.load_file("tests/main.ivy"));
+	Lexer lex(sm.load_file("tests/main.ivy"), handler);
 	Token tk = lex.next_token();
 
-	Error err = handler.new_error(ErrSeverity::ERROR, std::string(tk.raw()));
-	err.add_span(tk.span());
+	Error err = handler.new_error(Severity::ERROR, std::string(tk.raw()), tk.span(), 0);
+	err.add_span();
 	err.add_highlight();
 	err.add_help("if you wanted to import a module, use 'import mod'");
 	err.add_note("this is a fake error");
-	handler.emit(err);
+
+	try { handler.emit(err); }
+	catch (...) {}
 }
 
 #endif
