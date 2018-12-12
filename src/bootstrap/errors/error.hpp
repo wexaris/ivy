@@ -68,9 +68,9 @@ public:
 	/* Give the error an error code. */
 	inline void set_code(int code)		{ id = code; }
 
-	/* Add a span to the error. */
-	inline Error& add_span(const Span& span) {
-		this->sp = span;
+	/* Add info about the span of the error.
+	* Expects the span to also be set. */
+	inline Error& add_span() {
 		sub(SPAN);
 		return *this;
 	}

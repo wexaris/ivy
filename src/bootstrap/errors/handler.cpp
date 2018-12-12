@@ -39,16 +39,22 @@ size_t ErrorHandler::recount_errors() {
 
 Error* ErrorHandler::make_warning(const std::string& msg, int code) {
 	auto err = new_error(WARNING, msg, code);
+	// Return pushed back error
 	delayed_errors.push_back(std::move(err));
 	return &*(--delayed_errors.end());
 }
 Error* ErrorHandler::make_warning_spanned(const std::string& msg, const Span& sp, int code) {
 	auto err = new_error(WARNING, msg, sp, code);
+	err.add_span();
+	// Return pushed back error
 	delayed_errors.push_back(std::move(err));
 	return &*(--delayed_errors.end());
 }
 Error* ErrorHandler::make_warning_higligted(const std::string& msg, const Span& sp, int code) {
-	auto err = new_error(WARNING, msg, sp, code).add_highlight();
+	auto err = new_error(WARNING, msg, sp, code);
+	err.add_span();
+	err.add_highlight();
+	// Return pushed back error
 	delayed_errors.push_back(std::move(err));
 	return &*(--delayed_errors.end());
 }
@@ -60,16 +66,22 @@ Error* ErrorHandler::make_warning_higligted(const std::string& msg, const Span& 
 
 Error* ErrorHandler::make_error(const std::string& msg, int code) {
 	auto err = new_error(ERROR, msg, code);
+	// Return pushed back error
 	delayed_errors.push_back(std::move(err));
 	return &*(--delayed_errors.end());
 }
 Error* ErrorHandler::make_error_spanned(const std::string& msg, const Span& sp, int code) {
 	auto err = new_error(ERROR, msg, sp, code);
+	err.add_span();
+	// Return pushed back error
 	delayed_errors.push_back(std::move(err));
 	return &*(--delayed_errors.end());
 }
 Error* ErrorHandler::make_error_higligted(const std::string& msg, const Span& sp, int code) {
-	auto err = new_error(ERROR, msg, sp, code).add_highlight();
+	auto err = new_error(ERROR, msg, sp, code);
+	err.add_span();
+	err.add_highlight();
+	// Return pushed back error
 	delayed_errors.push_back(std::move(err));
 	return &*(--delayed_errors.end());
 }
@@ -85,9 +97,12 @@ Error ErrorHandler::make_fatal(const std::string& msg, int code) {
 }
 Error ErrorHandler::make_fatal_spanned(const std::string& msg, const Span& sp, int code) {
 	auto err = new_error(FATAL, msg, sp, code);
+	err.add_span();
 	return std::move(std::move(err));
 }
 Error ErrorHandler::make_fatal_higligted(const std::string& msg, const Span& sp, int code) {
-	auto err = new_error(FATAL, msg, sp, code).add_highlight();
+	auto err = new_error(FATAL, msg, sp, -code);
+	err.add_span();
+	err.add_highlight();
 	return std::move(std::move(err));
 }
