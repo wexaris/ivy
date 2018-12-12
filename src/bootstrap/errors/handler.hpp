@@ -36,12 +36,12 @@ public:
 	{}
 
 	/* Create a new basic error. */
-	inline Error new_error(ErrSeverity sev, const std::string& msg, int code) {
+	inline Error new_error(Severity sev, const std::string& msg, int code) {
 		err_count++;
 		return Error(sev, msg, code);
 	}
 	/* Create a new spanned error. */
-	inline Error new_error(ErrSeverity sev, const std::string& msg, const Span& sp, int code) {
+	inline Error new_error(Severity sev, const std::string& msg, const Span& sp, int code) {
 		err_count++;
 		return Error(sev, msg, sp, code);
 	}

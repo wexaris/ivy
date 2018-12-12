@@ -22,7 +22,7 @@ struct SubError {
 
 /* The severity of the error message.
  * 'FATAL' and 'BUG' automatically stop the compilation process. */
-enum ErrSeverity {
+enum Severity {
 	CANCELED,
 
 	WARNING,
@@ -37,7 +37,7 @@ enum ErrSeverity {
 class Error {
 	
 private:
-	ErrSeverity sev;
+	Severity sev;
 	std::string msg;
 	std::optional<Span> sp;
 	int id;
@@ -51,10 +51,10 @@ private:
 	}
 
 public:
-	Error(ErrSeverity lvl, std::string msg, int code = 0)
+	Error(Severity lvl, std::string msg, int code = 0)
 		: sev(lvl), msg(std::move(msg)), id(code)
 	{}
-	Error(ErrSeverity lvl, std::string msg, const Span& sp, int code = 0)
+	Error(Severity lvl, std::string msg, const Span& sp, int code = 0)
 		: sev(lvl), msg(std::move(msg)), sp(sp), id(code)
 	{}
 
@@ -103,7 +103,7 @@ public:
 
 	/* Get the main error message. */
 	inline const std::string& message() const		{ return msg; }
-	inline ErrSeverity severity() const				{ return sev; }
+	inline Severity severity() const				{ return sev; }
 	inline const std::optional<Span>& span() const	{ return sp; }
 
 	/* Get a vector of all of the sub-errors of this 'Error'. */
