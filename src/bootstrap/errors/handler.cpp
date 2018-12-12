@@ -93,16 +93,25 @@ Error* ErrorHandler::make_error_higligted(const std::string& msg, const Span& sp
 
 Error ErrorHandler::make_fatal(const std::string& msg, int code) {
 	auto err = new_error(FATAL, msg, code);
-	return std::move(std::move(err));
+	return std::move(err);
 }
 Error ErrorHandler::make_fatal_spanned(const std::string& msg, const Span& sp, int code) {
 	auto err = new_error(FATAL, msg, sp, code);
 	err.add_span();
-	return std::move(std::move(err));
+	return std::move(err);
 }
 Error ErrorHandler::make_fatal_higligted(const std::string& msg, const Span& sp, int code) {
 	auto err = new_error(FATAL, msg, sp, -code);
 	err.add_span();
 	err.add_highlight();
+	return std::move(err);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////// Bug ///////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+Error ErrorHandler::make_bug(const std::string& msg) {
+	auto err = new_error(BUG, msg, 0);
 	return std::move(std::move(err));
 }

@@ -92,7 +92,7 @@ public:
 
 	/* True is there have been any errors.
 	 * Does not recount the delayed errors. */
-	inline bool has_errors() const			{ return err_count > 0; }
+	inline bool has_errors() const	{ return err_count > 0; }
 
 	Error* make_warning(const std::string& msg, int code = 0);
 	Error* make_warning_spanned(const std::string& msg, const Span& sp, int code = 0);
@@ -103,4 +103,5 @@ public:
 	Error make_fatal(const std::string& msg, int code = 0);
 	Error make_fatal_spanned(const std::string& msg, const Span& sp, int code = 0);
 	Error make_fatal_higligted(const std::string& msg, const Span& sp, int code = 0);
+	Error make_bug(const std::string& msg);
 };
