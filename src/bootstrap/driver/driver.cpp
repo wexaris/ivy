@@ -22,14 +22,16 @@ inline void usage(char* arg0) {
 
 bool compile(const std::vector<std::string>& input, const std::string& output) {
 	// TODO: all of the input files need to be parsed
-	Parser parser = Parser(input[0]);
 
 	Session::msg("output set to " + output);
 
 	try {
 		// TODO:  Store the AST
 		// FIXME:  This is in a try-catch because 'expressions not implemented yet'
-		try { parser.parse(); }
+		try {
+			Parser parser = Parser(input[0]);
+			parser.parse();
+		}
 		catch (const InternalException& e) {}
 
 		if (Session::handler.recount_errors() > 0) {
@@ -37,11 +39,18 @@ bool compile(const std::vector<std::string>& input, const std::string& output) {
 			if (fail_num > 0)
 				Session::handler.make_fatal("build failed due to " + std::to_string(fail_num) + " errors\n").emit();
 		}
-	// If anything throwed an exception, it was most likely a 'bug' or 'unimpl'
-	// Return bad compilation
-	} catch (const InternalException& e) {
+	}
+	// If anything throwed an internal exception,
+	// Return compilation failure
+	catch (const FatalException& e) {
 		return false;
 	}
+	// If anything throwed an internal exception, it was most likely a 'bug' or 'unimpl'
+	// Return compilation failure
+	catch (const InternalException& e) {
+		return false;
+	}
+	
 	// No unhandled exceptions
 	// Return success
 	return true;

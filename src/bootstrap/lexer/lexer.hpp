@@ -83,12 +83,6 @@ private:
 	 * Accumulates characters and builds tokens according to the language's syntax. */
 	Token next_token_inner();
 
-	/* Throws a spanned error through the current Session.
-	 * Does not return. */
-	inline void err(const std::string& msg, const Span& sp) const {
-		Session::handler.make_fatal_higligted(msg, sp).emit();
-	}
-
 protected:
 	/* Bumps past whitespace and comments. */
 	void consume_ws_and_comments();

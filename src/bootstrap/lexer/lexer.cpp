@@ -140,7 +140,7 @@ void Lexer::consume_ws_and_comments() {
 				// Throw an error if the block is not terminated at the end of the file
 				if (!is_valid(curr)) {
 					// This is a critiacal 
-					auto err = Session::handler.make_fatal_higligted("unterminated block comment", curr_span());
+					auto err = handler.make_fatal_higligted("unterminated block comment", curr_span());
 					err.emit();
 				}
 				if (curr == '*' && next == '/') { 
@@ -164,12 +164,12 @@ bool Lexer::scan_hex_escape(uint num, char delim) {
 		if (!is_valid(curr)) {
 			// Citical failure
 			// We can't guess how the literal was supposed to be terminated
-			Session::span_err("numeric escape is too short", curr_span());
-			std::exit(5);
+			auto err = handler.make_fatal_higligted("incomplete numeric escape", curr_span());
+			err.emit();
 		}
 		// Escape is shorter than expected
 		if (curr == delim) {
-			Session::span_err("numeric escape is too short", curr_span());
+			handler.make_error_higligted("numeric escape is too short", curr_span());
 			valid = false;
 			break;
 		}
@@ -179,7 +179,7 @@ bool Lexer::scan_hex_escape(uint num, char delim) {
 			number += n.value();
 		else {
 			valid = false;
-			Session::span_err("invalid character in numeric escape: " + std::string{curr}, curr_span());
+			handler.make_error_higligted("invalid character in numeric escape: " + std::string{curr}, curr_span());
 		}
 		bump();
 	}
@@ -198,8 +198,8 @@ void Lexer::scan_exponent() {
 		size_t digit_start = bitpos();
 		scan_digits(10, 10);
 		if (bitpos() == digit_start) {
-			Session::err("exponent expects at least one digit");
-			std::exit(7);
+			auto err = handler.make_fatal_higligted("exponent expects at least one digit", curr_span());
+			err.emit();
 		}
 	}
 }
@@ -212,7 +212,7 @@ void Lexer::scan_digits(int base, int full_base) {
 		if (range::get_num(curr, full_base).has_value()) {
 			if (!range::get_num(curr, base).has_value()) {
 				bump();
-				Session::span_err("invalid digit in base " + std::to_string(base) + " literal", curr_span());
+				handler.make_error_higligted("invalid digit in base " + std::to_string(base) + " literal", curr_span());
 			}
 			bump();
 		}
@@ -261,20 +261,20 @@ Token Lexer::lex_number() {
 		scan_digits(10, 10);
 		scan_exponent();
 		if (base != 10) {
-			Session::span_err("only decimal float literals are supported", curr_span());
+			handler.make_error_higligted("only decimal float literals are supported", curr_span());
 		}
 	}
 
 	/* There were no numbers */
 	if (bitpos() == start) {
-		Session::span_err("no valid numbers", curr_span());
+		handler.make_error_higligted("no valid numbers", curr_span());
 		return Token(TokenType::LIT_INTEGER, "0", curr_span());
 	}
 
 	if (curr == 'e' || curr == 'E') {
 		scan_exponent();
 		if (base != 10) {
-			Session::span_err("exponent only supported for decimal numbers", curr_span());
+			handler.make_error_higligted("exponent only supported for decimal numbers", curr_span());
 		}
 	}
 
@@ -520,7 +520,7 @@ Token Lexer::next_token_inner() {
 			// Character literal is empty
 			if (c == '\'') {
 				valid = false;
-				Session::span_err("character must have a value", curr_span());
+				handler.make_error_higligted("character must have a value", curr_span());
 			}
 			else {
 				// If it starts like an indentifier and doesnt close,
@@ -536,8 +536,8 @@ Token Lexer::next_token_inner() {
 					// In that case we assume it's an unterminated character literal
 					if (curr == '\'') {
 						bump();
-						Session::span_err("character literal may contain only one symbol", curr_span());
-						Session::warn("if you meant to create a string literal, use double quotes");
+						auto err = handler.make_error_higligted("character literal may contain only one symbol", curr_span());
+						err->add_help("if you meant to create a string literal, use double quotes");
 						return Token(TokenType::LIT_STRING, trans_unit().source().substr(start, bitpos() - start - 1), curr_span());
 					}
 
@@ -547,7 +547,7 @@ Token Lexer::next_token_inner() {
 				// Newlines and tabs aren't allowed inside characters
 				if ((c == '\n' || c == '\r' || c == '\t') && curr == '\'') {
 					valid = false;
-					Session::span_err("special characters need to be escaped", curr_span());
+					handler.make_error_higligted("special characters need to be escaped", curr_span());
 				}
 
 				// The character is an escape sequence
@@ -563,7 +563,7 @@ Token Lexer::next_token_inner() {
 						case 'U': bump(); valid &= scan_hex_escape(8, '\''); break;
 						default:
 							valid = false;
-							Session::span_err("unknown escape sequence: '\\" + std::string(1, curr) + "'", curr_span());
+							handler.make_error_higligted("unknown escape sequence: '\\" + std::string{curr} + "'", curr_span());
 							bump(); 
 					}
 				}
@@ -576,15 +576,16 @@ Token Lexer::next_token_inner() {
 						// Return it as a string literal
 						if (curr == '\'') {
 							bump();
-							Session::span_err("character literal may contain only one symbol", curr_span());
-							Session::warn("if you wanted a string literal, use double quotes");
+							auto err = handler.make_error_higligted("character literal may contain only one symbol", curr_span());
+							err->add_help("if you wanted a string literal, use double quotes");
 							return Token(TokenType::LIT_STRING, trans_unit().source().substr(start, bitpos() - start - 1), curr_span());
 						}
 						// The character literal goes to EOF or newline
 						if (!is_valid(curr) || curr == '\n') {
 							// This is a critical failure
 							// We can't expect what to do with the missing quote
-							err("character literal missing end quote", curr_span());
+							auto err = handler.make_fatal_higligted("character literal missing end quote", curr_span());
+							err.emit();
 						}
 					}
 				}
@@ -607,7 +608,8 @@ Token Lexer::next_token_inner() {
 				if (curr == (int)TokenType::END) {
 					// This is a critical failure
 					// We can't know where the end quote was supposed to be
-					err("string literal missing end quote", curr_span());
+					auto err = handler.make_fatal_higligted("string literal missing end quote", curr_span());
+					err.emit();
 				}
 
 				char c = curr;
@@ -625,7 +627,7 @@ Token Lexer::next_token_inner() {
 						case 'U': bump(); valid &= scan_hex_escape(8, '\"'); break;
 						default:
 							valid = false;
-							Session::span_err("unknown escape sequence: '\\" + std::string(1, curr) + "'", curr_span());
+							handler.make_error_higligted("unknown escape sequence: '\\" + std::string(1, curr) + "'", curr_span());
 							bump(); 
 					}
 				}
@@ -639,7 +641,7 @@ Token Lexer::next_token_inner() {
 		}
 
 		default:
-			Session::span_err("unrecognised character: " + std::string(1, curr), curr_span());
+			handler.make_error_higligted("unrecognised character: " + std::string(1, curr), curr_span());
 			bump();
 			return Token(TokenType::UNKNOWN, curr_src_view(), curr_span());
 	}
