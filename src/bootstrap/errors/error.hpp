@@ -1,5 +1,6 @@
 #pragma once
 #include "util/span.hpp"
+#include <optional>
 #include <vector>
 #include <string>
 
@@ -38,7 +39,7 @@ class Error {
 private:
 	ErrSeverity sev;
 	std::string msg;
-	Span sp;
+	std::optional<Span> sp;
 	int id;
 
 	std::vector<SubError> sub_err;
@@ -101,9 +102,9 @@ public:
 	inline bool is_bug() const		{ return sev == BUG; }
 
 	/* Get the main error message. */
-	inline const std::string& message() const	{ return msg; }
-	inline ErrSeverity severity() const			{ return sev; }
-	inline const Span& span() const				{ return sp; }
+	inline const std::string& message() const		{ return msg; }
+	inline ErrSeverity severity() const				{ return sev; }
+	inline const std::optional<Span>& span() const	{ return sp; }
 
 	/* Get a vector of all of the sub-errors of this 'Error'. */
 	inline const std::vector<SubError>& children() const	{ return sub_err; }

@@ -28,20 +28,26 @@ std::string Emitter::format_error(const Error& err) {
 	for (const auto& sub : err.children()) {
 		switch (sub.type) {
 			case SPAN:
+				if (!err.span().has_value())
+					continue;
+
 				build_err += "\033[4;36m>> ";
 
 				// Add <file>:<line>:<column> to error message
-				if (!err.span().tu->filepath().empty())
-					build_err += err.span().tu->filepath() + ":";
-				build_err += std::to_string(err.span().lo.line) + ":" + std::to_string(err.span().lo.col);
+				if (!err.span()->tu->filepath().empty())
+					build_err += err.span()->tu->filepath() + ":";
+				build_err += std::to_string(err.span()->lo.line) + ":" + std::to_string(err.span()->lo.col);
 
 				build_err += "\033[0m\n";
 				break;
 
 			case HIGHLIGHT:
 				{
-					auto pos = err.span().tu->pos_from_index(err.span().lo.bit);
-					auto line = err.span().tu->get_line(pos.line);
+					if (!err.span().has_value())
+						continue;
+
+					auto pos = err.span()->tu->pos_from_index(err.span()->lo.bit);
+					auto line = err.span()->tu->get_line(pos.line);
 
 					// TODO:  Multi line spans still look quite stupid.
 					std::string linenum_str = std::to_string(pos.line);
@@ -52,8 +58,8 @@ std::string Emitter::format_error(const Error& err) {
 					// The current span's start pos in the error message
 					size_t index = build_err.length();
 					// The final length of the error message
-					size_t new_len = err.span().lo.line == err.span().hi.line ?
-						index + (err.span().hi.bit - err.span().lo.bit) :	// TRUE
+					size_t new_len = err.span()->lo.line == err.span()->hi.line ?
+						index + (err.span()->hi.bit - err.span()->lo.bit) :	// TRUE
 						index + line.length();				// FALSE
 					
 					build_err.resize(new_len, ' ');
