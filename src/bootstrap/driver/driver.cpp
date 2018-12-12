@@ -6,7 +6,7 @@
 inline void warn_bad_compiler() { 
 	printf("This is the ivy-lang bootstrap compiler.\n");
 	printf("While we are thankful that you have decided to use it,\nwe must inform you that it is very much work in progress, and isn't going to be functional any time soon!\n");
-	printf("If you still want to try it out, you can use the '-nowarn' option. Though, we can't give any guarantees that the build will be successful.\n");
+	printf("If you still want to try it out, you can use the '-force' option. Though, we can't give any guarantees that the build will be successful.\n");
 	printf("You are welcome to wait, or partake in it's development on GitHub!\n");
 	std::exit(0);
 }
@@ -14,16 +14,16 @@ inline void warn_bad_compiler() {
 inline void usage(char* arg0) {
 	printf("usage: %s [options] <input_files>\n", arg0);
 	printf("options:\n");
-	printf("	-o <filename>	write output to <filename>\n");
-	printf("	-nowarn			suppress bad_compiler warning\n");
-	printf("	-h				display help menu\n\n");
+	printf("    -o <filename>   write output to <filename>\n");
+	printf("    -nowarn         suppress bad_compiler warning\n");
+	printf("    -h              display help menu\n\n");
 	std::exit(0);
 }
 
 bool compile(const std::vector<std::string>& input, const std::string& output) {
 	// TODO: all of the input files need to be parsed
 
-	Session::msg("output set to " + output);
+	Session::handler.trace("output set to " + output);
 
 	try {
 		// TODO:  Store the AST
@@ -71,7 +71,7 @@ int main(int argc, char* argv[]) {
 
 	std::vector<std::string> input_files;
 	std::string output_file;
-	bool warn = true;
+	bool bad_comp = true;
 
 	const std::string curr_path = argv[0];
 
@@ -86,36 +86,27 @@ int main(int argc, char* argv[]) {
 			}
 
 			// Disable bad-compiler warning
-			if (arg == "-nowarn") {
-				warn = false;
+			if (arg == "-force") {
+				bad_comp = false;
 				continue;
 			}
 
 			// Enable trace messages
 			if (arg == "-trace") {
-				Session::enable_trace();
+				Session::handler.flags.trace = true;
 				continue;
 			}
 
-			// Set required severity level for message writing
-			if (arg == "-require_sev") {
-				// If there are more options and the next one doesn't start with '-',
-				// set the requred severity limit
-				if (i + 1 <= argc && argv[i+1][0] != '-') {
-					arg = argv[++i];
-					if (arg == "trace")
-						Session::require_severity(Severity::TRACE);
-					else if (arg == "message")
-						Session::require_severity(Severity::MESSAGE);
-					else if (arg == "warning")
-						Session::require_severity(Severity::WARNING);
-					else if (arg == "error")
-						Session::require_severity(Severity::ERROR);
-					else
-						Session::handler.make_fatal("-require_sev invalid argument").emit();
-					continue;
-				}
-				else Session::handler.make_fatal("-require_sev requires an argument" + arg).emit();
+			// Enable trace messages
+			if (arg == "-nowarn") {
+				Session::handler.flags.no_warnings = true;
+				continue;
+			}
+
+			// Enable trace messages
+			if (arg == "-Werr") {
+				Session::handler.flags.warnings_as_err = true;
+				continue;
 			}
 
 			// Set output file
@@ -145,7 +136,7 @@ int main(int argc, char* argv[]) {
 	}
 
 	// Display warning about this being a non-functional compiler
-	if (warn) warn_bad_compiler();
+	if (bad_comp) warn_bad_compiler();
 
 	// Error if there is no input file
 	if (input_files.size() == 0)

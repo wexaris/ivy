@@ -1,10 +1,12 @@
 #pragma once
 #include "emitter.hpp"
 #include <unordered_set>
-#include <list>
+#include <cstring>
 #include <string>
+#include <list>
 
 struct HandlerFlags {
+	bool trace;
 	bool no_warnings;
 	bool warnings_as_err;
 
@@ -16,6 +18,11 @@ struct HandlerFlags {
 class ErrorHandler {
 
 private:
+	Emitter& emitter;
+
+	std::string trace_indent;
+	static constexpr char INDENT_LEVEL[] = "  ";
+
 	size_t err_count = 0;
 
 	/* All of the errors that are still yet to be emitted. */
@@ -24,8 +31,8 @@ private:
 public:
 	HandlerFlags flags;
 
-	ErrorHandler(const HandlerFlags& flags = HandlerFlags())
-		: flags(flags)
+	explicit ErrorHandler(Emitter& emitter, const HandlerFlags& flags = HandlerFlags())
+		: emitter(emitter), flags(flags)
 	{}
 
 	/* Create a new basic error. */
@@ -41,7 +48,24 @@ public:
 
 	/* Emit the given error. */
 	inline void emit(const Error& err) const {
-		Emitter::emit(err);
+		emitter.emit(err);
+	}
+
+	/* Emit a trace message.
+	 * Will not write messages unless tracing is enabled.
+	 * Every new trace will be indented further. */
+	inline void trace(std::string msg) {
+		if (flags.trace) {
+			trace_indent += INDENT_LEVEL;
+			printf("%s%s\n", trace_indent.c_str(), msg.c_str());
+		}
+	}
+
+	/* Removes the last level of indentation from trace messages. 
+	 * Should be called at the end of a trace level. */
+	inline void end_trace() {
+		if (flags.trace)
+			trace_indent.resize(trace_indent.size() - strlen(INDENT_LEVEL));
 	}
 
 	/* Emit all of the backed up errors if there are any.

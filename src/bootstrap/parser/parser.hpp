@@ -59,17 +59,13 @@ private:
 			curr_tok = lexer.next_token();
 	}
 
-	/* Requests the Session to print a trace message.
-	 * The Session won't print if verbosity is disabled. */
-	inline void trace(const std::string& msg) const { Session::trace(msg); }
-	/* Requests the Session to remove one level of trace indentation. */
-	inline void end_trace() const { Session::end_trace(); }
+	/* Requests trace message to be printed.
+	 * Won't be printed if tracing is disabled. */
+	inline void trace(const std::string& msg) const { handler.trace(msg); }
+	/* Requests a level of indentation to be removed from trace messages. */
+	inline void end_trace() const { handler.end_trace(); }
 
-	/* Throws a spanned error through the current Session. */
-	//[[noreturn]] inline void err(const std::string& msg) const {
-	//	Session::span_err(msg, curr_tok.span());
-	//	std::exit(1);
-	//}
+	/* Ceates an "unexpected token: .., expected .." error message. */
 	inline Error* err_expected(const std::string& found, const std::string& expected, int code = 0);
 
 	inline Error* expect_symbol(char exp);

@@ -7,10 +7,13 @@
 class Emitter {
 
 public:
+	Emitter() = default;
+	virtual ~Emitter() {}
+
 	/* Emit the given 'Error'.
 	 * The error's 'format()' is called to get the final string that will be printed.
 	 * Some 'CompilerException' might be thrown if the error is of type 'ERROR', 'FATAL' or 'BUG'. */
-	static void emit(const Error& err) {
+	virtual void emit(const Error& err) {
 		// Cenceled errors aren't emitted
 		if (err.is_canceled())
 			return;
@@ -26,5 +29,5 @@ public:
 
 	/* Returns a fully formatted error message.
 	 * Compiles the sub-messages and adds coloring. */
-	static std::string format_error(const Error&);
+	std::string format_error(const Error&);
 };

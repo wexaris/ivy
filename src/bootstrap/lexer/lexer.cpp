@@ -1,5 +1,4 @@
 #include "lexer.hpp"
-#include "driver/session.hpp"
 #include "util/ranges.hpp"
 #include "util/token_info.hpp"
 #include <iostream>

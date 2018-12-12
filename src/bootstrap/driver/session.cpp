@@ -1,10 +1,8 @@
 #include "session.hpp"
 
 SysConfig Session::cfg = SysConfig();
-Severity Session::_req_severity = Severity::MESSAGE;
-bool Session::_format = true;
-std::string Session::indent_prefix;
-ErrorHandler Session::handler;
+Emitter Session::emitter = Emitter();
+ErrorHandler Session::handler = ErrorHandler(emitter);
 
 #ifdef _WIN64				// Check for Windows and it's architecture
 	constexpr const OS _OS = OS::Windows;
