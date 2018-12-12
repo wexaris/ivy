@@ -35,7 +35,7 @@ bool compile(const std::vector<std::string>& input, const std::string& output) {
 		if (Session::handler.recount_errors() > 0) {
 			auto fail_num = Session::handler.emit_delayed();
 			if (fail_num > 0)
-				Session::err("build failed due to " + std::to_string(fail_num) + " errors\n");
+				Session::handler.make_fatal("build failed due to " + std::to_string(fail_num) + " errors\n").emit();
 		}
 	// If anything throwed an exception, it was most likely a 'bug' or 'unimpl'
 	// Return bad compilation
@@ -102,11 +102,11 @@ int main(int argc, char* argv[]) {
 						Session::require_severity(Severity::WARNING);
 					else if (arg == "error")
 						Session::require_severity(Severity::ERROR);
-					else 
-						Session::err("-require_sev invalid argument");
+					else
+						Session::handler.make_fatal("-require_sev invalid argument").emit();
 					continue;
 				}
-				else Session::err("-require_sev requires an argument" + arg);
+				else Session::handler.make_fatal("-require_sev requires an argument" + arg).emit();
 			}
 
 			// Set output file
@@ -117,18 +117,18 @@ int main(int argc, char* argv[]) {
 					output_file = argv[++i];
 					continue;
 				}
-				else Session::err("-o requires an argument" + arg);
+				else Session::handler.make_fatal("-o requires an argument" + arg).emit();
 			}
 
 			// Invalid option
-			else Session::err("unrecognised option: " + arg);
+			else Session::handler.make_fatal("unrecognised option: " + arg).emit();
 		}
 		// Handle input files
 		else {
 			// Input files should be the last things provided
 			while (i < argc) {
 				if (argv[i][0] == '-')
-					Session::err(std::string("bad option '") + argv[i] + "'; options should be placed before input files");
+					Session::handler.make_fatal("bad option '" + std::string(argv[i]) + "'; options should be placed before input files").emit();
 				input_files.push_back(argv[i]);
 				i++;
 			}
@@ -140,7 +140,7 @@ int main(int argc, char* argv[]) {
 
 	// Error if there is no input file
 	if (input_files.size() == 0)
-		Session::err("no input files were specified");
+		Session::handler.make_fatal("no input files were specified").emit();
 
 	// No output file specified. Use current location and 'a.out'
 	if (output_file.empty() || output_file == ".")
