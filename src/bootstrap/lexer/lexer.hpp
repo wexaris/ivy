@@ -77,15 +77,16 @@ public:
 class Lexer : protected SourceReader {
 
 private:
+	ErrorHandler& handler;
+
 	/* The main identification pattern in the tokenization process.
 	 * Accumulates characters and builds tokens according to the language's syntax. */
 	Token next_token_inner();
 
 	/* Throws a spanned error through the current Session.
 	 * Does not return. */
-	[[noreturn]] inline void err(const std::string& msg, const Span& sp) const {
-		Session::span_err(msg, sp);
-		std::exit(1);
+	inline void err(const std::string& msg, const Span& sp) const {
+		Session::handler.make_fatal_higligted(msg, sp).emit();
 	}
 
 protected:
@@ -139,9 +140,9 @@ public:
 
 public:
 	/* Construct a lexer to work on the provided Translation Unit. */
-	explicit Lexer(TranslationUnit& file) : SourceReader(file) {}
+	explicit Lexer(TranslationUnit& file, ErrorHandler& handler) : SourceReader(file), handler(handler) {}
 	/* Copy constructor */
-	Lexer(const Lexer& other) : SourceReader(other.translation_unit) {}
+	Lexer(const Lexer& other) : SourceReader(other.translation_unit), handler(other.handler) {}
 
 	/* Gets the next token.
 	 * Tokens get marked with a type, location and value if necessary.

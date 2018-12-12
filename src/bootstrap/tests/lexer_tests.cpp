@@ -10,7 +10,7 @@ namespace tests {
 			// The numbers should correspond to absolute positions in the TU
 			ErrorHandler handler;
 			TranslationUnit tu = TranslationUnit(handler, "\n12345\n7\n9");
-			Lexer lex(tu);
+			Lexer lex(tu, handler);
 			
 			// Retrieve the first token
 			// Should be '12345'
@@ -33,7 +33,7 @@ namespace tests {
 			// The numbers should correspond to absolute positions in the TU
 			ErrorHandler handler;
 			TranslationUnit tu = TranslationUnit(handler, "\n12345\n7\n9");
-			Lexer lex(tu);
+			Lexer lex(tu, handler);
 			
 			// Retrieve the first token
 			// Should be '12345'
@@ -56,7 +56,7 @@ namespace tests {
 			// The numbers should correspond to absolute positions in the TU
 			ErrorHandler handler;
 			TranslationUnit tu = TranslationUnit(handler, "\n12345\n7\n9");
-			Lexer lex(tu);
+			Lexer lex(tu, handler);
 			
 			// Retrieve the first token
 			// Should be '12345'
@@ -78,7 +78,7 @@ namespace tests {
 			// Create a Lexer with no text in the TU
 			ErrorHandler handler;
 			TranslationUnit tu = TranslationUnit(handler, "");
-			Lexer lex(tu);
+			Lexer lex(tu, handler);
 
 			// Retrieve the first token
 			Token tk = lex.next_token();
