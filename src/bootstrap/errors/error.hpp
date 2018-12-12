@@ -35,6 +35,7 @@ enum Severity {
  * An error has a main error message and optional notes, help messages, etc.
  * An error code should be added where possible. */
 class Error {
+	friend class ErrorHandler;
 	
 private:
 	Severity sev;
@@ -94,6 +95,8 @@ public:
 		return *this;
 	}
 
+	/* True if this is a warning. */
+	inline bool is_warning() const	{ return sev == WARNING; }
 	/* True if this is a standard error. */
 	inline bool is_error() const	{ return sev == ERROR; }
 	/* True if this is a fatal error. */

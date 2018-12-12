@@ -48,6 +48,19 @@ public:
 
 	/* Emit the given error. */
 	inline void emit(const Error& err) const {
+		if (err.is_warning()) {
+			// Exit if warnings are suppressed
+			if (flags.no_warnings)
+				return;
+
+			// Create and emit a new Error if we're reporting warnings as errors
+			if (flags.warnings_as_err) {
+				Error new_err = Error(err);
+				new_err.sev = Severity::ERROR;
+				emitter.emit(new_err);
+				return;
+			}
+		}
 		emitter.emit(err);
 	}
 
