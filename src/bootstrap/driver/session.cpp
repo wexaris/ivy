@@ -36,7 +36,7 @@ ErrorHandler Session::handler = ErrorHandler(emitter);
 #endif
 
 struct System {
-	static inline OS get_os()				{ return _OS; }
+	static inline OS get_os()			{ return _OS; }
 	static inline Arch get_arch() 		{ return _ARCH; }
 	static inline SysType get_isize() 	{ return _ARCH == Arch::x64 ? SysType::i64 : SysType::i32; }
 	static inline SysType get_usize() 	{ return _ARCH == Arch::x64 ? SysType::u64 : SysType::u32; }
