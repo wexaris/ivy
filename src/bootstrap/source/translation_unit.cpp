@@ -13,13 +13,13 @@ TranslationUnit::TextPos TranslationUnit::pos_from_index(size_t index) const {
 	// Find the line that the index is from
 	for (size_t i = 0; i <= newlines.size(); i++) {
 		if (i == newlines.size()) {
-			pos.line = i;
-			pos.col = index - newlines[pos.line-1];
+			pos.line = i + 1;
+			pos.col = index - newlines[pos.line - 2];
 			return pos;
 		}
 		else if (newlines[i] > index) {
-			pos.line = i;
-			pos.col = index - newlines[pos.line];
+			pos.line = i + 1;
+			pos.col = index - newlines[pos.line - 2] + 1;
 			return pos;
 		}
 	}
