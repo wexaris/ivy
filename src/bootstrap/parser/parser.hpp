@@ -40,7 +40,7 @@ private:
 	ErrorHandler& handler;
 
 	/* A complete source code map of the package being parsed. */
-	SourceMap source_map;
+	SourceMap& source_map;
 
 	/* The parser's internal lexer.
 	 * Used to read text and build tokens from the input file.
@@ -144,8 +144,8 @@ private:
 
 public:
 	/* Constructs a parser for the file at the provided location. */
-	Parser(const std::string& filepath)
-		: handler(Session::handler), source_map(handler), lexer(source_map.load_file(filepath), handler), curr_tok(lexer.next_token())
+	Parser(SourceMap& src_map, const std::string& filepath)
+		: handler(Session::handler), source_map(src_map), lexer(source_map.load_file(filepath), handler), curr_tok(lexer.next_token())
 	{}
 
 	/* Begins the process of parsing the package.

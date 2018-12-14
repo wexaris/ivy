@@ -26,10 +26,13 @@ bool compile(const std::vector<std::string>& input, const std::string& output) {
 	Session::handler.trace("output set to " + output);
 
 	try {
+		// Must exist outside the Parser
+		SourceMap src_map = SourceMap(Session::handler);
+
 		// TODO:  Store the AST
 		// FIXME:  This is in a try-catch because 'expressions not implemented yet'
 		try {
-			Parser parser = Parser(input[0]);
+			Parser parser = Parser(src_map, input[0]);
 			parser.parse();
 		}
 		catch (const InternalException& e) {}
