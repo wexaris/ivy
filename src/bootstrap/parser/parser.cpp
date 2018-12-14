@@ -207,7 +207,7 @@ inline Error* Parser::expect_symbol(char sym) {
 	std::string found = curr_tok.type() < 256 ?
 		std::string{ (char)curr_tok.type() } :		// TRUE
 		translate::tk_type(curr_tok);				// FALSE
-	return err_expected(found, "'" + std::string{sym} + "'");
+	return err_expected(found, "a '" + std::string{sym} + "'");
 }
 
 inline Error* Parser::expect_primitive() {
