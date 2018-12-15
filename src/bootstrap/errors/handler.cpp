@@ -101,7 +101,7 @@ Error ErrorHandler::make_fatal_spanned(const std::string& msg, const Span& sp, i
 	return std::move(err);
 }
 Error ErrorHandler::make_fatal_higligted(const std::string& msg, const Span& sp, int code) {
-	auto err = new_error(FATAL, msg, sp, -code);
+	auto err = new_error(FATAL, msg, sp, code);
 	err.add_span();
 	err.add_highlight();
 	return std::move(err);

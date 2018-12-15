@@ -43,7 +43,7 @@ public:
 	/* Create a new spanned error. */
 	inline Error new_error(Severity sev, const std::string& msg, const Span& sp, int code) {
 		err_count++;
-		return Error(sev, msg, sp, code);
+		return Error(sev, msg, sp.into_wide(), code);
 	}
 
 	/* Emit the given error. */

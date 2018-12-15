@@ -117,7 +117,7 @@ protected:
 	/* Returns the current token's span.
 	 * Relies on a correctly set 'curr_start' position. */
 	inline Span curr_span() const {
-		return Span(trans_unit(), curr_start.abs, curr_start.ln, curr_start.col, bitpos(), lineno(), colno());
+		return Span(trans_unit(), curr_start.abs, bitpos());
 	}
 
 	/* The current tokens's absolute length. */

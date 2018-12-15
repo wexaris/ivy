@@ -1,6 +1,6 @@
 #pragma once
 #include "token_type.hpp"
-#include "util/span.hpp"
+#include "source/span.hpp"
 #include <string>
 
 /* The token class.

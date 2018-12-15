@@ -19,6 +19,7 @@ set( SRC_FILES
 		${CURR_DIR}/lexer/lexer.cpp
 		${CURR_DIR}/source/source_map.cpp
 		${CURR_DIR}/source/translation_unit.cpp
+		${CURR_DIR}/source/span.cpp
 		${CURR_DIR}/errors/handler.cpp
 		${CURR_DIR}/errors/emitter.cpp
 		${CURR_DIR}/errors/error.cpp
