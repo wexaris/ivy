@@ -3,6 +3,12 @@
 
 class TranslationUnit;
 
+/* An structure for passing around lines and columns. */
+struct TextPos {
+	size_t line;
+	size_t col;
+};
+
 /* A position in a file.
  * Keeps a pointer to the file of origin,
  * an absolute position in the file, as well as

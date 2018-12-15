@@ -2,7 +2,7 @@
 #include "util/ranges.hpp"
 #include "errors/handler.hpp"
 
-TranslationUnit::TextPos TranslationUnit::pos_from_index(size_t index) const {
+TextPos TranslationUnit::pos_from_index(size_t index) const {
 
 	// File has no newlines or it hasn't been entirely lexed
 	if (newlines.empty() || index < newlines[0])

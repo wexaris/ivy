@@ -1,5 +1,6 @@
 #pragma once
 #include "errors/handler.hpp"
+#include "util/span.hpp"
 #include <string>
 #include <vector>
 
@@ -30,12 +31,6 @@ public:
 
 	TranslationUnit(ErrorHandler& handler, const std::string& path, const std::string& src, size_t start_pos) 
 		: handler(&handler), path(path), src(src), start_position(start_pos) {}
-
-	/* An structure for passing around lines and columns. */
-	struct TextPos {
-		size_t line;
-		size_t col;
-	};
 
 	std::string this_source_line(size_t index) const;
 
