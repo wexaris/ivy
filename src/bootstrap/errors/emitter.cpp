@@ -46,21 +46,23 @@ std::string Emitter::format_error(const Error& err) {
 					if (!err.span().has_value())
 						continue;
 
-					auto pos = err.span()->tu->pos_from_index(err.span()->lo.bit);
-					auto line = err.span()->tu->get_line(pos.line);
+					auto lo_pos = err.span()->tu->pos_from_index(err.span()->lo.bit);
+					auto hi_pos = err.span()->tu->pos_from_index(err.span()->hi.bit);
+					auto line = err.span()->tu->get_line(lo_pos.line);
 
 					// TODO:  Multi line spans still look quite stupid.
-					std::string linenum_str = std::to_string(pos.line);
-					build_err += std::string(linenum_str.length(), ' ') + " |\n";
+					auto linenum_str = std::to_string(lo_pos.line);
+					auto linenum_ws = std::string(linenum_str.length(), ' ');
+					build_err += linenum_ws + " |\n";
 					build_err += linenum_str + " | " + line + "\n";
-					build_err += std::string(linenum_str.length(), ' ') + " | ";
+					build_err += linenum_ws + " | ";
 
 					// The current span's start pos in the error message
 					size_t index = build_err.length();
 					// The final length of the error message
-					size_t new_len = err.span()->lo.line == err.span()->hi.line ?
+					size_t new_len = lo_pos.line == hi_pos.line ?
 						index + (err.span()->hi.bit - err.span()->lo.bit) :	// TRUE
-						index + line.length();				// FALSE
+						index + line.length();								// FALSE
 					
 					build_err.resize(new_len, ' ');
 
