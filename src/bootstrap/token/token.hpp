@@ -25,15 +25,11 @@ public:
 
 	/* Create a token from it's type, location
 	 * and store it's string literal. */
-	//Token(TokenType type, const std::string& str, const Span& sp)
-	//	: ty((int)type), raw_str(str), tk_span(sp) {}
 	Token(TokenType type, std::string_view str, const Span& sp)
 		: ty((int)type), raw_str(str), tk_span(sp) {}
 
 	/* Create a token from it's type, location and
 	 * store it's string literal. */
-	//Token(int type, const std::string& str, const Span& sp)
-	//	: ty(type), raw_str(str), tk_span(sp) {}
 	Token(int type, std::string_view str, const Span& sp)
 		: ty(type), raw_str(str), tk_span(sp) {}
 
