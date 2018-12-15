@@ -18,7 +18,7 @@ namespace tests {
 			Token tk = lex.next_token();
 
 			// Check for correct absolute position
-			if (tk.span().lo.bit == 1 || tk.span().hi.bit == 5) {
+			if (tk.span().lo_bit == 1 || tk.span().hi_bit == 5) {
 				printf("COMPLETED token_has_correct_absolute_pos\n");
 				return;
 			}
@@ -26,7 +26,7 @@ namespace tests {
 			// The lexer has assigned the wrong position
 			// Either location tracking is broken,
 			// or some token's positon isn't being set correctly
-			printf("FAILED token_has_correct_location; the token's absolute position was wrong (%lu, %lu)\n", tk.span().lo.bit, tk.span().hi.bit);
+			printf("FAILED token_has_correct_location; the token's absolute position was wrong (%lu, %lu)\n", tk.span().lo_bit, tk.span().hi_bit);
 		}
 
 		void token_has_correct_line_pos() {
@@ -40,9 +40,11 @@ namespace tests {
 			// Retrieve the first token
 			// Should be '12345'
 			Token tk = lex.next_token();
+			auto lo_pos = tk.span().lo_textpos();
+			auto hi_pos = tk.span().hi_textpos();
 
 			// Check for correct line position
-			if (tk.span().lo.line == 2 || tk.span().hi.line == 2) {
+			if (lo_pos.line == 2 || hi_pos.line == 2) {
 				printf("COMPLETED token_has_correct_line_pos\n");
 				return;
 			}
@@ -50,7 +52,7 @@ namespace tests {
 			// The lexer has assigned the wrong position
 			// Either location tracking is broken,
 			// or some token's positon isn't being set correctly
-			printf("FAILED token_has_correct_line_pos; the token's line position was wrong (%lu, %lu)\n", tk.span().lo.line, tk.span().hi.line);
+			printf("FAILED token_has_correct_line_pos; the token's line position was wrong (%lu, %lu)\n", lo_pos.line, hi_pos.line);
 		}
 
 		void token_has_correct_column_pos() {
@@ -64,9 +66,11 @@ namespace tests {
 			// Retrieve the first token
 			// Should be '12345'
 			Token tk = lex.next_token();
+			auto lo_pos = tk.span().lo_textpos();
+			auto hi_pos = tk.span().hi_textpos();
 
 			// Check for correct column position
-			if (tk.span().lo.col == 1 || tk.span().hi.col == 5) {
+			if (lo_pos.col == 1 || hi_pos.col == 5) {
 				printf("COMPLETED token_has_correct_column_pos\n");
 				return;
 			}
@@ -74,7 +78,7 @@ namespace tests {
 			// The lexer has assigned the wrong position
 			// Either location tracking is broken,
 			// or some token's positon isn't being set correctly
-			printf("FAILED token_has_correct_column_pos; the token's column position was wrong (%lu, %lu)\n", tk.span().lo.col, tk.span().hi.col);
+			printf("FAILED token_has_correct_column_pos; the token's column position was wrong (%lu, %lu)\n", lo_pos.col, hi_pos.col);
 		}
 
 		void return_eof_without_translation_unit() {

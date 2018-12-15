@@ -294,7 +294,7 @@ Token Lexer::next_token() {
 	// If the current character is EOF, return an END token
 	// It's span is a singel position, since the file ends there
 	if (!is_valid(curr))
-		return Token(TokenType::END, "\\0", Span(trans_unit(), bitpos(), lineno(), colno(), bitpos(), lineno(), colno()));
+		return Token(TokenType::END, "\\0", Span(trans_unit(), bitpos(), bitpos()));
 
 	save_curr_pos();
 
