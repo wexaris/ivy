@@ -14,7 +14,7 @@ TextPos TranslationUnit::pos_from_index(size_t index) const {
 	for (size_t i = 0; i <= newlines.size(); i++) {
 		if (i == newlines.size()) {
 			pos.line = i + 1;
-			pos.col = index - newlines[pos.line - 2];
+			pos.col = index - newlines[pos.line - 2] + 1;
 			return pos;
 		}
 		else if (newlines[i] > index) {
