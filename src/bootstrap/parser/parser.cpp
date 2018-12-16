@@ -166,7 +166,9 @@ inline bool is_primitive(const Token& tk) {
 		tk == TokenType::INT ||
 		tk == TokenType::I64 || tk == TokenType::I32 || tk == TokenType::I16 || tk == TokenType::I8 ||
 		tk == TokenType::UINT ||
-		tk == TokenType::U64 || tk == TokenType::U32 || tk == TokenType::U16 || tk == TokenType::U8;
+		tk == TokenType::U64 || tk == TokenType::U32 || tk == TokenType::U16 || tk == TokenType::U8 ||
+		tk == TokenType::FLOAT ||
+		tk == TokenType::F32 || tk == TokenType::F64;
 }
 
 /* True if the provided token's type is a literal. */
