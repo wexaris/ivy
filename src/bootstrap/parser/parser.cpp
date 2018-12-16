@@ -996,7 +996,8 @@ void Parser::type_sum() {
 
 // primitive : THING | STR | CHAR
 //           | INT | I64 | I32 | I16 | I8
-//           | UINT | U64 | U32 | U16 | U8 
+//           | UINT | U64 | U32 | U16 | U8
+//           | FLOAT | F64 | F32
 void Parser::primitive() {
 	trace("primitive: " + std::string(curr_tok.raw()));
 
