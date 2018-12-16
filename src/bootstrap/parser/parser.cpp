@@ -296,29 +296,10 @@ inline void Parser::SHR() {
 // attributes: PUB | PRIV | MUT | CONST
 Attributes Parser::attributes() {
 	Attributes attributes;
-
-	while (is_attr(curr_tok))
-	{
-		switch (curr_tok.type()) {
-			case (int)TokenType::PUB:
-				attributes.push_back({ TokenType::PUB, curr_tok.span() });
-				break;
-			case (int)TokenType::PRIV:
-				attributes.push_back({ TokenType::PRIV, curr_tok.span() });
-				break;
-			case (int)TokenType::MUT:
-				attributes.push_back({ TokenType::MUT, curr_tok.span() });
-				break;
-			case (int)TokenType::CONST:
-				attributes.push_back({ TokenType::CONST, curr_tok.span() });
-				break;
-
-			default:
-				bug("the parser has an inconsistent definition of an 'attribute'");
-		}
+	while (is_attr(curr_tok)) {
+		attributes.push_back({ (TokenType)curr_tok.type(), curr_tok.span() });
 		bump();
 	}
-
 	return attributes;
 }
 
