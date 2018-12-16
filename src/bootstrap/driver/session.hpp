@@ -56,10 +56,9 @@ class Session {
 	/* Internal system configuration info */
 	static SysConfig cfg;
 	
-	static Emitter emitter;
-
 public:
 	static ErrorHandler handler;
+	static Emitter emitter;
 	
 	/* Set the system configuration. */
 	static inline void set_system_cfg(const SysConfig& conf) {

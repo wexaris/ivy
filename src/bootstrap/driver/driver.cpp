@@ -37,10 +37,16 @@ bool compile(const std::vector<std::string>& input, const std::string& output) {
 		}
 		catch (const InternalException& e) {}
 
-		if (Session::handler.recount_errors() > 0) {
-			auto fail_num = Session::handler.emit_delayed();
-			if (fail_num > 0)
-				Session::handler.make_fatal("build failed due to " + std::to_string(fail_num) + " errors\n").emit();
+		if (Session::handler.recount_errors() > 0)
+			Session::handler.emit_delayed();
+
+		if (Session::emitter.num_err_emitted() > 0) {
+			// Build error count string
+			std::string err_count = Session::emitter.num_err_emitted() != 1 ?
+				std::to_string(Session::emitter.num_err_emitted()) + " errors" :
+				"1 error";
+
+			Session::handler.make_fatal("build failed due to " + err_count + "\n").emit();
 		}
 	}
 	// If anything throwed an internal exception,

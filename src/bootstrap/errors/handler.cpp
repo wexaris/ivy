@@ -17,21 +17,20 @@ void ErrorHandler::emit(const Error& err) const {
 	emitter.emit(err);
 }
 
+void ErrorHandler::emit_delayed() const {
 	// Emit all of the delayed errors
 	// Count how many of them fail the compilation session
 	for (const auto& err : delayed_errors) {
 		if (!err.is_canceled()) {
 			try {
 				emit(err);
-			} catch (const ErrorException& e) {
-				failures++;
-			} // Fatal exceptions should have been emitted during parsing
+			} catch (const ErrorException& e) {}
+			// Fatal exceptions should have been emitted during parsing
 			catch (const FatalException& e) {
 				emit(Error(BUG, "delayed fatal error; fatal errors should be emitted duiring the parse session", 0));
 			} // Don't catch 'InternalExpection' as it's a sign of someting going wring in the compiler itself
 		}
 	}
-	return failures;
 }
 
 size_t ErrorHandler::recount_errors() {

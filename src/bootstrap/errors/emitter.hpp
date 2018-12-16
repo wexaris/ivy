@@ -6,6 +6,10 @@
 /* A small wrapper around formatting and printing error strings. */
 class Emitter {
 
+private:
+	/* Keep track of how many errors have been emitted. */
+	size_t emitted_err_count;
+
 public:
 	Emitter() = default;
 	virtual ~Emitter() {}
@@ -22,10 +26,12 @@ public:
 		printf("%s\n", format_error(err).c_str());
 
 		// Throw exceptions for different error types
-		if (err.is_error()) throw ErrorException();
-		else if (err.is_fatal()) throw FatalException();
-		else if (err.is_bug()) throw InternalException();
+		if (err.is_error()) { emitted_err_count++; throw ErrorException(); }
+		else if (err.is_fatal()) { emitted_err_count++; throw FatalException(); }
+		else if (err.is_bug()) { emitted_err_count++; throw InternalException(); }
 	}
+
+	inline size_t num_err_emitted() const { return emitted_err_count; }
 
 	/* Returns a fully formatted error message.
 	 * Compiles the sub-messages and adds coloring. */

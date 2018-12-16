@@ -23,8 +23,6 @@ private:
 	std::string trace_indent;
 	static constexpr char INDENT_LEVEL[] = "  ";
 
-	size_t err_count = 0;
-
 	/* All of the errors that are still yet to be emitted. */
 	std::list<Error> delayed_errors;
 
@@ -37,12 +35,10 @@ public:
 
 	/* Create a new basic error. */
 	inline Error new_error(Severity sev, const std::string& msg, int code) {
-		err_count++;
 		return Error(sev, msg, code);
 	}
 	/* Create a new spanned error. */
 	inline Error new_error(Severity sev, const std::string& msg, const Span& sp, int code) {
-		err_count++;
 		return Error(sev, msg, sp.into_wide(), code);
 	}
 
@@ -68,9 +64,7 @@ public:
 	void emit(const Error& err) const;
 
 	/* Emit all of the backed up errors if there are any. */
-	/* Emit all of the backed up errors if there are any.
-	 * Return the cumber of errors that would have failed the compilation. */
-	size_t emit_delayed() const;
+	void emit_delayed() const;
 
 	/* Recounts the delayed errors.
 	 * Removes errors that have been cancelled.
@@ -79,7 +73,7 @@ public:
 
 	/* True is there have been any errors.
 	 * Does not recount the delayed errors. */
-	inline bool has_errors() const	{ return err_count > 0; }
+	inline bool has_errors() const	{ return delayed_errors.size() > 0; }
 
 	Error* make_warning(const std::string& msg, int code = 0);
 	Error* make_warning_spanned(const std::string& msg, const Span& sp, int code = 0);
