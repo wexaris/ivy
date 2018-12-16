@@ -2,6 +2,61 @@
 #include "util/ranges.hpp"
 #include "util/token_info.hpp"
 #include "ast/ast.hpp"
+#include <array>
+
+constexpr std::array<int, 27> stmt_start = {
+	(int)TokenType::IMPORT,
+	(int)TokenType::EXPORT,
+	(int)TokenType::USE,
+	(int)TokenType::MOD,
+
+	(int)TokenType::VAR,
+	(int)TokenType::CONST,
+	(int)TokenType::STATIC,
+	(int)TokenType::TYPE,
+
+	(int)TokenType::FUN,
+	(int)TokenType::STRUCT,
+	(int)TokenType::ENUM,
+	(int)TokenType::UNION,
+	(int)TokenType::MACRO,
+	(int)TokenType::TRAIT,
+	(int)TokenType::IMPL,
+
+	(int)TokenType::LOOP,
+	(int)TokenType::WHILE,
+	(int)TokenType::DO,
+	(int)TokenType::FOR,
+	(int)TokenType::MATCH,
+	(int)TokenType::SWITCH,
+	(int)TokenType::CASE,
+	(int)TokenType::RETURN,
+	(int)TokenType::BREAK,
+
+	(int)TokenType::PUB,
+	(int)TokenType::PRIV,
+	(int)TokenType::MUT,
+};
+
+constexpr std::array<int, 7> decl_start = {
+	(int)TokenType::VAR,
+	(int)TokenType::CONST,
+	(int)TokenType::STATIC,
+	(int)TokenType::TYPE,
+
+	(int)TokenType::PUB,
+	(int)TokenType::PRIV,
+	(int)TokenType::MUT,
+};
+
+constexpr std::array<int, 6> expr_end = {
+	(int)',',
+	(int)':',
+	(int)';',
+	(int)')',
+	(int)']',
+	(int)'}',
+};
 
 bool Attributes::contains(TokenType ty) {
 	for (auto attr : *this)
@@ -280,6 +335,17 @@ inline void Parser::unimpl(const std::string& msg) {
 ////////////////////////////////////      Helper Methods      /////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
+template<size_t N>
+void Parser::recover_to(const std::array<int, N>& to) {
+	while (curr_tok != TokenType::END)
+	{
+		for (auto c : to)
+			if (curr_tok.type() == c)
+				return;
+		bump();
+	}
+}
+
 /* Can interfere with normal token tree parsing,
  * so && is built on demand. */
 inline void Parser::AND() {
@@ -383,9 +449,18 @@ Node* Parser::parse() {
 void Parser::module_decl() {
 	trace("module_decl");
 
-	expect_keyword(TokenType::MOD);
+	auto err = expect_keyword(TokenType::MOD);
+	if (err) {
+		recover_to(stmt_start);
+		end_trace();
+		return;
+	}
 	Path mod_path = path();
-	expect_symbol(';');
+	if (expect_symbol(';')) {
+		recover_to(stmt_start);
+		end_trace();
+		return;
+	}
 
 	end_trace();
 }
@@ -554,7 +629,11 @@ void Parser::block_item() {
 			item_impl();
 			break;
 		default:
-			expect_block_item_decl();
+			if (expect_block_item_decl()) {
+				recover_to(stmt_start);
+				end_trace();
+				return;
+			}
 	}
 
 	end_trace();

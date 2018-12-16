@@ -39,16 +39,15 @@ private:
 	/* The Session's ErrorHandler */
 	ErrorHandler& handler;
 
-	/* A complete source code map of the package being parsed. */
+	/* The Session's SourceMap.
+	 * A complete map of the package being parsed. */
 	SourceMap& source_map;
 
 	/* The parser's internal lexer.
-	 * Used to read text and build tokens from the input file.
-	 * Call 'next_token()' whenever a new token is required. */
+	 * Used to read text and build tokens from the input file. */
 	Lexer lexer;
 
-	/* The last token provided by the lexer.
-	 * Stores a type, location and value, if necessary. */
+	/* The last token provided by the Lexer. */
 	Token curr_tok;
 
 	/* Bumps the current token.
@@ -64,6 +63,12 @@ private:
 	inline void trace(const std::string& msg) const { handler.trace(msg); }
 	/* Requests a level of indentation to be removed from trace messages. */
 	inline void end_trace() const { handler.end_trace(); }
+
+	/* Bump until the given character has been reached.
+	 * If the char is the end of a scope, e.g an ending bracket, brace or parenthesis,
+	 * it can be skipped until an unmatched one is found */
+	template<size_t N>
+	void recover_to(const std::array<int, N>& to);
 
 	/* Ceates an "unexpected token: .., expected .." error message. */
 	inline Error* err_expected(const std::string& found, const std::string& expected, int code = 0);
