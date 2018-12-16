@@ -54,6 +54,7 @@ constexpr static const Keyword keywords[] = {
 	{ "case",		(int)TokenType::CASE },
 	{ "where",		(int)TokenType::WHERE },
 	{ "return",		(int)TokenType::RETURN },
+	{ "break",		(int)TokenType::BREAK },
 	{ "pub",		(int)TokenType::PUB },
 	{ "priv",		(int)TokenType::PRIV },
 	{ "mut",		(int)TokenType::MUT }

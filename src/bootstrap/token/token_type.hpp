@@ -101,6 +101,7 @@ enum class TokenType {
 	CASE,
 	WHERE,
 	RETURN,
+	BREAK,
 
 	PUB,
 	PRIV,

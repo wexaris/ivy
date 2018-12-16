@@ -113,6 +113,7 @@ std::string translate::tk_type(int type) {
 		case (int)TokenType::CASE:			return "case";
 		case (int)TokenType::WHERE:			return "where";
 		case (int)TokenType::RETURN:		return "return";
+		case (int)TokenType::BREAK:			return "break";
 
 		case (int)TokenType::PUB:			return "pub";
 		case (int)TokenType::PRIV:			return "priv";
