@@ -85,4 +85,8 @@ public:
 	Error make_fatal_spanned(const std::string& msg, const Span& sp, int code = 0);
 	Error make_fatal_higligted(const std::string& msg, const Span& sp, int code = 0);
 	Error make_bug(const std::string& msg);
+
+	void emit_fatal(const std::string& msg, int code = 0);
+	void emit_fatal_spanned(const std::string& msg, const Span& sp, int code = 0);
+	void emit_fatal_higligted(const std::string& msg, const Span& sp, int code = 0);
 };

@@ -46,7 +46,7 @@ bool compile(const std::vector<std::string>& input, const std::string& output) {
 				std::to_string(Session::emitter.num_err_emitted()) + " errors" :
 				"1 error";
 
-			Session::handler.make_fatal("build failed due to " + err_count + "\n").emit();
+			Session::handler.emit_fatal("build failed due to " + err_count + "\n");
 		}
 	}
 	// If anything throwed an internal exception,
@@ -126,18 +126,18 @@ int main(int argc, char* argv[]) {
 					output_file = argv[++i];
 					continue;
 				}
-				else Session::handler.make_fatal("-o requires an argument" + arg).emit();
+				else Session::handler.emit_fatal("-o requires an argument" + arg);
 			}
 
 			// Invalid option
-			else Session::handler.make_fatal("unrecognised option: " + arg).emit();
+			else Session::handler.emit_fatal("unrecognised option: " + arg);
 		}
 		// Handle input files
 		else {
 			// Input files should be the last things provided
 			while (i < argc) {
 				if (argv[i][0] == '-')
-					Session::handler.make_fatal("bad option '" + std::string(argv[i]) + "'; options should be placed before input files").emit();
+					Session::handler.emit_fatal("bad option '" + std::string(argv[i]) + "'; options should be placed before input files");
 				input_files.push_back(argv[i]);
 				i++;
 			}
@@ -149,7 +149,7 @@ int main(int argc, char* argv[]) {
 
 	// Error if there is no input file
 	if (input_files.size() == 0)
-		Session::handler.make_fatal("no input files were specified").emit();
+		Session::handler.emit_fatal("no input files were specified");
 
 	// No output file specified. Use current location and 'a.out'
 	if (output_file.empty() || output_file == ".")

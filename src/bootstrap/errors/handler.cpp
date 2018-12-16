@@ -121,6 +121,16 @@ Error ErrorHandler::make_fatal_higligted(const std::string& msg, const Span& sp,
 	return std::move(err);
 }
 
+void ErrorHandler::emit_fatal(const std::string& msg, int code) {
+	make_fatal(msg, code).emit();
+}
+void ErrorHandler::emit_fatal_spanned(const std::string& msg, const Span& sp, int code) {
+	make_fatal_spanned(msg, sp, code).emit();
+}
+void ErrorHandler::emit_fatal_higligted(const std::string& msg, const Span& sp, int code) {
+	make_fatal_higligted(msg, sp, code).emit();
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////// Bug ///////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////

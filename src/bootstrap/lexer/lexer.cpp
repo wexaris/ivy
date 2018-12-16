@@ -138,9 +138,7 @@ void Lexer::consume_ws_and_comments() {
 			while (true) {
 				// Throw an error if the block is not terminated at the end of the file
 				if (!is_valid(curr)) {
-					// This is a critiacal 
-					auto err = handler.make_fatal_higligted("unterminated block comment", curr_span());
-					err.emit();
+					handler.emit_fatal_higligted("unterminated block comment", curr_span());
 				}
 				if (curr == '*' && next == '/') { 
 					bump(2);
@@ -163,8 +161,7 @@ bool Lexer::scan_hex_escape(uint num, char delim) {
 		if (!is_valid(curr)) {
 			// Citical failure
 			// We can't guess how the literal was supposed to be terminated
-			auto err = handler.make_fatal_higligted("incomplete numeric escape", curr_span());
-			err.emit();
+			handler.emit_fatal_higligted("incomplete numeric escape", curr_span());
 		}
 		// Escape is shorter than expected
 		if (curr == delim) {
@@ -197,8 +194,7 @@ void Lexer::scan_exponent() {
 		size_t digit_start = bitpos();
 		scan_digits(10, 10);
 		if (bitpos() == digit_start) {
-			auto err = handler.make_fatal_higligted("exponent expects at least one digit", curr_span());
-			err.emit();
+			handler.emit_fatal_higligted("exponent expects at least one digit", curr_span());
 		}
 	}
 }
@@ -585,8 +581,7 @@ Token Lexer::next_token_inner() {
 						if (!is_valid(curr) || curr == '\n') {
 							// This is a critical failure
 							// We can't expect what to do with the missing quote
-							auto err = handler.make_fatal_higligted("character literal missing end quote", curr_span());
-							err.emit();
+							handler.emit_fatal_higligted("character literal missing end quote", curr_span());
 						}
 					}
 				}
@@ -609,8 +604,7 @@ Token Lexer::next_token_inner() {
 				if (curr == (int)TokenType::END) {
 					// This is a critical failure
 					// We can't know where the end quote was supposed to be
-					auto err = handler.make_fatal_higligted("string literal missing end quote", curr_span());
-					err.emit();
+					handler.emit_fatal_higligted("string literal missing end quote", curr_span());
 				}
 
 				char c = curr;

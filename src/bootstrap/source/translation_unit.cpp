@@ -24,7 +24,7 @@ TextPos TranslationUnit::pos_from_index(size_t index) const {
 		}
 	}
 
-	handler->new_error(BUG, "failed to retrieve the line corresponding to index " + std::to_string(index), 0).emit();
+	handler->make_bug("failed to retrieve the line corresponding to index " + std::to_string(index)).emit();
 	return pos;
 }
 

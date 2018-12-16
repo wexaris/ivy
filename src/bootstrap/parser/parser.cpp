@@ -268,11 +268,11 @@ inline Error* Parser::expect_block_item_decl() {
 }
 
 inline void Parser::bug(const std::string& msg) {
-	handler.new_error(BUG, msg, 0).emit();
+	handler.make_bug(msg).emit();
 }
 
 inline void Parser::unimpl(const std::string& msg) {
-	handler.new_error(BUG, msg + " not implemented yet", 0).emit();
+	handler.make_bug(msg + " not implemented yet").emit();
 }
 
 
@@ -591,8 +591,7 @@ void Parser::item_struct() {
 		struct_tuple_block();
 		expect_symbol(';');
 	}
-	else if (curr_tok.type() == '{')
-		struct_decl_block();
+	else struct_decl_block();
 
 	end_trace();
 }
