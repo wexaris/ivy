@@ -46,24 +46,6 @@ public:
 		return Error(sev, msg, sp.into_wide(), code);
 	}
 
-	/* Emit the given error. */
-	inline void emit(const Error& err) const {
-		if (err.is_warning()) {
-			// Exit if warnings are suppressed
-			if (flags.no_warnings)
-				return;
-
-			// Create and emit a new Error if we're reporting warnings as errors
-			if (flags.warnings_as_err) {
-				Error new_err = Error(err);
-				new_err.sev = Severity::ERROR;
-				emitter.emit(new_err);
-				return;
-			}
-		}
-		emitter.emit(err);
-	}
-
 	/* Emit a trace message.
 	 * Will not write messages unless tracing is enabled.
 	 * Every new trace will be indented further. */
@@ -81,6 +63,11 @@ public:
 			trace_indent.resize(trace_indent.size() - strlen(INDENT_LEVEL));
 	}
 
+	/* Emit the given error. 
+	 * Might not be emitted if '-nowarn' was set. */
+	void emit(const Error& err) const;
+
+	/* Emit all of the backed up errors if there are any. */
 	/* Emit all of the backed up errors if there are any.
 	 * Return the cumber of errors that would have failed the compilation. */
 	size_t emit_delayed() const;

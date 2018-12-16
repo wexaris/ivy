@@ -1,7 +1,22 @@
 #include "handler.hpp"
 
-size_t ErrorHandler::emit_delayed() const {
-	size_t failures = 0;
+void ErrorHandler::emit(const Error& err) const {
+	if (err.is_warning()) {
+		// Exit if warnings are suppressed
+		if (flags.no_warnings)
+			return;
+		// Create and emit a new Error if we're reporting warnings as errors
+		if (flags.warnings_as_err) {
+			Error new_err = Error(err);
+			new_err.sev = Severity::ERROR;
+			emitter.emit(new_err);
+			return;
+		}
+	}
+
+	emitter.emit(err);
+}
+
 	// Emit all of the delayed errors
 	// Count how many of them fail the compilation session
 	for (const auto& err : delayed_errors) {
