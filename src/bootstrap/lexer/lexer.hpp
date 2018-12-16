@@ -108,29 +108,24 @@ protected:
 	bool scan_hex_escape(uint num, char delim);
 
 	/* Saves the current Span position. */
-	inline void save_curr_pos() {
-		curr_start.abs = bitpos();
-		curr_start.ln = lineno();
-		curr_start.col = colno();
+	inline void save_curr_start() {
+		curr_start = bitpos();
 	}
 
 	/* Returns the current token's span.
 	 * Relies on a correctly set 'curr_start' position. */
 	inline Span curr_span() const {
-		return Span(trans_unit(), curr_start.abs, bitpos());
+		return Span(trans_unit(), curr_start, bitpos());
 	}
 
 	/* The current tokens's absolute length. */
-	inline size_t curr_length() { return bitpos() - curr_start.abs; }
+	inline size_t curr_length() { return bitpos() - curr_start; }
 	/* Extract's the current token's view from the TU string.  */
-	inline std::string_view curr_src_view() { return trans_unit().source().substr(curr_start.abs, curr_length()); }
+	inline std::string_view curr_src_view() { return trans_unit().source().substr(curr_start, curr_length()); }
 
 public:
 	/* Saved start position of the current token. */
-	struct TokenPos {
-		size_t abs = 0;
-		int ln, col;
-	} curr_start;
+	size_t curr_start = 0;
 
 public:
 	/* Construct a lexer to work on the provided Translation Unit. */

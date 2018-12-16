@@ -122,7 +122,7 @@ void Lexer::consume_ws_and_comments() {
 	// Eat comments
 	if (curr == '/') {
 		if (next == '/') {
-			save_curr_pos();
+			save_curr_start();
 
 			// Eat comment until line ends or EOF
 			while (curr != '\n' && curr != '\0') 
@@ -131,7 +131,7 @@ void Lexer::consume_ws_and_comments() {
 			consume_ws_and_comments();
 		}
 		else if (next == '*') {
-			save_curr_pos();
+			save_curr_start();
 
 			bump(2);
 			// Eat block comment until closed
@@ -296,7 +296,7 @@ Token Lexer::next_token() {
 	if (!is_valid(curr))
 		return Token(TokenType::END, "\\0", Span(trans_unit(), bitpos(), bitpos()));
 
-	save_curr_pos();
+	save_curr_start();
 
 	return next_token_inner();
 }
