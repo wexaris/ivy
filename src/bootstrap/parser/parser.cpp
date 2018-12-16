@@ -6,59 +6,59 @@
 
 namespace recover {
 
-constexpr std::array<int, 27> stmt_start = {
-	(int)TokenType::IMPORT,
-	(int)TokenType::EXPORT,
-	(int)TokenType::USE,
-	(int)TokenType::MOD,
+	constexpr std::array<int, 27> stmt_start = {
+		(int)TokenType::IMPORT,
+		(int)TokenType::EXPORT,
+		(int)TokenType::USE,
+		(int)TokenType::MOD,
 
-	(int)TokenType::VAR,
-	(int)TokenType::CONST,
-	(int)TokenType::STATIC,
-	(int)TokenType::TYPE,
+		(int)TokenType::VAR,
+		(int)TokenType::CONST,
+		(int)TokenType::STATIC,
+		(int)TokenType::TYPE,
 
-	(int)TokenType::FUN,
-	(int)TokenType::STRUCT,
-	(int)TokenType::ENUM,
-	(int)TokenType::UNION,
-	(int)TokenType::MACRO,
-	(int)TokenType::TRAIT,
-	(int)TokenType::IMPL,
+		(int)TokenType::FUN,
+		(int)TokenType::STRUCT,
+		(int)TokenType::ENUM,
+		(int)TokenType::UNION,
+		(int)TokenType::MACRO,
+		(int)TokenType::TRAIT,
+		(int)TokenType::IMPL,
 
-	(int)TokenType::LOOP,
-	(int)TokenType::WHILE,
-	(int)TokenType::DO,
-	(int)TokenType::FOR,
-	(int)TokenType::MATCH,
-	(int)TokenType::SWITCH,
-	(int)TokenType::CASE,
-	(int)TokenType::RETURN,
-	(int)TokenType::BREAK,
+		(int)TokenType::LOOP,
+		(int)TokenType::WHILE,
+		(int)TokenType::DO,
+		(int)TokenType::FOR,
+		(int)TokenType::MATCH,
+		(int)TokenType::SWITCH,
+		(int)TokenType::CASE,
+		(int)TokenType::RETURN,
+		(int)TokenType::BREAK,
 
-	(int)TokenType::PUB,
-	(int)TokenType::PRIV,
-	(int)TokenType::MUT,
-};
+		(int)TokenType::PUB,
+		(int)TokenType::PRIV,
+		(int)TokenType::MUT,
+	};
 
-constexpr std::array<int, 7> decl_start = {
-	(int)TokenType::VAR,
-	(int)TokenType::CONST,
-	(int)TokenType::STATIC,
-	(int)TokenType::TYPE,
+	constexpr std::array<int, 7> decl_start = {
+		(int)TokenType::VAR,
+		(int)TokenType::CONST,
+		(int)TokenType::STATIC,
+		(int)TokenType::TYPE,
 
-	(int)TokenType::PUB,
-	(int)TokenType::PRIV,
-	(int)TokenType::MUT,
-};
+		(int)TokenType::PUB,
+		(int)TokenType::PRIV,
+		(int)TokenType::MUT,
+	};
 
-constexpr std::array<int, 6> expr_end = {
-	(int)',',
-	(int)':',
-	(int)';',
-	(int)')',
-	(int)']',
-	(int)'}',
-};
+	constexpr std::array<int, 6> expr_end = {
+		(int)',',
+		(int)':',
+		(int)';',
+		(int)')',
+		(int)']',
+		(int)'}',
+	};
 }
 
 bool Attributes::contains(TokenType ty) {
@@ -377,17 +377,25 @@ Attributes Parser::attributes() {
 Path Parser::path() {
 	trace("path");
 
+	bool bad_path = false;
+
 	Path path = { SubPath{ curr_tok.raw(), curr_tok.span() } };
-	ident();
+	if (ident()) {
+		bump();
+		bad_path = true;
+	}
 
 	while (curr_tok == TokenType::SCOPE) {
 		bump();
 		path.push_back(SubPath{ curr_tok.raw(), curr_tok.span() });
-		ident();
+		if (ident()) {
+			bump();
+			bad_path = true;
+		}
 	}
 
 	end_trace();
-	return path;
+	return !bad_path ? path : Path();
 }
 
 // ident : ID
