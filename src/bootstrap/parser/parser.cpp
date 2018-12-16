@@ -198,7 +198,7 @@ inline bool is_attr(const Token& tk) {
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 inline Error* Parser::err_expected(const std::string& found, const std::string& expected, int code) { 
-	return handler.make_error_higligted("unexpected token: " + found + "; expected " + expected, curr_tok.span(), code);
+	return handler.make_error_higligted("unexpected " + found + "; expected " + expected, curr_tok.span(), code);
 }
 
 inline Error* Parser::expect_symbol(char sym) {
@@ -207,8 +207,8 @@ inline Error* Parser::expect_symbol(char sym) {
 		return nullptr;
 	}
 	std::string found = curr_tok.type() < 256 ?
-		std::string{ (char)curr_tok.type() } :		// TRUE
-		translate::tk_type(curr_tok);				// FALSE
+		std::string{'\'', (char)curr_tok.type(), '\'' } :	// TRUE
+		translate::tk_type(curr_tok);						// FALSE
 	return err_expected(found, "a '" + std::string{sym} + "'");
 }
 
