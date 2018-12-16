@@ -48,7 +48,28 @@ std::string Emitter::format_error(const Error& err) {
 					if (!err.span().has_value())
 						continue;
 
-					auto line = err.span()->tu->get_line(err.span()->lo.line);
+					auto line = err.span()->tu->get_line(err.span()->lo.line, false);
+
+					int line_prefix = 0;
+					{
+						// Remove whitespace from front and back
+						while (line[line_prefix] == ' ' || line[line_prefix] == '\t')
+							line_prefix++;
+
+						int line_postfix = line.length();
+						while (line[line_postfix] == ' ' || line[line_postfix] == '\t')
+							line_postfix--;
+
+						line = line.substr(line_prefix, line_prefix - line_postfix);
+
+						// Replace '\t' with four spaces
+						// Makes debugging message lengths consistent 
+						size_t pos = 0;
+						while ((pos = line.find("\t")) != line.npos) {
+							line.replace(pos, 1, "    ");
+							pos += 4;
+						}
+					}
 
 					// TODO:  Multi line spans still look quite stupid.
 					auto linenum_str = std::to_string(err.span()->lo.line);
@@ -58,7 +79,7 @@ std::string Emitter::format_error(const Error& err) {
 					build_err += linenum_ws + " | ";
 
 					// The current span's start pos in the error message
-					size_t index = build_err.length() + err.span()->lo.col - 1;
+					size_t index = build_err.length() + err.span()->lo.col - 1 - line_prefix;
 					// The final length of the error message
 					size_t new_len = err.span()->lo.line == err.span()->hi.line ?
 						index + (err.span()->hi.bit - err.span()->lo.bit) :	// TRUE

@@ -28,7 +28,7 @@ TextPos TranslationUnit::pos_from_index(size_t index) const {
 	return pos;
 }
 
-std::string TranslationUnit::get_line(size_t ln) const {
+std::string TranslationUnit::get_line(size_t ln, bool fmt) const {
 
 	size_t ln_index = ln - 1;
 	std::string str;
@@ -58,12 +58,25 @@ std::string TranslationUnit::get_line(size_t ln) const {
 		str = src.substr(line_start, i);
 	}
 
-	// Replace '\t' with four spaces
-	// Makes debugging message lengths consistent 
-	size_t pos = 0;
-	while ((pos = str.find("\t")) != str.npos) {
-		str.replace(pos, 1, "    ");
-		pos += 4;
+	if (fmt) {
+		// Remove whitespace from front and back of line
+		int line_prefix = 0;
+		while (str[line_prefix] == ' ' || str[line_prefix] == '\t')
+			line_prefix++;
+
+		int line_postfix = str.length();
+		while (str[line_postfix] == ' ' || str[line_postfix] == '\t')
+			line_postfix--;
+
+		str = str.substr(line_prefix, line_prefix - line_postfix);
+
+		// Replace '\t' with four spaces
+		// Makes debugging message lengths consistent 
+		size_t pos = 0;
+		while ((pos = str.find("\t")) != str.npos) {
+			str.replace(pos, 1, "    ");
+			pos += 4;
+		}
 	}
 
 	return str;

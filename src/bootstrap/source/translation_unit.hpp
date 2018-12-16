@@ -37,10 +37,13 @@ public:
 	 * Beginning and ending whitespace is removed. */
 	TextPos pos_from_index(size_t index) const;
 
-	std::string get_line(size_t ln) const;
-
 	/* Returns the line of source that the index was from.
-	 * Beginning and ending whitespace is removed. */
+	 * If format is enabled beginning and ending whitespace is removed and
+	 * Tab characters are replaced by four spaces. */
+	std::string get_line(size_t ln, bool fmt) const;
+
+	/* Save a '\n' char's position
+	 * Getting positions from an index  relies on this. */
 	void save_newline(size_t index) {
 		newlines.push_back(index);
 	}
