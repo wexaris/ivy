@@ -219,6 +219,14 @@ inline Error* Parser::expect_primitive() {
 	return err_expected(translate::tk_type(curr_tok), "a primitive type");
 }
 
+inline Error* Parser::expect_ident() {
+	if (curr_tok == TokenType::ID) {
+		bump();
+		return nullptr;
+	}
+	return err_expected(translate::tk_type(curr_tok), "an identifier");
+}
+
 inline Error* Parser::expect_lifetime() {
 	if (is_lifetime(curr_tok)) {
 		bump();
@@ -333,7 +341,7 @@ Path Parser::path() {
 // ident : ID
 void Parser::ident() {
 	trace("ident: " + std::string(curr_tok.raw()));
-	expect_keyword(TokenType::ID);
+	expect_ident();
 	end_trace();
 }
 // lifetime : LF
@@ -667,7 +675,7 @@ void Parser::struct_decl_item() {
 	Attributes attr = attributes();
 
 	//auto name = curr_tok.raw();
-	expect_keyword(TokenType::ID);
+	ident();
 
 	expect_symbol(':');
 	type_with_lt();

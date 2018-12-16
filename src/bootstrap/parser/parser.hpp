@@ -70,6 +70,7 @@ private:
 
 	inline Error* expect_symbol(char exp);
 	inline Error* expect_primitive();
+	inline Error* expect_ident();
 	inline Error* expect_lifetime();
 	inline Error* expect_keyword(TokenType ty);
 	inline Error* expect_mod_or_package();
