@@ -10,6 +10,11 @@ pub struct Pos<'a> {				// make public struct 'Pos'
 
 pub struct Int(i32,);
 
+pub union FloatInt<'c> {
+	f: 'c f32;
+	i: 'c i32;
+}
+
 pub enum Dir<'b> {
 	UP,
 	DOWN,
