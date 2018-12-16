@@ -758,7 +758,13 @@ void Parser::item_union() {
 	//auto name = curr_tok.raw();
 	ident();
 
-	unimpl("item_union");
+	if (curr_tok.type() == '<')
+		generic_params();
+
+	if (curr_tok.type() == ';')
+		bump();
+	else
+		struct_decl_block();
 
 	end_trace();
 }
