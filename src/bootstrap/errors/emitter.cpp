@@ -58,7 +58,7 @@ std::string Emitter::format_error(const Error& err) {
 					build_err += linenum_ws + " | ";
 
 					// The current span's start pos in the error message
-					size_t index = build_err.length();
+					size_t index = build_err.length() + err.span()->lo.col;
 					// The final length of the error message
 					size_t new_len = err.span()->lo.line == err.span()->hi.line ?
 						index + (err.span()->hi.bit - err.span()->lo.bit) :	// TRUE
