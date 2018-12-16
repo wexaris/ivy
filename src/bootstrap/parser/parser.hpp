@@ -99,8 +99,8 @@ private:
 // Parsing functions based on BNFs
 private:
 
-	void ident();
-	void lifetime();
+	Error* ident();
+	Error* lifetime();
 
 	Path path();
 	Attributes attributes();

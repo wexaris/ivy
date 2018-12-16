@@ -388,19 +388,16 @@ Path Parser::path() {
 }
 
 // ident : ID
-void Parser::ident() {
+Error* Parser::ident() {
 	trace("ident: " + std::string(curr_tok.raw()));
-	expect_ident();
 	end_trace();
+	return expect_ident();;
 }
 // lifetime : LF
-void Parser::lifetime() {
+Error* Parser::lifetime() {
 	trace("lifetime: " + std::string(curr_tok.raw()));
-
-	//auto name = { curr_tok.raw() };
-	expect_lifetime();
-
 	end_trace();
+	return expect_lifetime();
 }
 
 // generic_params : '<' type_or_lt (',' type_or_lt)* '>'
