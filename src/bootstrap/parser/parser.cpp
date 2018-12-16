@@ -4,6 +4,8 @@
 #include "ast/ast.hpp"
 #include <array>
 
+namespace recover {
+
 constexpr std::array<int, 27> stmt_start = {
 	(int)TokenType::IMPORT,
 	(int)TokenType::EXPORT,
@@ -57,6 +59,7 @@ constexpr std::array<int, 6> expr_end = {
 	(int)']',
 	(int)'}',
 };
+}
 
 bool Attributes::contains(TokenType ty) {
 	for (auto attr : *this)
@@ -448,13 +451,13 @@ void Parser::module_decl() {
 
 	auto err = expect_keyword(TokenType::MOD);
 	if (err) {
-		recover_to(stmt_start);
+		recover_to(recover::stmt_start);
 		end_trace();
 		return;
 	}
 	Path mod_path = path();
 	if (expect_symbol(';')) {
-		recover_to(stmt_start);
+		recover_to(recover::stmt_start);
 		end_trace();
 		return;
 	}
@@ -627,7 +630,7 @@ void Parser::block_item() {
 			break;
 		default:
 			if (expect_block_item_decl()) {
-				recover_to(stmt_start);
+				recover_to(recover::stmt_start);
 				end_trace();
 				return;
 			}
