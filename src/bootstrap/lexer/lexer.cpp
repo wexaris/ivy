@@ -449,10 +449,10 @@ Token Lexer::next_token_inner() {
 			return Token('^', curr_src_view(), curr_span());								// ^
 
 		case '&':
-			//if (next == '&') {
-			//	bump(2);
-			//	return Token(TokenType::AND, curr_src_view(), curr_span());					// &&
-			//}
+			if (next == '&') {
+				bump(2);
+				return Token(TokenType::AND, curr_src_view(), curr_span());					// &&
+			}
 			if (next == '=') {
 				bump(2);
 				return Token(TokenType::ANDE, curr_src_view(), curr_span());				// &=
@@ -477,10 +477,10 @@ Token Lexer::next_token_inner() {
 				bump(2);
 				return Token(TokenType::GE, curr_src_view(), curr_span());					// >=
 			}
-			//else if (next == '>') {
-			//	bump(2);
-			//	return Token(TokenType::SHR, curr_src_view(), curr_span());					// >>
-			//}
+			else if (next == '>') {
+				bump(2);
+				return Token(TokenType::SHR, curr_src_view(), curr_span());					// >>
+			}
 			bump();
 			return Token('>', curr_src_view(), curr_span());								// >
 			

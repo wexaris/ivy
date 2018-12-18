@@ -32,13 +32,9 @@ enum class TokenType {
 	ORE,			// |=
 	ANDE,			// &=
 	OR,				// ||
+	AND,			// &&
 	SHL,			// <<
-	// These should probably be built in the parser,
-	// since they can be meant to be single tokens.
-	//	&&type
-	//	<type<type>>
-	//AND,			// &&
-	//SHR,			// >>
+	SHR,			// >>
 
 	// Miscellaneous
 	DOTDOTDOT,		// ...
