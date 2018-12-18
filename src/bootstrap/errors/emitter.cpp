@@ -51,6 +51,7 @@ std::string Emitter::format_error(const Error& err) {
 					auto line = err.span()->tu->get_line(err.span()->lo.line, false);
 
 					int line_prefix = 0;
+					int tabbed_len = 0;
 					{
 						// Remove whitespace from front and back
 						while (line[line_prefix] == ' ' || line[line_prefix] == '\t')
@@ -67,6 +68,8 @@ std::string Emitter::format_error(const Error& err) {
 						size_t pos = 0;
 						while ((pos = line.find("\t")) != line.npos) {
 							line.replace(pos, 1, "    ");
+							if (err.span()->lo.col <= pos && pos <= err.span()->hi.col)
+								tabbed_len += 4;
 							pos += 4;
 						}
 					}
@@ -82,8 +85,8 @@ std::string Emitter::format_error(const Error& err) {
 					size_t index = build_err.length() + err.span()->lo.col - 1 - line_prefix;
 					// The final length of the error message
 					size_t new_len = err.span()->lo.line == err.span()->hi.line ?
-						index + (err.span()->hi.bit - err.span()->lo.bit) :	// TRUE
-						index + line.length();								// FALSE
+						index + (err.span()->hi.bit - err.span()->lo.bit) + tabbed_len :	// TRUE
+						index + line.length();												// FALSE
 					
 					build_err.resize(new_len, ' ');
 
