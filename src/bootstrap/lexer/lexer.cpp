@@ -534,8 +534,11 @@ Token Lexer::next_token_inner() {
 					// In that case we assume it's an unterminated character literal
 					if (curr == '\'') {
 						bump();
-						auto err = handler.make_error_higligted("character literal may contain only one symbol", curr_span());
-						err->add_help("if you meant to create a string literal, use double quotes");
+						// This is a critical failure
+						// Unterminated characters tend to consume a lot of the real source
+						auto err = handler.make_fatal_higligted("character literal may contain only one symbol", curr_span());
+						err.add_help("if you meant to create a string literal, use double quotes");
+						err.emit();
 						return Token(TokenType::LIT_STRING, trans_unit().source().substr(start, bitpos() - start - 1), curr_span());
 					}
 
@@ -574,8 +577,11 @@ Token Lexer::next_token_inner() {
 						// Return it as a string literal
 						if (curr == '\'') {
 							bump();
-							auto err = handler.make_error_higligted("character literal may contain only one symbol", curr_span());
-							err->add_help("if you wanted a string literal, use double quotes");
+							// This is a critical failure
+							// Unterminated characters tend to consume a lot of the real source
+							auto err = handler.make_fatal_higligted("character literal may contain only one symbol", curr_span());
+							err.add_help("if you wanted a string literal, use double quotes");
+							err.emit();
 							return Token(TokenType::LIT_STRING, trans_unit().source().substr(start, bitpos() - start - 1), curr_span());
 						}
 						// The character literal goes to EOF or newline
