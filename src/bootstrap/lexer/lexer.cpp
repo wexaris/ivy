@@ -356,7 +356,7 @@ Token Lexer::next_token_inner() {
 			}
 			else if (!range::is_dec(next)) {
 				bump();
-				return Token('.', curr_span());												// .
+				return Token('.', curr_src_view(), curr_span());							// .
 			}
 			return lex_number();															// Number
 
@@ -366,7 +366,7 @@ Token Lexer::next_token_inner() {
 				return Token(TokenType::SCOPE, curr_src_view(), curr_span());				// ::
 			}
 			bump();
-			return Token(':', curr_span());													// :
+			return Token(':', curr_src_view(), curr_span());								// :
 	
 		case '=':
 			if (next == '=') {
@@ -378,7 +378,7 @@ Token Lexer::next_token_inner() {
 				return Token(TokenType::FATARROW, curr_src_view(), curr_span());			// =>
 			}
 			bump();
-			return Token('=', curr_span());													// =
+			return Token('=', curr_src_view(), curr_span());								// =
 
 		case '!':
 			if (next == '=') {
@@ -386,7 +386,7 @@ Token Lexer::next_token_inner() {
 				return Token(TokenType::NE, curr_src_view(), curr_span());					// !=
 			}
 			bump();
-			return Token('!', curr_span());													// !
+			return Token('!', curr_src_view(), curr_span());								// !
 
 		case '+':
 			if (next == '+') {
@@ -398,7 +398,7 @@ Token Lexer::next_token_inner() {
 				return Token(TokenType::SUME, curr_src_view(), curr_span());				// +=
 			}
 			bump();
-			return Token('+', curr_span());													// +
+			return Token('+', curr_src_view(), curr_span());								// +
 
 		case '-':
 			if (next == '-') {
@@ -414,7 +414,7 @@ Token Lexer::next_token_inner() {
 				return Token(TokenType::SUBE, curr_src_view(), curr_span());				// -=
 			}
 			bump();
-			return Token('-', curr_span());													// -
+			return Token('-', curr_src_view(), curr_span());								// -
 
 		case '*':
 			if (next == '=') {
@@ -422,7 +422,7 @@ Token Lexer::next_token_inner() {
 				return Token(TokenType::MULE, curr_src_view(), curr_span());				// *=
 			}
 			bump();
-			return Token('*', curr_span());													// *
+			return Token('*', curr_src_view(), curr_span());								// *
 
 		case '/':
 			if (next == '=') {
@@ -430,7 +430,7 @@ Token Lexer::next_token_inner() {
 				return Token(TokenType::DIVE, curr_src_view(), curr_span());				// /=
 			}
 			bump();
-			return Token('/', curr_span());													// /
+			return Token('/', curr_src_view(), curr_span());								// /
 
 		case '%':
 			if (next == '=') {
@@ -438,7 +438,7 @@ Token Lexer::next_token_inner() {
 				return Token(TokenType::MODE, curr_src_view(), curr_span());				// %=
 			}
 			bump();
-			return Token('%', curr_span());													// %
+			return Token('%', curr_src_view(), curr_span());								// %
 
 		case '^':
 			if (next == '=') {
@@ -446,7 +446,7 @@ Token Lexer::next_token_inner() {
 				return Token(TokenType::CARE, curr_src_view(), curr_span());				// ^=
 			}
 			bump();
-			return Token('^', curr_span());													// ^
+			return Token('^', curr_src_view(), curr_span());								// ^
 
 		case '&':
 			//if (next == '&') {
@@ -458,7 +458,7 @@ Token Lexer::next_token_inner() {
 				return Token(TokenType::ANDE, curr_src_view(), curr_span());				// &=
 			}
 			bump();
-			return Token('&', curr_span());													// &
+			return Token('&', curr_src_view(), curr_span());								// &
 
 		case '|':
 			if (next == '|') {
@@ -470,7 +470,7 @@ Token Lexer::next_token_inner() {
 				return Token(TokenType::ORE, curr_src_view(), curr_span());					// |=
 			}
 			bump();
-			return Token('|', curr_span());													// |
+			return Token('|', curr_src_view(), curr_span());								// |
 
 		case '>':
 			if (next == '=') {
@@ -482,7 +482,7 @@ Token Lexer::next_token_inner() {
 			//	return Token(TokenType::SHR, curr_src_view(), curr_span());					// >>
 			//}
 			bump();
-			return Token('>', curr_span());													// >
+			return Token('>', curr_src_view(), curr_span());								// >
 			
 		case '<':
 			switch (next) {
@@ -504,7 +504,7 @@ Token Lexer::next_token_inner() {
 
 				default:
 					bump();
-					return Token('<', curr_span());											// <
+					return Token('<', curr_src_view(), curr_span());						// <
 			}
 
 		case '\'':
