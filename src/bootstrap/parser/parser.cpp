@@ -250,6 +250,37 @@ inline bool is_attr(const Token& tk) {
 			tk == TokenType::CONST;
 }
 
+Token Parser::split_multi_binop() {
+	switch (curr_tok.type()) {
+		[[fallthrough]] case (int)TokenType::EQEQ:
+		[[fallthrough]] case (int)TokenType::NE:
+		[[fallthrough]] case (int)TokenType::SUME:
+		[[fallthrough]] case (int)TokenType::SUBE:
+		[[fallthrough]] case (int)TokenType::MULE:
+		[[fallthrough]] case (int)TokenType::DIVE:
+		[[fallthrough]] case (int)TokenType::MOD:
+		[[fallthrough]] case (int)TokenType::CARE:
+		[[fallthrough]] case (int)TokenType::GE:
+		[[fallthrough]] case (int)TokenType::LE:
+		[[fallthrough]] case (int)TokenType::ORE:
+		[[fallthrough]] case (int)TokenType::ANDE:
+		[[fallthrough]] case (int)TokenType::OR:
+		[[fallthrough]] case (int)TokenType::AND:
+		[[fallthrough]] case (int)TokenType::SHL:
+		[[fallthrough]] case (int)TokenType::SHR:
+			curr_tok = Token(
+				curr_tok.raw()[1],
+				curr_tok.raw().substr(1, 2),
+				Span(*curr_tok.span().tu, curr_tok.span().lo_bit + 1, curr_tok.span().lo_bit + 2));
+			return Token(
+				curr_tok.raw()[0],
+				curr_tok.raw().substr(0, 1),
+				Span(*curr_tok.span().tu, curr_tok.span().lo_bit, curr_tok.span().lo_bit + 1));
+		default:
+			return curr_tok;
+	}
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////    Expects    ///////////////////////////////////////////
@@ -264,6 +295,13 @@ inline Error* Parser::expect_symbol(char sym) {
 		bump();
 		return nullptr;
 	}
+	else {
+		auto tk = split_multi_binop();
+		if (tk.type() == (int)sym) {
+			bump();
+			return nullptr;
+		}
+	}
 	std::string found = curr_tok.type() < 256 ?
 		std::string{'\'', (char)curr_tok.type(), '\'' } :	// TRUE
 		translate::tk_type(curr_tok);						// FALSE
@@ -271,8 +309,7 @@ inline Error* Parser::expect_symbol(char sym) {
 }
 
 inline Error* Parser::expect_primitive() {
-	if (is_primitive(curr_tok))
-	{
+	if (is_primitive(curr_tok)) {
 		bump();
 		return nullptr;
 	}
@@ -299,6 +336,13 @@ inline Error* Parser::expect_keyword(TokenType ty) {
 	if (curr_tok == ty) {
 		bump();
 		return nullptr;
+	}
+	else {
+		auto tk = split_multi_binop();
+		if (tk == ty) {
+			bump();
+			return nullptr;
+		}
 	}
 	return err_expected(translate::tk_type(curr_tok), "the keyword '" + translate::tk_type(ty) + "'");
 }

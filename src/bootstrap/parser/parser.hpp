@@ -50,6 +50,10 @@ private:
 	/* The last token provided by the Lexer. */
 	Token curr_tok;
 
+	/* Splits up the current token into smaller tokens
+	 * if the current token is a multi-character binary op. */
+	Token split_multi_binop();
+
 	/* Bumps the current token.
 	 * The current one becomes the previous one.
 	 * A new token is read as the new one. */
