@@ -71,9 +71,17 @@ private:
 	/* Bump until the given character has been reached.
 	 * If the char is the end of a scope, e.g an ending bracket, brace or parenthesis,
 	 * it can be skipped until an unmatched one is found */
-	template<size_t N>
-	void recover_to(const std::array<int, N>& to);
 
+	/* Creates and emits an internal compiler failure error message.
+	 * Will be fatal. */
+	inline void bug(const std::string& msg);
+
+	/* Creates and emits an internal compiler failure error message about a missing feature.
+	 * Will be fatal. */
+	inline void unimpl(const std::string& msg);
+
+// Expect errors
+private:
 	/* Ceates an "unexpected token: .., expected .." error message. */
 	inline Error* err_expected(const std::string& found, const std::string& expected, int code = 0);
 
@@ -84,21 +92,6 @@ private:
 	inline Error* expect_keyword(TokenType ty);
 	inline Error* expect_mod_or_package();
 	inline Error* expect_block_item_decl();
-
-	/* Creates and emits an internal compiler failure error message.
-	 * Will be fatal. */
-	inline void bug(const std::string& msg);
-
-	/* Creates and emits an internal compiler failure error message about a missing feature.
-	 * Will be fatal. */
-	inline void unimpl(const std::string& msg);
-
-	/* Can interfere with normal token tree parsing,
-	 * so && is built on demand. */
-	inline void AND();
-	/* Can interfere with normal token tree parsing,
-	 * so >> is built on demand. */ 
-	inline void SHR();
 
 // Parsing functions based on BNFs
 private:
