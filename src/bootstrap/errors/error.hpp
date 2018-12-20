@@ -59,15 +59,19 @@ public:
 		: sev(lvl), msg(std::move(msg)), sp(sp), id(code)
 	{}
 
-	/* Disables the error.
-	 * Will not be emitted. */
-	inline void cancel()				{ sev = CANCELED; }
-	inline bool is_canceled() const		{ return sev == CANCELED; }
+	/* Give the error an error code. */
+	inline void set_msg(std::string msg)	{ this->msg = std::move(msg); }
 
 	/* Get the error code of the error. */
 	inline int code() const				{ return id; }
 	/* Give the error an error code. */
 	inline void set_code(int code)		{ id = code; }
+
+	/* Disables the error.
+	 * Will not be emitted. */
+	inline void cancel()				{ sev = CANCELED; }
+	inline bool is_canceled() const		{ return sev == CANCELED; }
+
 
 	/* Add info about the span of the error.
 	* Expects the span to also be set. */
