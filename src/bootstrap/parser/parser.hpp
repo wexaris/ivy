@@ -21,6 +21,8 @@ struct Attributes : std::vector<Attr> {
 	}
 };
 
+using Recovery = std::vector<int>;
+
 /* A single part of a path.
  * Has a string and Span. */
 struct SubPath {
@@ -68,9 +70,17 @@ private:
 	/* Requests a level of indentation to be removed from trace messages. */
 	inline void end_trace() const { handler.end_trace(); }
 
-	/* Bump until the given character has been reached.
-	 * If the char is the end of a scope, e.g an ending bracket, brace or parenthesis,
-	 * it can be skipped until an unmatched one is found */
+	/* Bump until one of a given set of characters has been reached */
+	void recover_to(const Recovery& to);
+	/* True if the parser has recovered.
+	 * Set back to 'false' after handling. */
+	//bool has_recovered = false;
+	/* Return 'has_recovered' and set it back to */
+	//inline bool poll_recover() {
+	//	if (!has_recovered) return false;;
+	//	has_recovered = false;
+	//	return true;;
+	//}
 
 	/* Creates and emits an internal compiler failure error message.
 	 * Will be fatal. */
@@ -86,40 +96,50 @@ private:
 	inline Error* err_expected(const std::string& found, const std::string& expected, int code = 0);
 
 	inline Error* expect_symbol(char exp);
+	inline Error* expect_symbol(char exp, const Recovery& to);
 	inline Error* expect_primitive();
+	inline Error* expect_primitive(const Recovery& to);
 	inline Error* expect_ident();
+	inline Error* expect_ident(const Recovery& to);
 	inline Error* expect_lifetime();
+	inline Error* expect_lifetime(const Recovery& to);
 	inline Error* expect_keyword(TokenType ty);
+	inline Error* expect_keyword(TokenType ty, const Recovery& to);
 	inline Error* expect_mod_or_package();
-	inline Error* expect_block_item_decl();
+	inline Error* expect_mod_or_package(const Recovery& to);
+	inline Error* expect_block_decl();
+	inline Error* expect_block_decl(const Recovery& to);
 
 // Parsing functions based on BNFs
 private:
 
-	Error* ident();
-	Error* lifetime();
+	inline Error* ident();
+	inline Error* ident(const Recovery& recovery);
+	inline Error* lifetime();
+	inline Error* lifetime(const Recovery& recovery);
 
-	Path path();
-	Attributes attributes();
+	Path path(const Recovery& to);
+	inline Attributes attributes();
 
-	void generic_params();
+	void generic_params(const Recovery& recovery);
 
 	// type
-	void type();
-	void type_or_lt();
-	void type_with_lt();
-	void type_sum();
-	void primitive();
+	Error* type(const Recovery& recovery);
+	Error* type_or_lt(const Recovery& recovery);
+	Error* type_with_lt(const Recovery& recovery);
+	Error* type_sum(const Recovery& recovery);
+	Error* primitive();
 
 	// file
-	void module_decl();
+	void module_decl(); // for entire file
 	void item();
 
+	void item_module(); // sub-modules
+
 	// stmt
-	void stmt_item();
+	void stmt_item(Attributes& attr);
 	void import_item();
-	void item_static();
-	void item_const();
+	void item_var(bool is_const, bool is_static);
 	void item_type();
 	void view_item();
 	void block_item();
