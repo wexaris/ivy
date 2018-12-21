@@ -72,15 +72,6 @@ private:
 
 	/* Bump until one of a given set of characters has been reached */
 	void recover_to(const Recovery& to);
-	/* True if the parser has recovered.
-	 * Set back to 'false' after handling. */
-	//bool has_recovered = false;
-	/* Return 'has_recovered' and set it back to */
-	//inline bool poll_recover() {
-	//	if (!has_recovered) return false;;
-	//	has_recovered = false;
-	//	return true;;
-	//}
 
 	/* Creates and emits an internal compiler failure error message.
 	 * Will be fatal. */
