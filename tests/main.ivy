@@ -15,18 +15,18 @@ pub union FloatInt<'c> {
 	i: 'c i32;
 }
 
+impl Pos {						// methods need to implemented seperately
+	pub fun make(x: i32, y: i32) -> Pos {
+		Pos { x: x, y: y }
+	}
+}
+
 pub enum Dir<'b> {
 	UP,
 	DOWN,
 	LEFT,
 	RIGHT,
 	SEQ = 4,
-}
-
-impl Pos {						// methods need to implemented seperately
-	pub fun new(x: i32, y: i32) -> Pos {
-		Pos { x: x, y: y }
-	}
 }
 
 pub trait Raw {					// make public trait 'Raw'
