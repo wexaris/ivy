@@ -465,6 +465,25 @@ inline Error* Parser::lifetime(const Recovery& to) {
 	return expect_lifetime(to);
 }
 
+// primitive : THING | STR | CHAR
+//           | INT | I64 | I32 | I16 | I8
+//           | UINT | U64 | U32 | U16 | U8
+//           | FLOAT | F64 | F32
+inline Error* Parser::primitive() {
+	trace("primitive: " + std::string(curr_tok.raw()));
+	end_trace();
+	return expect_primitive();
+}
+// primitive : THING | STR | CHAR
+//           | INT | I64 | I32 | I16 | I8
+//           | UINT | U64 | U32 | U16 | U8
+//           | FLOAT | F64 | F32
+inline Error* Parser::primitive(const Recovery& to) {
+	trace("primitive: " + std::string(curr_tok.raw()));
+	end_trace();
+	return expect_primitive(to);
+}
+
 // SubPath(TokenType, Span)
 // path : SubPath (',' SubPath)*
 Path Parser::path(const Recovery& to) {
@@ -494,15 +513,33 @@ void Parser::generic_params(const Recovery& recovery) {
 	trace("generic_params");
 
 	if (expect_symbol('<', recovery))  // should have been checked already
-		DEFAULT_PARSE_END();
+		DEFAULT_PARSE_END();\
+	
+	if (curr_tok.type() != '>') {
 
-	while (curr_tok.type() != '>') {
-		if (type_or_lt(recovery + Recovery{',', '>'}))
-			if (curr_tok.type() != ',' && curr_tok.type() != '>')
+		if (auto err = type_or_lt(recovery + Recovery{',', '>'})) {
+			if (curr_tok.type() != ',' && curr_tok.type() != '>') {
+				err->cancel();
+				handler.make_error_higligted("unterminated generic clause", curr_tok.span());
 				DEFAULT_PARSE_END();
+			}
+		}
 
-		if (curr_tok.type() == ',')
+		while (curr_tok.type() == ',') {
 			bump();
+
+			if (curr_tok.type() == '>') {
+				break;
+			}
+
+			if (auto err = type_or_lt(recovery + Recovery{',', '>'})) {
+				if (curr_tok.type() != ',' && curr_tok.type() == '>') {
+					err->cancel();
+					handler.make_error_higligted("unterminated generic clause", curr_tok.span());
+					DEFAULT_PARSE_END();
+				}
+			}
+		}
 	}
 	
 	expect_symbol('>', recovery);
@@ -832,6 +869,10 @@ void Parser::item_fun() {
 	//auto name = curr_tok.raw();
 	ident();
 
+	if (curr_tok.type() == '<')
+		generic_params({'(', (int)TokenType::RARROW, '{'});
+
+	// FIXME:
 	unimpl("item_fun");
 
 	end_trace();
@@ -856,16 +897,16 @@ void Parser::item_struct() {
 		bump();
 	else if (curr_tok.type() == '(') {
 		struct_tuple_block();
-		expect_symbol(';');
+		expect_symbol(';', recover::stmt_start + recover::semi);
 	}
 	else struct_decl_block();
 
 	end_trace();
 }
 
-// struct_tuple_block : '(' struct_tuple_items? ')'
-// struct_decl_items  : attributes? type (',' attributes? type)*
-//                    | attributes? type (',' attributes? type)* ','
+// struct_tuple_block : '(' ')'
+//                    | '(' struct_tuple_item (',' struct_tuple_item)*     ')'
+//                    | '(' struct_tuple_item (',' struct_tuple_item)* ',' ')'
 void Parser::struct_tuple_block() {
 	trace("struct_tuple_block");
 
@@ -873,66 +914,85 @@ void Parser::struct_tuple_block() {
 		bug("struct_tuple_block not checked before invoking");
 
 	while (curr_tok.type() != ')') {
-		trace("struct_tuple_item");
-
-		Attributes attr = attributes();
-		type_with_lt({',', ')'});
+		
+		struct_tuple_item();
 
 		while (curr_tok.type() == ',') {
 			bump();
 
-		if (curr_tok.type() == ')')
-			break;
+			if (curr_tok.type() == ')')
+				break;
 
-		attr = attributes();
-
-		if (type_with_lt(recover::stmt_start + Recovery{',', ')'}))
-			if (curr_tok.type() != ',' && curr_tok.type() != ')')
-				DEFAULT_PARSE_END();
+			struct_tuple_item();
 		}
-
-		end_trace();
 	}
 
-	expect_symbol(')', recover::stmt_start);
+	EXPECT_OR_PASS(')');
 	end_trace();
 }
 
-// struct_decl_block : '{' struct_decl_items? '}'
+// struct_tuple_item  : attributes? type
+void Parser::struct_tuple_item() {
+	trace("struct_tuple_item");
+
+	Attributes attr = attributes();
+
+	if (type_with_lt(recover::stmt_start + Recovery{',', ')'})) {
+		if (curr_tok.type() != ',' && curr_tok.type() != ')') {
+			end_trace();
+			DEFAULT_PARSE_END();
+		}
+	}
+
+	end_trace();
+}
+
+// struct_decl_block : '{' struct_decl_item* '}'
 void Parser::struct_decl_block() {
 	trace("struct_decl_block");
 
 	if (expect_symbol('{'))
 		bug("struct_decl_block not checked before invoking");
 
-	if (curr_tok.type() != '}')
-		struct_decl_items();
+	while (curr_tok.type() != '}') {
+		struct_decl_item();
+	}
 
-	expect_symbol('}', recover::stmt_start);
+	EXPECT_OR_PASS('}');
 	end_trace();
 }
 
-// struct_decl_items : struct_decl_item*
 // struct_decl_item  : attributes? ident ':' type_with_lt ';' 
-void Parser::struct_decl_items() {
-	trace("struct_decl_items");
+void Parser::struct_decl_item() {
+	trace("struct_decl_item");
 
-	while (curr_tok.type() != '}') {
-		trace("struct_decl_item");
+	auto attr = attributes();
 
-		Attributes attr = attributes();
-
-		//auto name = curr_tok.raw();
-		ident();
-
-		expect_symbol(':');
-		type_with_lt({';'});
-
-		expect_symbol(';');
-
-		end_trace();
+	if (expect_ident(recover::stmt_start + Recovery{':', ';'})) {
+		if (curr_tok.type() == ';') {
+			bump();
+			DEFAULT_PARSE_END();
+		}
+		if (curr_tok.type() != ':')
+			DEFAULT_PARSE_END();
 	}
 
+	if (expect_symbol(':', recover::stmt_start + Recovery{':', ';'})) {
+		if (curr_tok.type() == ';') {
+			bump();
+			DEFAULT_PARSE_END();
+		}
+		if (curr_tok.type() != ':')
+			DEFAULT_PARSE_END();
+	}
+
+	if (type_with_lt(recover::stmt_start + recover::semi)) {
+		if (curr_tok.type() == ';')
+			bump();
+		DEFAULT_PARSE_END();
+	}
+
+	EXPECT_OR_PASS(';');
 	end_trace();
 }
 
@@ -945,23 +1005,23 @@ void Parser::item_enum() {
 		bug("item_enum not checked before invoking");
 
 	//auto name = curr_tok.raw();
-	ident();
+	ident(recover::stmt_start + Recovery{'{', '<', ';'});
 
 	if (curr_tok.type() == '<')
-		generic_params({';', '{'});
+		generic_params({'{', ';'});
 
-	if (curr_tok.type() == ';')
+	if (curr_tok.type() == ';') {
 		bump();
-	else if (curr_tok.type() == '{')
-		enum_defs();
+	}
+	else enum_decl_block();
 
 	end_trace();
 }
 
 // enum_defs : '{' '}'
-//           | '{' enum_def (',' enum_def)*		'}'
-//           | '{' enum_def (',' enum_def)* ',' '}'
-void Parser::enum_defs() {
+//           | '{' enum_decl (',' enum_decl)*     '}'
+//           | '{' enum_decl (',' enum_decl)* ',' '}'
+void Parser::enum_decl_block() {
 	trace("enum_defs");
 
 	if (expect_symbol('{'))
@@ -969,7 +1029,7 @@ void Parser::enum_defs() {
 
 	if (curr_tok.type() != '}') {
 
-		enum_def();
+		enum_decl({',', '}'});
 
 		// Keep looping as long as there are commas
 		while (curr_tok.type() == ',') {
@@ -979,22 +1039,23 @@ void Parser::enum_defs() {
 			if (curr_tok.type() == '}')
 				break;
 
-			enum_def();
+			enum_decl({',', '}'});
 		}
 	}
 
-	expect_symbol('}');
+	EXPECT_OR_PASS('}');
 	end_trace();
 }
 
-// enum_def : ident
-//          | ident '=' expr
-//          | ident struct_tuple_block
-void Parser::enum_def() {
+// enum_decl : ident
+//           | ident '=' expr
+//           | ident struct_tuple_block
+void Parser::enum_decl(const Recovery& recovery) {
 	trace("enum_def");
 
 	//auto name = curr_tok.raw();
-	ident();
+	if (ident(recovery))
+		DEFAULT_PARSE_END();
 
 	if (curr_tok.type() == '=') {
 		bump();
@@ -1004,9 +1065,17 @@ void Parser::enum_def() {
 		struct_tuple_block();
 	}
 
+	for (auto& delim : recovery) {
+		if (curr_tok.type() == delim)
+			DEFAULT_PARSE_END();
+	}
+	recover_to(recovery);
+
 	end_trace();
 }
 
+// item_union : UNION ident generic_params? ';'
+//            | UNION ident generic_params? struct_decl_block
 void Parser::item_union() {
 	trace("item_union");
 
@@ -1041,14 +1110,64 @@ void Parser::item_trait() {
 	end_trace();
 }
 
+// item_impl : IMPL generic_params? ident generic_params?                           impl_block
+//           | IMPL generic_params? ident generic_params? FOR ident generic_params? impl_block
 void Parser::item_impl() {
 	trace("item_impl");
 
 	if (expect_keyword(TokenType::IMPL))
 		bug("item_impl not checked before invoking");
 
-	unimpl("item_impl");
+	if (curr_tok.type() == '<')
+		generic_params({'{', ';'});
 
+	if (ident(recover::stmt_start + Recovery{'{', '<', ';'})) {
+		if (curr_tok.type() != '{' && curr_tok.type() != '<' && curr_tok.type() != ';')
+			DEFAULT_PARSE_END();
+	}
+	if (curr_tok.type() == '<')
+		generic_params({'{', ';'});
+
+	if (curr_tok == TokenType::FOR) {
+		bump();
+
+		if (ident(recover::stmt_start + Recovery{'{', '<', ';'})) {
+			if (curr_tok.type() != '{' && curr_tok.type() != '<' && curr_tok.type() != ';')
+				DEFAULT_PARSE_END();
+		}
+		if (curr_tok.type() == '<')
+			generic_params({'{', ';'});
+	}
+
+	if (curr_tok.type() != '{') {
+		expect_symbol('{', recover::stmt_start + Recovery{'{', ';'});
+		if (curr_tok.type() != '{') {
+			if (curr_tok.type() == ';')
+				bump();
+			DEFAULT_PARSE_END();
+		}
+	}
+
+	impl_block();
+
+	end_trace();
+}
+
+void Parser::impl_block() {
+	trace("impl_block");
+
+	if (expect_symbol('{'))
+		bug("impl_block not checked before invoking");
+
+	while (curr_tok.type() != '}') {
+		auto attrib = attributes();
+
+		// FIXME:  Add constructor support
+		// FIXME:  'impl' should probably have it's own item list
+		item();
+	}
+
+	EXPECT_OR_PASS('}');
 	end_trace();
 }
 
@@ -1219,14 +1338,4 @@ Error* Parser::type_sum(const Recovery& recovery) {
 
 	end_trace();
 	return nullptr;
-}
-
-// primitive : THING | STR | CHAR
-//           | INT | I64 | I32 | I16 | I8
-//           | UINT | U64 | U32 | U16 | U8
-//           | FLOAT | F64 | F32
-Error* Parser::primitive() {
-	trace("primitive: " + std::string(curr_tok.raw()));
-	end_trace();
-	return expect_primitive();
 }

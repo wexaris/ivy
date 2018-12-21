@@ -108,6 +108,8 @@ private:
 	inline Error* ident(const Recovery& recovery);
 	inline Error* lifetime();
 	inline Error* lifetime(const Recovery& recovery);
+	inline Error* primitive();
+	inline Error* primitive(const Recovery& recovery);
 
 	Path path(const Recovery& to);
 	inline Attributes attributes();
@@ -119,7 +121,6 @@ private:
 	Error* type_or_lt(const Recovery& recovery);
 	Error* type_with_lt(const Recovery& recovery);
 	Error* type_sum(const Recovery& recovery);
-	Error* primitive();
 
 	// file
 	void module_decl(); // for entire file
@@ -138,17 +139,17 @@ private:
 	void item_union();
 	void item_trait();
 	void item_impl();
+	void impl_block();
 
 	void item_struct();
 	void struct_tuple_block();
-	void struct_tuple_items();
+	void struct_tuple_item();
 	void struct_decl_block();
-	void struct_decl_items();
 	void struct_decl_item();
 
 	void item_enum();
-	void enum_defs();
-	void enum_def();
+	void enum_decl_block();
+	void enum_decl(const Recovery& recovery);
 
 	// expr
 	void expr();
