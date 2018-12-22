@@ -1,3 +1,8 @@
+// This is a file for testing the compiler.
+// This is not meant to be a functional 'main' file.
+// It is used to see wether multiple compiler parts
+// work together as they should, including the parser, lexer,
+// error handling system etc.
 
 /* src/foo/bar.ivy */			// module 'bar' is declared through a file
 

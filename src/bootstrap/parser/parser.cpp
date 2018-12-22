@@ -872,7 +872,7 @@ void Parser::item_fun() {
 	if (curr_tok.type() == '<')
 		generic_params({'(', (int)TokenType::RARROW, '{'});
 
-	// FIXME:
+	// FIXME: 
 	unimpl("item_fun");
 
 	end_trace();
@@ -1105,6 +1105,7 @@ void Parser::item_trait() {
 	//auto name = curr_tok.raw();
 	ident();
 
+	// FIXME: 
 	unimpl("item_trait");
 
 	end_trace();

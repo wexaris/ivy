@@ -1,5 +1,14 @@
+// The Driver takes care of managing all of the compiler's parts
+// and letting them work together.
+// It currently handles responding to command line parameters,
+// interfacing with the current Session and error systems and
+// driving the compilation process forward.
 
-#if (true)
+// To use the main compiler entry point, set this to 'true'
+// To use a miniature testing suite, set this to 'false'
+#define MAIN_ENTRY true
+
+#if (MAIN_ENTRY)
 
 #include "parser/parser.hpp"
 

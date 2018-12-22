@@ -27,17 +27,20 @@ set( SRC_FILES
 		${CURR_DIR}/tests/lexer_tests.cpp
 	)
 
-# GNU GCC compile options
+# GNUCXX compile options
 if( CMAKE_COMPILER_IS_GNUCXX )
-	message( "Setting GCC compile options" )
+	message( "\n-- Setting GNU C/C++ compile options" )
 
+	# add generic
 	add_compile_options( -pedantic -Wall -Wextra -Werror )
 
-	# add debug / release compile options
-	if( ${CMAKE_BUILD_TYPE} EQUAL Debug )
-		add_compile_options( -g3 -O0 )
+	message( ${CMAKE_BUILD_TYPE} )
+	
+	# add debug / release
+	if( ${CMAKE_BUILD_TYPE} STREQUAL "Debug" )
+		add_compile_options( -DDEBUG -g3 -O0 )
 	else()
-		add_compile_options( -O3 )
+		add_compile_options( -NDEBUG -O3 )
 	endif()
 endif()
 
