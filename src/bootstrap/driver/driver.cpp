@@ -12,14 +12,6 @@
 
 #include "parser/parser.hpp"
 
-inline void warn_bad_compiler() { 
-	printf("This is the ivy-lang bootstrap compiler.\n");
-	printf("While we are thankful that you have decided to use it,\nwe must inform you that it is very much work in progress, and isn't going to be functional any time soon!\n");
-	printf("If you still want to try it out, you can use the '-force' option. Though, we can't give any guarantees that the build will be successful.\n");
-	printf("You are welcome to wait, or partake in it's development on GitHub!\n");
-	std::exit(0);
-}
-
 inline void usage(char* arg0) {
 	printf("usage: %s [options] <input_files>\n", arg0);
 	printf("options:\n");
@@ -78,7 +70,6 @@ int main(int argc, char* argv[]) {
 
 	std::vector<std::string> input_files;
 	std::string output_file;
-	bool bad_comp = true;
 
 	const std::string cwd = Session::get_cwd();
 
@@ -90,12 +81,6 @@ int main(int argc, char* argv[]) {
 			if (arg == "-h") {
 				usage(argv[0]);
 				return 0;
-			}
-
-			// Disable bad-compiler warning
-			if (arg == "-force") {
-				bad_comp = false;
-				continue;
 			}
 
 			// Enable trace messages
@@ -141,10 +126,6 @@ int main(int argc, char* argv[]) {
 			input_files.push_back(argv[i]);
 		}
 	}
-
-	// Display warning about this being a non-functional compiler
-	if (bad_comp)
-		warn_bad_compiler();
 
 	// Error if there is no input file
 	if (input_files.size() == 0) {
