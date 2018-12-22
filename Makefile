@@ -5,7 +5,7 @@
 # Otherwise cd won't work
 .ONESHELL:
 
-all: debug
+all: release
 
 debug:
 	mkdir -p build/debug && cd build/debug
