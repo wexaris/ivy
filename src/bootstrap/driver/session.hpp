@@ -38,8 +38,6 @@ struct SysConfig {
 	SysType usize;
 	SysType fsize;
 
-	SysConfig();
-
 	SysConfig(OS os, Arch arch, SysType isize, SysType usize, SysType fsize) 
 		: os(os), arch(arch),
 		isize(isize),
@@ -54,17 +52,21 @@ struct SysConfig {
 class Session {
 	
 	/* Internal system configuration info */
-	static SysConfig cfg;
+	static SysConfig sysconf;
+
+	/* The current working direcotry. */
+	static std::string cwd;
 	
 public:
 	static ErrorHandler handler;
 	static Emitter emitter;
 	
-	/* Set the system configuration. */
-	static inline void set_system_cfg(const SysConfig& conf) {
-		cfg = conf;
-	}
-
 	/* Returns a reference to the Session's SysConfig. */
-	static inline const SysConfig& conf() { return cfg; }
+	static inline const SysConfig& get_sysconf() { return sysconf; }
+	/* Override current system configuration. */
+	static inline void set_sysconf(const SysConfig& cfg) { sysconf = cfg; }
+
+	/* Returns the current working directory path. */
+	static inline std::string get_cwd() { return cwd; }
+
 };

@@ -84,9 +84,6 @@ inline std::string dir_from_path(const std::string& path) {
 
 int main(int argc, char* argv[]) {
 
-	// TODO: Improve Config auto-generation
-	Session::set_system_cfg(SysConfig());
-
 	std::vector<std::string> input_files;
 	std::string output_file;
 	bool bad_comp = true;
