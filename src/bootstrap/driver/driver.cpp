@@ -32,7 +32,7 @@ inline void usage(char* arg0) {
 bool compile(const std::vector<std::string>& input, const std::string& output) {
 	// TODO: all of the input files need to be parsed
 
-	Session::handler.trace("output set to " + output);
+	printf("-- output set to %s\n", output.c_str());
 
 	try {
 		// Must exist outside the Parser
@@ -74,21 +74,13 @@ bool compile(const std::vector<std::string>& input, const std::string& output) {
 	return true;
 }
 
-inline std::string dir_from_path(const std::string& path) {
-	size_t last_slash_index = 0;
-	for (size_t i = 0; i < path.length(); i++)
-		if (path[i] == '/')
-			last_slash_index = i;
-	return path.substr(0, last_slash_index + 1);
-}
-
 int main(int argc, char* argv[]) {
 
 	std::vector<std::string> input_files;
 	std::string output_file;
 	bool bad_comp = true;
 
-	const std::string curr_path = argv[0];
+	const std::string cwd = Session::get_cwd();
 
 	for (int i = 1; i < argc; i++) {
 		std::string arg = argv[i];
@@ -132,44 +124,60 @@ int main(int argc, char* argv[]) {
 					output_file = argv[++i];
 					continue;
 				}
-				else Session::handler.emit_fatal("-o requires an argument" + arg);
+				else {
+					printf("-o requires an argument");
+					return EXIT_FAILURE;
+				}
 			}
 
 			// Invalid option
-			else Session::handler.emit_fatal("unrecognised option: " + arg);
-		}
-		// Handle input files
-		else {
-			// Input files should be the last things provided
-			while (i < argc) {
-				if (argv[i][0] == '-')
-					Session::handler.emit_fatal("bad option '" + std::string(argv[i]) + "'; options should be placed before input files");
-				input_files.push_back(argv[i]);
-				i++;
+			else {
+				printf("unrecognised option: %s\n", arg.c_str());
+				return EXIT_FAILURE;
 			}
+		}
+		// Collect input files
+		else {
+			input_files.push_back(argv[i]);
 		}
 	}
 
 	// Display warning about this being a non-functional compiler
-	if (bad_comp) warn_bad_compiler();
+	if (bad_comp)
+		warn_bad_compiler();
 
 	// Error if there is no input file
-	if (input_files.size() == 0)
-		Session::handler.emit_fatal("no input files were specified");
+	if (input_files.size() == 0) {
+		printf("input files missing\n");
+		return EXIT_FAILURE;
+	}
 
-	// No output file specified. Use current location and 'a.out'
+	// In case no output was specified or it's just '.',
+	// use the cwd and an 'a.out' file
 	if (output_file.empty() || output_file == ".")
-		output_file = dir_from_path(curr_path) + "a.out";
-	// Output file is relative. Prefix it with the current location
+		output_file = cwd + "/a.out";
+	// In case the given output is relative by './',
+	// use the cwd and an 'a.out' file
+	else if (output_file[0] == '.' && output_file[1] == '/') {
+		if (output_file.length() != 2)
+			output_file = cwd + output_file.substr(1);
+		else
+			output_file = cwd + "/a.out";
+	}
+	// In case the given output doesn't start from the root
+	// prepend ir with the cwd
 	else if (output_file[0] != '/')
-		output_file = dir_from_path(curr_path) + output_file;
-	else if (output_file[0] == '.' && output_file[1] == '/')
-		output_file = dir_from_path(curr_path) + output_file.substr(2);
+		output_file = cwd + output_file;
+	// In case we are given an output directory but no file,
+	// append an 'a.out' file
+	else if (output_file[output_file.length() - 1] == '/')
+		output_file += "/a.out";
 
 	return compile(input_files, output_file);
 }
 
-#else
+
+#else // MAIN_ENTRY
 
 #include "tests/lexer_tests.hpp"
 #include "parser/parser.hpp"
@@ -190,26 +198,29 @@ void print_main() {
 
 int main() {
 
+	// Prints the tokens in the 'main.ivy' test file
 	print_main();
 
+	// Run thests
+	// TODO:  There should be more but we're short on time
 	tests::lexer::token_has_correct_absolute_pos();
 	tests::lexer::token_has_correct_line_pos();
 	tests::lexer::token_has_correct_column_pos();
 	tests::lexer::return_eof_without_translation_unit();
 
-	Emitter emitter;
-	ErrorHandler handler(emitter);
-	SourceMap sm(handler);
-	Lexer lex(sm.load_file("tests/main.ivy"), handler);
+	// Check error handling
+	// TODO:  Should be moved to a test function at some point
+	SourceMap sm(Session::handler);
+	Lexer lex(sm.load_file("tests/main.ivy"), Session::handler);
 	Token tk = lex.next_token();
 
-	Error err = handler.new_error(Severity::ERROR, std::string(tk.raw()), tk.span(), 0);
+	Error err = Session::handler.new_error(Severity::ERROR, std::string(tk.raw()), tk.span(), 0);
 	err.add_span();
 	err.add_highlight();
 	err.add_help("if you wanted to import a module, use 'import mod'");
 	err.add_note("this is a fake error");
 
-	try { handler.emit(err); }
+	try { Session::handler.emit(err); }
 	catch (...) {}
 }
 
