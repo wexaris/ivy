@@ -1297,10 +1297,10 @@ Error* Parser::type(const Recovery& recovery) {
 Error* Parser::type_or_lt(const Recovery& recovery) {
 	trace("type_or_lt");
 
-	if (is_lifetime(curr_tok)) bump();
+	if (is_lifetime(curr_tok)) lifetime();
 	else if (is_type(curr_tok)) {
-		type(recovery); 
-		DEFAULT_PARSE_END(nullptr);
+		auto err = type(recovery); 
+		DEFAULT_PARSE_END(err);
 	}
 	else {
 		auto err = err_expected(translate::tk_type(curr_tok), "a type or lifetime", 0);
@@ -1317,7 +1317,7 @@ Error* Parser::type_with_lt(const Recovery& recovery) {
 	trace("type_with_lt");
 
 	if (is_lifetime(curr_tok))
-		bump();
+		lifetime();
 	if (auto err = type(recovery))
 		DEFAULT_PARSE_END(err);
 
