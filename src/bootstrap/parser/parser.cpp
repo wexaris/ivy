@@ -522,8 +522,8 @@ Path Parser::path(const Recovery& to) {
 void Parser::generic_params(const Recovery& recovery) {
 	trace("generic_params");
 
-	if (expect_symbol('<', recovery))  // should have been checked already
-		DEFAULT_PARSE_END();\
+	if (expect_symbol('<'))
+		bug("generic_params not checked before invoking");
 	
 	if (curr_tok.type() != '>') {
 
