@@ -1209,6 +1209,7 @@ void Parser::item_union() {
 	end_trace();
 }
 
+// item_trait : TRAIT ident
 void Parser::item_trait() {
 	trace("item_trait");
 
@@ -1216,10 +1217,42 @@ void Parser::item_trait() {
 		bug("item_trait not checked before invoking");
 
 	//auto name = curr_tok.raw();
-	ident();
+	if (ident({'<', '{', ';'})) {
+
+	}
+
+	if (curr_tok.type() == '<')
+		generic_params({'{', ';'});
+
+	if (curr_tok.type() == ';') {
+		auto err = expect_symbol('{');
+		err->add_note("traits should be defined at declaration");
+		bump();
+		DEFAULT_PARSE_END();
+	}
+	else if (curr_tok.type() != '{') {
+		expect_symbol('{', recover::stmt_start + Recovery{'{'});
+		if (curr_tok.type() != '{')
+			DEFAULT_PARSE_END();
+	}
+
+	trait_block();
+
+	end_trace();
+}
+
+void Parser::trait_block() {
+	trace("trait_block");
+
+	if (expect_symbol('{'))
+		bug("trait_block not checked before invoking");
 
 	// FIXME: 
-	unimpl("item_trait");
+	unimpl("trait block");
+
+	while (curr_tok.type() != '}') {
+		bump();
+	}
 
 	end_trace();
 }
