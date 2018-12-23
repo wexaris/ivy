@@ -215,6 +215,15 @@ inline bool is_primitive(const Token& tk) {
 		tk == TokenType::F32 || tk == TokenType::F64;
 }
 
+/* True if the provided token could be a type.
+ * ~could be~ because only the first token is checked.
+ * i.e. '*'(ptr) would pass as a type token, even though it could
+ * be followed by something else and be multiplication. */
+inline bool is_type(const Token& tk) {
+	return tk.type() == '&' || tk.type() == '*' || tk.type() == '[' || tk.type() == '(' ||
+		tk == TokenType::ID || is_primitive(tk);
+}
+
 /* True if the provided token's type is a literal. */
 inline bool is_literal(const Token& tk) {
 	return tk == TokenType::LIT_STRING		||
@@ -1190,15 +1199,6 @@ void Parser::expr() {
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////    Type    ///////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-
-/* True if the provided token could be a type.
- * ~could be~ because only the first token is checked.
- * i.e. '*'(ptr) would pass as a type token, even though it could
- * be followed by something else and be multiplication. */
-inline bool is_type(const Token& tk) {
-	return tk.type() == '&' || tk.type() == '*' || tk.type() == '[' || tk.type() == '(' ||
-		tk == TokenType::ID || is_primitive(tk);
-}
 
 // type : '&' type
 //      | '*' type
