@@ -543,7 +543,7 @@ void Parser::generic_params(const Recovery& recovery) {
 			}
 
 			if (auto err = type_or_lt(recovery + Recovery{',', '>'})) {
-				if (curr_tok.type() != ',' && curr_tok.type() == '>') {
+				if (curr_tok.type() != ',' && curr_tok.type() != '>') {
 					err->cancel();
 					handler.make_error_higligted("unterminated generic clause", curr_tok.span());
 					DEFAULT_PARSE_END();
