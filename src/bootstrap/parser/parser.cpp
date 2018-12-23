@@ -1300,6 +1300,7 @@ void Parser::item_impl() {
 	end_trace();
 }
 
+// impl_block : '{' item* '}'
 void Parser::impl_block() {
 	trace("impl_block");
 
