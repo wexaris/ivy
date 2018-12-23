@@ -870,6 +870,8 @@ void Parser::block_item() {
 	end_trace();
 }
 
+// item_fun : FUN ident generic_params? (RARROW return_type)? ';'
+//          | FUN ident generic_params? (RARROW return_type)? fun_block
 void Parser::item_fun() {
 	trace("item_fun");
 
@@ -882,8 +884,109 @@ void Parser::item_fun() {
 	if (curr_tok.type() == '<')
 		generic_params({'(', (int)TokenType::RARROW, '{'});
 
+	if (curr_tok.type() == '(')
+		param_list({(int)TokenType::RARROW, '{'});
+
+	if (curr_tok == TokenType::RARROW) {
+		bump();
+		if (return_type(recover::stmt_start + Recovery{'{', ';'})) {
+			if (curr_tok.type() != '{' && curr_tok.type() != ';')
+				DEFAULT_PARSE_END();
+		}
+	}
+
+	if (curr_tok.type() == ';') {
+		bump();
+		return;
+	}
+	else if (curr_tok.type() != '{') {
+		expect_symbol('{', recover::stmt_start + Recovery{'{'});
+		if (curr_tok.type() != '{')
+			DEFAULT_PARSE_END();
+	}
+
+	fun_block();
+
+	end_trace();
+}
+
+// param_list : '(' param* ')'
+void Parser::param_list(const Recovery& recovery) {
+	trace("param_list");
+
+	if (expect_symbol('('))
+		bug("param_list not checked before invoking");
+
+	if (curr_tok.type() != ')') {
+
+		if (param(recovery + Recovery{','})) {
+			if (curr_tok.type() != ',')
+				DEFAULT_PARSE_END();
+		}
+
+		while (curr_tok.type() == ',') {
+			bump();
+
+			if (param(recovery + Recovery{','})) {
+				if (curr_tok.type() != ',')
+					DEFAULT_PARSE_END();
+			}
+
+			if (curr_tok.type() == ')') {
+				break;
+			}
+		} 
+	}
+	
+	if (expect_symbol(')', recovery + Recovery{')'})) {
+		if (curr_tok.type() == ')') {
+			bump();
+		}
+		DEFAULT_PARSE_END();
+	}
+
+	end_trace();
+}
+
+// param : ident ':' type
+Error* Parser::param(const Recovery& recovery) {
+	trace("param");
+
+	if (auto err = ident(recovery))
+		DEFAULT_PARSE_END(err);
+
+	if (auto err = expect_symbol(':', recovery + recover::type_start)) {
+		if (!is_type(curr_tok))
+			DEFAULT_PARSE_END(err);
+	}
+
+	if (auto err = type(recovery))
+		DEFAULT_PARSE_END(err);
+
+	end_trace();
+	return nullptr;
+}
+
+// return_type: type
+Error* Parser::return_type(const Recovery& recovery) {
+	trace("return_type");
+	auto err = type(recovery);
+	end_trace();
+	return err;
+}
+
+void Parser::fun_block() {
+	trace("fun_block");
+
+	if (expect_symbol('{'))
+		bug("fun_block not checked before invoking");
+
 	// FIXME: 
-	unimpl("item_fun");
+	unimpl("function block");
+
+	while (curr_tok.type() != '}') {
+		bump();
+	}
 
 	end_trace();
 }
