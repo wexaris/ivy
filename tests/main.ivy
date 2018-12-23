@@ -6,6 +6,8 @@
 
 mod main;
 
+pub static var a_global_var: 'static &[*i32];
+
 mod sub {
 	pub struct Pos<'a> {
 		pub x: 'a i32;

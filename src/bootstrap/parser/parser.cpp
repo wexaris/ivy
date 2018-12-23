@@ -1210,49 +1210,77 @@ inline bool is_type(const Token& tk) {
 //      | ID
 //      | primitive
 Error* Parser::type(const Recovery& recovery) {
-	trace("type");
 
 	switch (curr_tok.type()) {
 		// reference type
 		case '&':
 			bump();
-			if (auto err = type(recovery))								// '&' type
+			trace("type: ref");
+			if (auto err = type(recovery)) {				// '&' type
 				DEFAULT_PARSE_END(err);
+			}
 			break;
 	
 		// pointer type
 		case '*':
 			bump();
-			if (auto err = type(recovery))								// '*' type
+			trace("type: ptr");
+			if (auto err = type(recovery)) {				// '*' type
 				DEFAULT_PARSE_END(err);
+			}
 			break;
 
 		// array type
 		case '[':
 			bump();
+			trace("type: array");
 			if (curr_tok.type() == ']') {
-				bump();							// '[' ']'
+				bump();										// '[' ']'
 			}
 			else {
-				auto err = type({';', ']', ')', '}'});							// '[' type ']'
-				DEFAULT_PARSE_END(err);
+				Error* passed_on = nullptr;
+				if (auto err = type(recover::stmt_start + Recovery{']', ';'})) {		// '[' type ']' | '[' type ';' expr ']'
+					if (curr_tok.type() == ']') {
+						bump();
+						DEFAULT_PARSE_END(err);
+					}
+					else if (curr_tok.type() == ';') {
+						bump();
+						passed_on = err;
+						// Doesn't fail
+						// Attempts to contilue parsing type
+					}
+				}
 				if (curr_tok.type() == ';') {
 					bump();
-					expr();						// '[' type ';' expr ']'
+					expr();									// '[' type ';' expr ']
 				}
-				if (auto err = expect_symbol(']')) {
-					recover_to({']'});
-					DEFAULT_PARSE_END(err);
+				if (auto err = expect_symbol(']', recover::stmt_start + Recovery{']', ';'})) {
+					if (curr_tok.type() == ']') {
+						bump();
+						DEFAULT_PARSE_END(err);
+					}
+					else if (curr_tok.type() == ';') {
+						bump();
+						DEFAULT_PARSE_END(err);
+					}
+					else {
+						DEFAULT_PARSE_END(err);
+					}
+				}
+				if (passed_on) {
+					DEFAULT_PARSE_END(passed_on);
 				}
 			}
+			end_trace();
 			break;
 
 		// tuple type
 		case '(':
+			trace("type: tuple");
 			bump();
-			if (curr_tok.type() == ')') {
-				bump();
-				break;							// '(' ')'
+			if (curr_tok.type() == ')') {						// '(' ')'
+				bump();				
 			}
 			else {
 				auto err = type({';', ']', ')', '}'});
@@ -1271,6 +1299,7 @@ Error* Parser::type(const Recovery& recovery) {
 
 		// custom type
 		case (int)TokenType::ID:
+			trace("type: ident");
 			//auto type_name = curr_tok.raw();
 			if (auto err = ident()) {							// ident
 				recover_to(recovery);
@@ -1280,14 +1309,17 @@ Error* Parser::type(const Recovery& recovery) {
 
 		// primitive type
 		default:
-			if (auto err = primitive()) {
-				err->cancel();
-				err = err_expected(translate::tk_type(curr_tok), "a type", 0);
-				recover_to(recovery);
-				DEFAULT_PARSE_END(err);
+			if (is_primitive(curr_tok)) {
+				trace("type: primitive");
+				primitive();
 			}
+			else {
+				auto err = err_expected(translate::tk_type(curr_tok), "a type");
+				recover_to(recovery);
+				return err;
+ 			}
 	}
-	
+
 	end_trace();
 	return nullptr;
 }
