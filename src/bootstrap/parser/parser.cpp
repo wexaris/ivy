@@ -233,7 +233,8 @@ inline bool is_attr(const Token& tk) {
 	return tk == TokenType::PUB		||
 			tk == TokenType::PRIV	||
 			tk == TokenType::MUT	||
-			tk == TokenType::CONST;
+			tk == TokenType::CONST	||
+			tk == TokenType::STATIC;
 }
 
 Token Parser::split_multi_binop() {
