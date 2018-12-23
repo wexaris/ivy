@@ -13,11 +13,13 @@
 #include "parser/parser.hpp"
 
 inline void usage(char* arg0) {
-	printf("usage: %s [options] <input_files>\n", arg0);
+	printf("usage: %s [options] <input>\n", arg0);
 	printf("options:\n");
-	printf("    -o <filename>   write output to <filename>\n");
-	printf("    -nowarn         suppress bad_compiler warning\n");
-	printf("    -h              display help menu\n\n");
+	printf("    -o <path>       write the output file to the given location\n");
+	printf("    -nowarn         suppress compiler warnings\n");
+	printf("    -Werr           treat all warnings as errors\n");
+	printf("    -trace          emit trace messages during compilation\n");
+	printf("    -h              display this help menu\n\n");
 	std::exit(0);
 }
 
