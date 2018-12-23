@@ -12,12 +12,15 @@
 
 #include "parser/parser.hpp"
 
-inline void usage(char* arg0) {
-	printf("usage: %s [options] <input_files>\n", arg0);
-	printf("options:\n");
-	printf("    -o <filename>   write output to <filename>\n");
-	printf("    -nowarn         suppress bad_compiler warning\n");
-	printf("    -h              display help menu\n\n");
+inline void usage() {
+	printf("Usage:\n");
+	printf("    ivy [options] <input>\n\n");
+	printf("Options:\n");
+	printf("    -o <path>    write the output file to the given location\n");
+	printf("    -nowarn      suppress compiler warnings\n");
+	printf("    -Werr        treat all warnings as errors\n");
+	printf("    -trace       emit trace messages during compilation\n");
+	printf("    -h           display this help menu\n\n");
 	std::exit(0);
 }
 
@@ -79,7 +82,7 @@ int main(int argc, char* argv[]) {
 		if (arg[0] == '-') {
 			// Show help menu
 			if (arg == "-h") {
-				usage(argv[0]);
+				usage();
 				return 0;
 			}
 
@@ -118,6 +121,7 @@ int main(int argc, char* argv[]) {
 			// Invalid option
 			else {
 				printf("unrecognised option: %s\n", arg.c_str());
+				usage();
 				return EXIT_FAILURE;
 			}
 		}

@@ -44,4 +44,4 @@ if( CMAKE_COMPILER_IS_GNUCXX )
 	endif()
 endif()
 
-add_executable( ivy.out ${SRC_FILES} )
+add_executable( ivy ${SRC_FILES} )
