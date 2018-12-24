@@ -955,12 +955,15 @@ void Parser::decl_fun() {
 
 	if (curr_tok.type() == ';') {
 		bump();
-		return;
+		DEFAULT_PARSE_END();
 	}
 	else if (curr_tok.type() != '{') {
-		expect_symbol('{', recover::stmt_start + Recovery{'{'});
-		if (curr_tok.type() != '{')
+		expect_symbol('{', recover::stmt_start + Recovery{'{', ';'});
+		if (curr_tok.type() != '{') {
+			if (curr_tok.type() == ';')
+				bump();
 			DEFAULT_PARSE_END();
+	}
 	}
 
 	fun_block();
@@ -994,18 +997,33 @@ void Parser::decl_struct() {
 		bug("decl_struct not checked before invoking");
 
 	//auto name = curr_tok.raw();
-	ident();
+	ident(recover::stmt_start + Recovery{'<', '(', '{', ';'});
 
 	if (curr_tok.type() == '<')
 		generic_params({';', '(', '{'});
 
-	if (curr_tok.type() == ';')
+	if (curr_tok.type() == ';') {
 		bump();
+		DEFAULT_PARSE_END();
+	}
 	else if (curr_tok.type() == '(') {
 		struct_tuple_block();
-		expect_symbol(';', recover::stmt_start + recover::semi);
+		if (expect_symbol(';', recover::stmt_start + recover::semi)) {
+			if (curr_tok.type() == ';') 
+				bump();
 	}
-	else struct_named_block();
+		DEFAULT_PARSE_END();
+	}
+	else if (curr_tok.type() != '{') {
+		expect_symbol('{', recover::stmt_start + Recovery{'{', ';'});
+		if (curr_tok.type() != '{') {
+			if (curr_tok.type() == ';')
+				bump();
+			DEFAULT_PARSE_END();
+		}
+	}
+
+	struct_named_block();
 
 	end_trace();
 }
@@ -1074,7 +1092,7 @@ void Parser::struct_named_item() {
 
 	auto attr = attributes();
 
-	if (expect_ident(recover::stmt_start + Recovery{':', ';'})) {
+	if (ident(recover::stmt_start + Recovery{':', ';'})) {
 		if (curr_tok.type() == ';') {
 			bump();
 			DEFAULT_PARSE_END();
@@ -1111,15 +1129,25 @@ void Parser::decl_enum() {
 		bug("decl_enum not checked before invoking");
 
 	//auto name = curr_tok.raw();
-	ident(recover::stmt_start + Recovery{'{', '<', ';'});
+	ident(recover::stmt_start + Recovery{'<', '{', ';'});
 
 	if (curr_tok.type() == '<')
 		generic_params({'{', ';'});
 
 	if (curr_tok.type() == ';') {
 		bump();
+		DEFAULT_PARSE_END();
 	}
-	else enum_block();
+	else if (curr_tok.type() != '{') {
+		expect_symbol('{', recover::stmt_start + Recovery{'{', ';'});
+		if (curr_tok.type() != '{') {
+			if (curr_tok.type() == ';')
+				bump();
+			DEFAULT_PARSE_END();
+		}
+	}
+
+	enum_block();
 
 	end_trace();
 }
@@ -1189,14 +1217,24 @@ void Parser::decl_union() {
 		bug("decl_union not checked before invoking");
 
 	//auto name = curr_tok.raw();
-	ident();
+	ident(recover::stmt_start + Recovery{'{', '<', ';'});
 
 	if (curr_tok.type() == '<')
 		generic_params({';', '{'});
 
+	if (curr_tok.type() == ';') {
+		bump();
+		DEFAULT_PARSE_END();
+	}
+	else if (curr_tok.type() != '{') {
+		expect_symbol('{', recover::stmt_start + Recovery{'{', ';'});
+		if (curr_tok.type() != '{') {
 	if (curr_tok.type() == ';')
 		bump();
-	else
+			DEFAULT_PARSE_END();
+		}
+	}
+
 		struct_named_block();
 
 	end_trace();
