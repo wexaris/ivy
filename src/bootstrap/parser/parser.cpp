@@ -44,6 +44,31 @@ namespace recover {
 		(int)TokenType::MUT,
 	};
 
+	static const Recovery type_start = {
+		'*',
+		'&',
+		'[',
+		'(',
+		(int)TokenType::ID,
+
+		(int)TokenType::THING,
+		(int)TokenType::STR,
+		(int)TokenType::CHAR,
+		(int)TokenType::INT,
+		(int)TokenType::I64,
+		(int)TokenType::I32,
+		(int)TokenType::I16,
+		(int)TokenType::I8,
+		(int)TokenType::UINT,
+		(int)TokenType::U64,
+		(int)TokenType::U32,
+		(int)TokenType::U16,
+		(int)TokenType::U8,
+		(int)TokenType::FLOAT,
+		(int)TokenType::F32,
+		(int)TokenType::F64
+	};
+
 	static const Recovery semi = { ';' };
 }
 
