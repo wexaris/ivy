@@ -153,7 +153,7 @@ private:
 
 	void decl_enum();
 	void enum_block();
-	void enum_item(const Recovery& recovery);
+	Error* enum_item(const Recovery& recovery);
 
 	// expr
 	void expr();

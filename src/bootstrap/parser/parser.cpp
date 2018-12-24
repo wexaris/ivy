@@ -477,6 +477,7 @@ inline Error* Parser::ident(const Recovery& to) {
 	end_trace();
 	return expect_ident(to);
 }
+
 // lifetime : LF
 inline Error* Parser::lifetime() {
 	trace("lifetime: " + std::string(curr_tok.raw()));
@@ -1188,18 +1189,26 @@ void Parser::enum_block() {
 
 	if (curr_tok.type() != '}') {
 
-		enum_item({',', '}'});
+		if (enum_item({',', '}'})) {
+			if (curr_tok.type() != ',' && curr_tok.type() != '}')
+				DEFAULT_PARSE_END();
+		}
 
 		// Keep looping as long as there are commas
-		while (curr_tok.type() == ',') {
-			bump();
+		while (curr_tok.type() != '}') {
+			if (expect_symbol(',', {(int)TokenType::ID, '}'})) {
+
+			}
 
 			// Handle dangling comma at end of definitions
 			if (curr_tok.type() == '}')
 				break;
 
-			enum_item({',', '}'});
+			if (enum_item({',', '}'})) {
+				if (curr_tok.type() != ',' && curr_tok.type() != '}')
+					DEFAULT_PARSE_END();
 		}
+	}
 	}
 
 	EXPECT_OR_PASS('}');
@@ -1209,12 +1218,14 @@ void Parser::enum_block() {
 // enum_item : ident
 //           | ident '=' expr
 //           | ident struct_tuple_block
-void Parser::enum_item(const Recovery& recovery) {
+Error* Parser::enum_item(const Recovery& recovery) {
 	trace("enum_item");
 
 	//auto name = curr_tok.raw();
-	if (ident(recovery))
-		DEFAULT_PARSE_END();
+	if (auto err = ident(recovery + Recovery{'=', '('})) {
+		if (curr_tok.type() != '=' && curr_tok.type() != '(')
+			DEFAULT_PARSE_END(err);
+	}
 
 	if (curr_tok.type() == '=') {
 		bump();
@@ -1224,13 +1235,8 @@ void Parser::enum_item(const Recovery& recovery) {
 		struct_tuple_block();
 	}
 
-	for (auto& delim : recovery) {
-		if (curr_tok.type() == delim)
-			DEFAULT_PARSE_END();
-	}
-	recover_to(recovery);
-
 	end_trace();
+	return nullptr;
 }
 
 // decl_union : UNION ident generic_params? ';'
