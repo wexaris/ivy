@@ -111,10 +111,13 @@ private:
 	inline Error* primitive();
 	inline Error* primitive(const Recovery& recovery);
 
-	Path path(const Recovery& to);
 	inline Attributes attributes();
+	Path path(const Recovery& to);
 
 	void generic_params(const Recovery& recovery);
+	void param_list(const Recovery& recovery);
+	Error* param(const Recovery& recovery);
+	Error* return_type(const Recovery& recovery);
 
 	// type
 	Error* type(const Recovery& recovery);
@@ -122,34 +125,35 @@ private:
 	Error* type_with_lt(const Recovery& recovery);
 	Error* type_sum(const Recovery& recovery);
 
-	// file
-	void module_decl(); // for entire file
-	void item();
+	// decl
+	void decl();
+	void decl_file_module();
+	void decl_sub_module();
+	void decl_import_item();
+	void decl_var(bool is_const, bool is_static);
+	void decl_type();
+	void decl_use();
+	void block_decl();
 
-	void item_module(); // sub-modules
+	void decl_fun();
+	void fun_block();
 
-	// stmt
-	void stmt_item(Attributes& attr);
-	void import_item();
-	void item_var(bool is_const, bool is_static);
-	void item_type();
-	void view_item();
-	void block_item();
-	void item_fun();
-	void item_union();
-	void item_trait();
-	void item_impl();
+	void decl_trait();
+	void trait_block();
+
+	void decl_impl();
 	void impl_block();
 
-	void item_struct();
+	void decl_union();
+	void decl_struct();
 	void struct_tuple_block();
 	void struct_tuple_item();
-	void struct_decl_block();
-	void struct_decl_item();
+	void struct_named_block();
+	void struct_named_item();
 
-	void item_enum();
-	void enum_decl_block();
-	void enum_decl(const Recovery& recovery);
+	void decl_enum();
+	void enum_block();
+	void enum_item(const Recovery& recovery);
 
 	// expr
 	void expr();
