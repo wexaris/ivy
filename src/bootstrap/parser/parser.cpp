@@ -583,7 +583,7 @@ void Parser::generic_params(const Recovery& recovery) {
 }
 
 // param_list : '(' param* ')'
-void Parser::param_list(const Recovery& recovery) {
+void Parser::param_list(bool is_method, const Recovery& recovery) {
 	trace("param_list");
 
 	if (expect_symbol('('))
@@ -591,7 +591,10 @@ void Parser::param_list(const Recovery& recovery) {
 
 	if (curr_tok.type() != ')') {
 
-		if (param(recovery + Recovery{','})) {
+		if (is_method && is_type(curr_tok) && curr_tok != TokenType::ID) {
+			param_self(recovery + Recovery{','});
+		}
+		else if (param(recovery + Recovery{','})) {
 			if (curr_tok.type() != ',')
 				DEFAULT_PARSE_END();
 		}
@@ -645,6 +648,24 @@ Error* Parser::return_type(const Recovery& recovery) {
 	auto err = type(recovery);
 	end_trace();
 	return err;
+}
+
+Error* Parser::param_self(const Recovery& recovery) {
+	trace("param_self");
+
+	if (curr_tok.type() == '&' || curr_tok.type() == '*') {
+		bump();
+		if (curr_tok == TokenType::MUT)
+			bump();
+	}
+	if (curr_tok == TokenType::SELF)
+		bump();
+	else {
+		auto err = err_expected(translate::tk_type(curr_tok), "a named parameter");
+		recover_to(recovery);
+		return(err);
+	}
+	return nullptr;
 }
 
 
@@ -929,7 +950,7 @@ void Parser::block_decl() {
 
 	switch (curr_tok.type()) {
 		case (int)TokenType::FUN:
-			decl_fun();
+			decl_fun(false);
 			break;
 		case (int)TokenType::STRUCT:
 			decl_struct();
@@ -954,9 +975,9 @@ void Parser::block_decl() {
 	end_trace();
 }
 
-// decl_fun : FUN ident generic_params? (RARROW return_type)? ';'
-//          | FUN ident generic_params? (RARROW return_type)? fun_block
-void Parser::decl_fun() {
+// decl_fun : FUN ident generic_params? param_list (RARROW return_type)? ';'
+//          | FUN ident generic_params? param_list (RARROW return_type)? fun_block
+void Parser::decl_fun(bool is_method) {
 	trace("decl_fun");
 
 	if (expect_keyword(TokenType::FUN))
@@ -969,7 +990,7 @@ void Parser::decl_fun() {
 		generic_params(recover::decl_start + Recovery{'(', (int)TokenType::RARROW, '{'});
 
 	if (curr_tok.type() == '(')
-		param_list({(int)TokenType::RARROW, '{'});
+		param_list(is_method, {(int)TokenType::RARROW, '{'});
 
 	if (curr_tok == TokenType::RARROW) {
 		bump();
@@ -1368,11 +1389,14 @@ void Parser::impl_block() {
 		bug("impl_block not checked before invoking");
 
 	while (curr_tok.type() != '}') {
+
 		auto attrib = attributes();
 
 		// FIXME:  Add constructor support
-		// FIXME:  'impl' should probably have it's own decl list
-		decl();
+		if (curr_tok == TokenType::TYPE)
+			decl_type();
+		else if (curr_tok == TokenType::FUN)
+			decl_fun(true);
 	}
 
 	EXPECT_OR_PASS('}');

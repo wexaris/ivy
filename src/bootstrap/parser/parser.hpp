@@ -115,10 +115,11 @@ private:
 	Path path(const Recovery& to);
 
 	void generic_params(const Recovery& recovery);
-	void param_list(const Recovery& recovery);
+	void param_list(bool is_method, const Recovery& recovery);
 	Error* param(const Recovery& recovery);
+	Error* param_self(const Recovery& recovery);
 	Error* return_type(const Recovery& recovery);
-
+	
 	// type
 	Error* type(const Recovery& recovery);
 	Error* type_or_lt(const Recovery& recovery);
@@ -135,7 +136,7 @@ private:
 	void decl_use();
 	void block_decl();
 
-	void decl_fun();
+	void decl_fun(bool is_method);
 	void fun_block();
 
 	void decl_trait();
