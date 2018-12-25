@@ -1421,8 +1421,8 @@ void Parser::expr() {
 ////////////////////////////////////////////    Type    ///////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-// type : '&' type
-//      | '*' type
+// type : '&' MUT? type
+//      | '*' MUT? type
 //      | '[' ']'
 //      | '[' type ']'
 //      | '[' type ';' expr ']'
@@ -1436,7 +1436,11 @@ Error* Parser::type(const Recovery& recovery) {
 		// reference type
 		case '&':
 			bump();
-			trace("type: ref");
+			if (curr_tok == TokenType::MUT) {		// '&' MUT
+				bump();
+				trace("type: mut ref");
+			}
+			else trace("type: ref");
 			if (auto err = type(recovery)) {				// '&' type
 				DEFAULT_PARSE_END(err);
 			}
@@ -1445,7 +1449,11 @@ Error* Parser::type(const Recovery& recovery) {
 		// pointer type
 		case '*':
 			bump();
-			trace("type: ptr");
+			if (curr_tok == TokenType::MUT) {		// '*' MUT
+				bump();
+				trace("type: mut ptr");
+			}
+			else trace("type: ptr");
 			if (auto err = type(recovery)) {				// '*' type
 				DEFAULT_PARSE_END(err);
 			}
