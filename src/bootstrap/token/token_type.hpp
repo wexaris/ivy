@@ -70,6 +70,8 @@ enum class TokenType {
 	F64,
 
 	// Keyword
+	SELF,
+
 	PACKAGE,
 	MOD,
 	USE,

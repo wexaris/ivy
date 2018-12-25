@@ -29,6 +29,7 @@ constexpr static const Keyword keywords[] = {
 	{ "float",		(int)TokenType::FLOAT },
 	{ "f32",		(int)TokenType::F32 },
 	{ "f64",		(int)TokenType::F64 },
+	{ "self",		(int)TokenType::SELF },
 	{ "package",	(int)TokenType::PACKAGE },
 	{ "mod",		(int)TokenType::MOD },
 	{ "use",		(int)TokenType::USE },

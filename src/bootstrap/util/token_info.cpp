@@ -86,6 +86,7 @@ std::string translate::tk_type(int type) {
 		case (int)TokenType::LIT_FLOAT:		return "float literal";
 
 		// Keyword
+		case (int)TokenType::SELF:			return "self";
 		case (int)TokenType::PACKAGE:		return "package";
 		case (int)TokenType::MOD:			return "mod";
 		case (int)TokenType::USE:			return "use";
