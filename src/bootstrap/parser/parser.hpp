@@ -88,28 +88,22 @@ private:
 
 	inline Error* expect_symbol(char exp);
 	inline Error* expect_symbol(char exp, const Recovery& to);
-	inline Error* expect_primitive();
-	inline Error* expect_primitive(const Recovery& to);
-	inline Error* expect_ident();
-	inline Error* expect_ident(const Recovery& to);
-	inline Error* expect_lifetime();
-	inline Error* expect_lifetime(const Recovery& to);
-	inline Error* expect_keyword(TokenType ty);
-	inline Error* expect_keyword(TokenType ty, const Recovery& to);
-	inline Error* expect_mod_or_package();
-	inline Error* expect_mod_or_package(const Recovery& to);
 	inline Error* expect_block_decl();
 	inline Error* expect_block_decl(const Recovery& to);
+	inline Error* expect_mod_or_package();
+	inline Error* expect_mod_or_package(const Recovery& to);
+	inline Error* expect_keyword(TokenType ty);
+	inline Error* expect_keyword(TokenType ty, const Recovery& to);
 
 // Parsing functions based on BNFs
 private:
 
+	inline Error* primitive();
+	inline Error* primitive(const Recovery& recovery);
 	inline Error* ident();
 	inline Error* ident(const Recovery& recovery);
 	inline Error* lifetime();
 	inline Error* lifetime(const Recovery& recovery);
-	inline Error* primitive();
-	inline Error* primitive(const Recovery& recovery);
 
 	inline Attributes attributes();
 	Path path(const Recovery& to);

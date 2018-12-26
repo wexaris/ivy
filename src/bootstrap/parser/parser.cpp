@@ -335,48 +335,6 @@ inline Error* Parser::expect_symbol(char sym, const Recovery& to) {
 	return err;
 }
 
-inline Error* Parser::expect_primitive() {
-	if (is_primitive(curr_tok)) {
-		bump();
-		return nullptr;
-	}
-	return err_expected(translate::tk_type(curr_tok), "a primitive type");
-}
-
-inline Error* Parser::expect_primitive(const Recovery& to) {
-	auto err = expect_primitive();
-	if (err) recover_to(to);
-	return err;
-}
-
-inline Error* Parser::expect_ident() {
-	if (curr_tok == TokenType::ID) {
-		bump();
-		return nullptr;
-	}
-	return err_expected(translate::tk_type(curr_tok), "an identifier");
-}
-
-inline Error* Parser::expect_ident(const Recovery& to) {
-	auto err = expect_ident();
-	if (err) recover_to(to);
-	return err;
-}
-
-inline Error* Parser::expect_lifetime() {
-	if (is_lifetime(curr_tok)) {
-		bump();
-		return nullptr;
-	}
-	return err_expected(translate::tk_type(curr_tok), "a lifetime");
-}
-
-inline Error* Parser::expect_lifetime(const Recovery& to) {
-	auto err = expect_lifetime();
-	if (err) recover_to(to);
-	return err;
-}
-
 inline Error* Parser::expect_keyword(TokenType ty) {
 	if (curr_tok == ty) {
 		bump();
@@ -465,49 +423,61 @@ void Parser::recover_to(const Recovery& to) {
 	}
 }
 
-// ident : ID
-inline Error* Parser::ident() {
-	trace("ident: " + std::string(curr_tok.raw()));
-	end_trace();
-	return expect_ident();
-}
-// ident : ID
-inline Error* Parser::ident(const Recovery& to) {
-	trace("ident: " + std::string(curr_tok.raw()));
-	end_trace();
-	return expect_ident(to);
-}
-
-// lifetime : LF
-inline Error* Parser::lifetime() {
-	trace("lifetime: " + std::string(curr_tok.raw()));
-	end_trace();
-	return expect_lifetime();
-}
-// lifetime : LF
-inline Error* Parser::lifetime(const Recovery& to) {
-	trace("lifetime: " + std::string(curr_tok.raw()));
-	end_trace();
-	return expect_lifetime(to);
-}
-
 // primitive : THING | STR | CHAR
 //           | INT | I64 | I32 | I16 | I8
 //           | UINT | U64 | U32 | U16 | U8
 //           | FLOAT | F64 | F32
 inline Error* Parser::primitive() {
 	trace("primitive: " + std::string(curr_tok.raw()));
-	end_trace();
-	return expect_primitive();
+	if (!is_primitive(curr_tok))
+		DEFAULT_PARSE_END(err_expected(translate::tk_type(curr_tok), "a primitive type"));
+	bump();
+	DEFAULT_PARSE_END(nullptr);
 }
 // primitive : THING | STR | CHAR
 //           | INT | I64 | I32 | I16 | I8
 //           | UINT | U64 | U32 | U16 | U8
 //           | FLOAT | F64 | F32
 inline Error* Parser::primitive(const Recovery& to) {
-	trace("primitive: " + std::string(curr_tok.raw()));
-	end_trace();
-	return expect_primitive(to);
+	if (auto err = primitive()) {
+		recover_to(to);
+		return err;
+	}
+	return nullptr;
+}
+
+// ident : ID
+inline Error* Parser::ident() {
+	trace("ident: " + std::string(curr_tok.raw()));
+	if (curr_tok != TokenType::ID)
+		DEFAULT_PARSE_END(err_expected(translate::tk_type(curr_tok), "an identifier"));
+	bump();
+	DEFAULT_PARSE_END(nullptr);
+}
+// ident : ID
+inline Error* Parser::ident(const Recovery& to) {
+	if (auto err = ident()) {
+		recover_to(to);
+		return err;
+}
+	return nullptr;
+}
+
+// lifetime : LF
+inline Error* Parser::lifetime() {
+	trace("lifetime: " + std::string(curr_tok.raw()));
+	if (!is_lifetime(curr_tok))
+		DEFAULT_PARSE_END(err_expected(translate::tk_type(curr_tok), "a lifetime"));
+	bump();
+	DEFAULT_PARSE_END(nullptr);
+}
+// lifetime : LF
+inline Error* Parser::lifetime(const Recovery& to) {
+	if (auto err = lifetime()) {
+		recover_to(to);
+		return err;
+}
+	return nullptr;
 }
 
 // attributes: PUB | PRIV | MUT | CONST
