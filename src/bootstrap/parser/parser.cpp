@@ -645,7 +645,8 @@ void Parser::generic_params(const Recovery& recovery) {
 	end_trace();
 }
 
-// param_list : '(' param* ')'
+// param_list : '(' ')'
+//            | '(' param (',' param)* ')'
 void Parser::param_list(bool is_method, const Recovery& recovery) {
 	trace("param_list");
 
@@ -657,24 +658,17 @@ void Parser::param_list(bool is_method, const Recovery& recovery) {
 		if (is_method && is_type(curr_tok) && curr_tok != TokenType::ID) {
 			param_self(recovery + Recovery{','});
 		}
-		else if (param(recovery + Recovery{','})) {
-			if (curr_tok.type() != ',')
-				DEFAULT_PARSE_END();
-		}
+		else param(recovery + Recovery{',', ')'});
 
 		while (curr_tok.type() == ',') {
 			bump();
 
-			if (param(recovery + Recovery{','})) {
-				if (curr_tok.type() != ',')
-					DEFAULT_PARSE_END();
-			}
+			param(recovery + Recovery{',', ')'});
 
-			if (curr_tok.type() == ')') {
+			if (curr_tok.type() == ')')
 				break;
 			}
 		} 
-	}
 	
 	if (expect_symbol(')', recovery + Recovery{')'})) {
 		if (curr_tok.type() == ')') {
