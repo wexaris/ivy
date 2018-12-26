@@ -667,8 +667,8 @@ void Parser::param_list(bool is_method, const Recovery& recovery) {
 
 			if (curr_tok.type() == ')')
 				break;
-			}
 		} 
+	}
 	
 	if (expect_symbol(')', recovery + Recovery{')'})) {
 		if (curr_tok.type() == ')') {
@@ -1527,17 +1527,6 @@ void Parser::expr() {
 		err_expected(translate::tk_type(curr_tok), "the end of the expression");
 		recover_to(recover::expr_end);
 	}
-
-	/*if (curr_tok.type() == '&') {
-		bump();
-		if (curr_tok == TokenType::ID)
-			bump();
-	}
-	if (curr_tok.type() == '*') {
-		bump();
-		if (curr_tok == TokenType::ID)
-			bump();
-	}*/
 
 	end_trace();
 }
