@@ -169,9 +169,7 @@ int main(int argc, char* argv[]) {
 #include "util/token_info.hpp"
 
 void print_main() {
-	Emitter emitter;
-	ErrorHandler handler(emitter);
-	SourceMap sm(handler);
+	SourceMap sm(Session::handler);
 	Lexer lex(sm.load_file("tests/main.ivy"), handler);
 
 	Token tk = lex.next_token();
