@@ -699,14 +699,7 @@ Error* Parser::param(const Recovery& recovery) {
 	return nullptr;
 }
 
-// return_type: type
-Error* Parser::return_type(const Recovery& recovery) {
-	trace("return_type");
-	auto err = type(recovery);
-	end_trace();
-	return err;
-}
-
+// param_self : (& MUT?)? SELF
 Error* Parser::param_self(const Recovery& recovery) {
 	trace("param_self");
 
@@ -723,6 +716,58 @@ Error* Parser::param_self(const Recovery& recovery) {
 		return(err);
 	}
 	return nullptr;
+}
+
+// arg_list : '(' ')'
+//          | '(' arg (',' arg)* ')'
+void Parser::arg_list(const Recovery& recovery) {
+	trace("arg_list");
+
+	if (expect_symbol('('))
+		bug("arg_list not checked before invoking");
+
+	if (curr_tok.type() != ')') {
+
+		arg();
+
+		while (curr_tok.type() == ',') {
+			bump();
+
+			arg();
+
+			if (curr_tok.type() == ')')
+				break;
+		} 
+	}
+	
+	if (expect_symbol(')', recovery + Recovery{')'})) {
+		if (curr_tok.type() == ')') {
+			bump();
+		}
+		DEFAULT_PARSE_END();
+	}
+
+	end_trace();
+}
+
+// arg : expr
+void Parser::arg() {
+	trace("arg");
+
+	// The expression parse should handle any unexpected characters
+	// We should have recovered to 'expr_end' if any unexpected
+	// characters followed
+	expr();
+
+	end_trace();
+}
+
+// return_type: type
+Error* Parser::return_type(const Recovery& recovery) {
+	trace("return_type");
+	auto err = type(recovery);
+	end_trace();
+	return err;
 }
 
 
@@ -1524,10 +1569,8 @@ Error* Parser::val(const Recovery& recovery) {
 	}
 	else if (curr_tok == TokenType::ID) {
 		auto p = path(recovery);
-		if (curr_tok.type() == '(') {
-			// FIXME:  function call
-			unimpl("function calls as expressions");
-		}
+		if (curr_tok.type() == '(')
+			arg_list(recovery);
 	}
 	else if (is_literal(curr_tok)) {
 		if (literal())

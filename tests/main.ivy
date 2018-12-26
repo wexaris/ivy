@@ -32,7 +32,7 @@ mod sub {
 		DOWN,
 		LEFT,
 		RIGHT,
-		SEQ = 4,
+		SEQ = useless::ret_this(4),
 	}
 
 	pub trait Raw {

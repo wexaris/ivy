@@ -118,6 +118,8 @@ private:
 	void param_list(bool is_method, const Recovery& recovery);
 	Error* param(const Recovery& recovery);
 	Error* param_self(const Recovery& recovery);
+	void arg_list(const Recovery& recovery);
+	void arg();
 	Error* return_type(const Recovery& recovery);
 	
 	// type
