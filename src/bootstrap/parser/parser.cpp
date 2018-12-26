@@ -271,6 +271,14 @@ inline bool is_attr(const Token& tk) {
 			tk == TokenType::STATIC;
 }
 
+inline bool is_binop(const Token& tk) {
+	return tk.type() == '+' || tk.type() == '-' || tk.type() == '*' || tk.type() == '/' || tk.type() == '^';
+}
+
+inline bool is_unaryop(const Token& tk) {
+	return tk.type() == '-' || tk.type() == '!' || tk.type() == '&' || tk.type() == '*';
+}
+
 Token Parser::split_multi_binop() {
 	switch (curr_tok.type()) {
 		[[fallthrough]] case (int)TokenType::EQEQ:
@@ -477,6 +485,80 @@ inline Error* Parser::lifetime(const Recovery& to) {
 		recover_to(to);
 		return err;
 }
+	return nullptr;
+}
+
+// literal : LIT_STRING
+//         | LIT_CHAR
+//         | LIT_INTEGER
+//         | LIT_FLOAT
+inline Error* Parser::literal() {
+	switch (curr_tok.type()) {
+		case (int)TokenType::LIT_STRING:
+			trace("literal: string: " + translate::tk_info(curr_tok));
+			bump();
+			break;
+		case (int)TokenType::LIT_CHAR:
+			trace("literal: char: " + translate::tk_info(curr_tok));
+			bump();
+			break;
+		case (int)TokenType::LIT_INTEGER:
+			trace("literal: int: " + translate::tk_info(curr_tok));
+			bump();
+			break;
+		case (int)TokenType::LIT_FLOAT:
+			trace("literal: float: " + translate::tk_info(curr_tok));
+			bump();
+			break;
+		default:
+			trace("literal: invalid: " + std::string(curr_tok.raw()));
+			DEFAULT_PARSE_END(err_expected(translate::tk_type(curr_tok), "a literal"));
+	}
+	DEFAULT_PARSE_END(nullptr);
+}
+// literal : LIT_STRING
+//         | LIT_CHAR
+//         | LIT_INTEGER
+//         | LIT_FLOAT
+inline Error* Parser::literal(const Recovery& to) {
+	if (auto err = literal()) {
+		recover_to(to);
+		return err;
+	}
+	return nullptr;
+}
+
+// binop : '+' | '-' | '*' | '/' | '^'
+inline Error* Parser::binop() {
+	trace("binop: " + std::string(curr_tok.raw()));
+	if (!is_binop(curr_tok))
+		DEFAULT_PARSE_END(err_expected(translate::tk_type(curr_tok), "a binary operator"));
+	bump();
+	DEFAULT_PARSE_END(nullptr);
+}
+// binop : '+' | '-' | '*' | '/' | '^'
+inline Error* Parser::binop(const Recovery& to) {
+	if (auto err = binop()) {
+		recover_to(to);
+		return err;
+	}
+	return nullptr;
+}
+
+// unaryop : '-' | '!' | '&' | '*'
+inline Error* Parser::unaryop() {
+	trace("unaryop: " + std::string(curr_tok.raw()));
+	if (!is_unaryop(curr_tok))
+		DEFAULT_PARSE_END(err_expected(translate::tk_type(curr_tok), "a unary operator"));
+	bump();
+	DEFAULT_PARSE_END(nullptr);
+}
+// unaryop : '-' | '!' | '&' | '*'
+inline Error* Parser::unaryop(const Recovery& to) {
+	if (auto err = unaryop()) {
+		recover_to(to);
+		return err;
+	}
 	return nullptr;
 }
 

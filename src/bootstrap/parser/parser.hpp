@@ -104,6 +104,12 @@ private:
 	inline Error* ident(const Recovery& recovery);
 	inline Error* lifetime();
 	inline Error* lifetime(const Recovery& recovery);
+	inline Error* literal();
+	inline Error* literal(const Recovery& recovery);
+	inline Error* binop();
+	inline Error* binop(const Recovery& recovery);
+	inline Error* unaryop();
+	inline Error* unaryop(const Recovery& recovery);
 
 	inline Attributes attributes();
 	Path path(const Recovery& to);
