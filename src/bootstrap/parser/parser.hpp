@@ -158,6 +158,7 @@ private:
 
 	// expr
 	void expr();
+	Error* val(const Recovery& recovery);
 
 	/* There shouldn't be any reason to contstruct multiples of the same parser. */
 	Parser(const Parser& other) = delete;

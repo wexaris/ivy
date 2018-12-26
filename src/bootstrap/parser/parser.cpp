@@ -2,6 +2,7 @@
 #include "util/ranges.hpp"
 #include "util/token_info.hpp"
 #include "ast/ast.hpp"
+#include <algorithm>
 
 #define DEFAULT_PARSE_END(x) { { end_trace(); return x; }; }
 #define	EXPECT_OR_PASS(x) { if (expect_symbol(x, recover::decl_start + Recovery{x})) if (curr_tok.type() == x) bump(); }
@@ -67,6 +68,16 @@ namespace recover {
 		(int)TokenType::FLOAT,
 		(int)TokenType::F32,
 		(int)TokenType::F64
+	};
+
+	static const Recovery expr_end = {
+		',',
+		'.',
+		';',
+		':',
+		')',
+		']',
+		'}'
 	};
 
 	static const Recovery semi = { ';' };
@@ -467,7 +478,7 @@ inline Error* Parser::ident(const Recovery& to) {
 	if (auto err = ident()) {
 		recover_to(to);
 		return err;
-}
+	}
 	return nullptr;
 }
 
@@ -484,7 +495,7 @@ inline Error* Parser::lifetime(const Recovery& to) {
 	if (auto err = lifetime()) {
 		recover_to(to);
 		return err;
-}
+	}
 	return nullptr;
 }
 
@@ -1280,8 +1291,8 @@ void Parser::enum_block() {
 			if (enum_item({',', '}'})) {
 				if (curr_tok.type() != ',' && curr_tok.type() != '}')
 					DEFAULT_PARSE_END();
+			}
 		}
-	}
 	}
 
 	EXPECT_OR_PASS('}');
@@ -1460,12 +1471,82 @@ void Parser::impl_block() {
 ////////////////////////////////////////////    Expr    ///////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
+// TODO:  we want fun_blocks to also work as expressions
+//        e.g 'var foo: Bar = { ... };'
+// expr : val (binop val)*
 void Parser::expr() {
 	trace("expr");
 
-	unimpl("expressions");
+	val(recover::expr_end + Recovery{'+', '-', '*', '/', '^'});
+
+	while (is_binop(curr_tok)) {
+		binop();
+		val(recover::expr_end + Recovery{'+', '-', '*', '/', '^'});
+	}
+
+	if (std::find(recover::expr_end.begin(), recover::expr_end.end(), curr_tok.type()) == recover::expr_end.end()) {
+		err_expected(translate::tk_type(curr_tok), "the end of the expression");
+		recover_to(recover::expr_end);
+	}
+
+	/*if (curr_tok.type() == '&') {
+		bump();
+		if (curr_tok == TokenType::ID)
+			bump();
+	}
+	if (curr_tok.type() == '*') {
+		bump();
+		if (curr_tok == TokenType::ID)
+			bump();
+	}*/
 
 	end_trace();
+}
+
+// val  : literal
+//      | path
+//      | fun_call
+//      | '(' expr ')'
+//      | unaryop val
+Error* Parser::val(const Recovery& recovery) {
+	trace("val");
+
+	if (is_unaryop(curr_tok)) {
+		if (unaryop()) {
+			bug("inconsistent unary operator definitions");
+		}
+		if (auto err = val(recovery))
+			DEFAULT_PARSE_END(err);
+	}
+
+	else if (curr_tok.type() == '(') {
+		bump();
+		expr();
+		if (auto err = expect_symbol(')', recovery + Recovery{')'})) {
+			if (curr_tok.type() == ')')
+				bump();
+			else DEFAULT_PARSE_END(err);
+		}
+	}
+	else if (curr_tok == TokenType::ID) {
+		auto p = path(recovery);
+		if (curr_tok.type() == '(') {
+			// FIXME:  function call
+			unimpl("function calls as expressions");
+		}
+	}
+	else if (is_literal(curr_tok)) {
+		if (literal())
+			bug("inconsistent literal definitions");
+	}
+	else {
+		auto err = err_expected(translate::tk_type(curr_tok), "an expression");
+		recover_to(recovery);
+		DEFAULT_PARSE_END(err);
+	}
+
+	end_trace();
+	return nullptr;
 }
 
 
