@@ -651,7 +651,7 @@ void Parser::generic_params(const Recovery& recovery) {
 	
 	if (curr_tok.type() != '>') {
 
-		if (auto err = type_or_lt(recovery + Recovery{',', '>'})) {
+		if (auto err = generic_param(recovery + Recovery{',', '>'})) {
 			if (curr_tok.type() != ',' && curr_tok.type() != '>') {
 				err->cancel();
 				handler.make_error_higligted("unterminated generic clause", curr_tok.span());
@@ -666,7 +666,7 @@ void Parser::generic_params(const Recovery& recovery) {
 				break;
 			}
 
-			if (auto err = type_or_lt(recovery + Recovery{',', '>'})) {
+			if (auto err = generic_param(recovery + Recovery{',', '>'})) {
 				if (curr_tok.type() != ',' && curr_tok.type() != '>') {
 					err->cancel();
 					handler.make_error_higligted("unterminated generic clause", curr_tok.span());
@@ -678,6 +678,13 @@ void Parser::generic_params(const Recovery& recovery) {
 	
 	expect_symbol('>', recovery);
 	end_trace();
+}
+
+// generic_params : type_or_lt
+Error* Parser::generic_param(const Recovery& recovery) {
+	trace("generic_param");
+	auto err = type_or_lt(recovery);
+	DEFAULT_PARSE_END(err);
 }
 
 // param_list : '(' ')'

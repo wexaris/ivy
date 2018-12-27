@@ -126,6 +126,7 @@ private:
 
 	// helping item collections
 	void generic_params(const Recovery& recovery);
+	Error* generic_param(const Recovery& recovery);
 
 	void param_list(bool is_method, const Recovery& recovery);
 	Error* param(const Recovery& recovery);
@@ -135,7 +136,7 @@ private:
 	Error* arg(const Recovery& recovery);
 
 	Error* return_type(const Recovery& recovery);
-	
+
 	void struct_init(const Recovery& recovery);
 	Error* struct_field(const Recovery& recovery);
 
@@ -175,7 +176,7 @@ private:
 	// expr
 	Error* expr(int min_prec);
 	Error* val(const Recovery& recovery);
-	
+
 	// type
 	Error* type(const Recovery& recovery);
 	Error* type_or_lt(const Recovery& recovery);
