@@ -644,8 +644,8 @@ Token Lexer::next_token_inner() {
 		}
 
 		default:
-			handler.make_error_higligted("unrecognised character: " + std::string(1, curr), curr_span());
 			bump();
+			handler.emit_fatal_higligted("unrecognised token: " + std::string{curr}, curr_span());
 			return Token(TokenType::UNKNOWN, curr_src_view(), curr_span());
 	}
 }
