@@ -312,14 +312,17 @@ inline bool is_attr(const Token& tk) {
 			tk == TokenType::STATIC;
 }
 
+/* True is the provided token is a binary operator. */
 inline bool is_binop(const Token& tk) {
 	return tk.type() == '+' || tk.type() == '-' || tk.type() == '*' || tk.type() == '/' || tk.type() == '^';
 }
 
+/* True is the provided token is a unary operator. */
 inline bool is_unaryop(const Token& tk) {
 	return tk.type() == '-' || tk.type() == '!' || tk.type() == '&' || tk.type() == '*';
 }
 
+/* Splits the current multi-character binop into smaller tokens. */
 Token Parser::split_multi_binop() {
 	switch (curr_tok.type()) {
 		[[fallthrough]] case (int)TokenType::EQEQ:
