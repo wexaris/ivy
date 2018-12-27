@@ -748,8 +748,10 @@ Error* Parser::param_self(const Recovery& recovery) {
 	else {
 		auto err = err_expected(translate::tk_type(curr_tok), "a named parameter");
 		recover_to(recovery);
-		return(err);
+		DEFAULT_PARSE_END(err);
 	}
+
+	end_trace();
 	return nullptr;
 }
 
@@ -802,8 +804,7 @@ Error* Parser::arg(const Recovery& recovery) {
 Error* Parser::return_type(const Recovery& recovery) {
 	trace("return_type");
 	auto err = type(recovery);
-	end_trace();
-	return err;
+	DEFAULT_PARSE_END(err);
 }
 
 

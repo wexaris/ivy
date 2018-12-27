@@ -106,7 +106,7 @@ private:
 
 // Parsing functions based on BNFs
 private:
-
+	// items
 	inline Error* primitive();
 	inline Error* primitive(const Recovery& recovery);
 	inline Error* ident();
@@ -120,22 +120,27 @@ private:
 	inline Error* unaryop();
 	inline Error* unaryop(const Recovery& recovery);
 
+	// collectors
 	inline Attributes attributes();
 	Path path(const Recovery& to);
 
+	// helping item collections
 	void generic_params(const Recovery& recovery);
+
 	void param_list(bool is_method, const Recovery& recovery);
 	Error* param(const Recovery& recovery);
 	Error* param_self(const Recovery& recovery);
+
 	void arg_list(const Recovery& recovery);
 	Error* arg(const Recovery& recovery);
+
 	Error* return_type(const Recovery& recovery);
 	
-	// type
-	Error* type(const Recovery& recovery);
-	Error* type_or_lt(const Recovery& recovery);
-	Error* type_with_lt(const Recovery& recovery);
-	Error* type_sum(const Recovery& recovery);
+	void struct_init(const Recovery& recovery);
+	Error* struct_field(const Recovery& recovery);
+
+	void arr_init(const Recovery& recovery);
+	Error* arr_field();
 
 	// decl
 	void decl();
@@ -171,19 +176,20 @@ private:
 	Error* expr(int min_prec);
 	Error* val(const Recovery& recovery);
 	
-	void struct_init(const Recovery& recovery);
-	Error* struct_field(const Recovery& recovery);
-	void arr_init(const Recovery& recovery);
-	Error* arr_field();
-
-	/* There shouldn't be any reason to contstruct multiples of the same parser. */
-	Parser(const Parser& other) = delete;
+	// type
+	Error* type(const Recovery& recovery);
+	Error* type_or_lt(const Recovery& recovery);
+	Error* type_with_lt(const Recovery& recovery);
+	Error* type_sum(const Recovery& recovery);
 
 public:
 	/* Constructs a parser for the file at the provided location. */
 	Parser(SourceMap& src_map, const std::string& filepath)
 		: handler(Session::handler), source_map(src_map), lexer(source_map.load_file(filepath), handler), curr_tok(lexer.next_token())
 	{}
+
+	/* There shouldn't be any reason to contstruct multiples of the same parser. */
+	Parser(const Parser& other) = delete;
 
 	/* Begins the process of parsing the package.
 	 * Returns the root node of the abstract syntax tree. */
