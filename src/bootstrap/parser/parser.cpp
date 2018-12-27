@@ -1005,7 +1005,7 @@ void Parser::decl_var(bool is_const, bool is_static) {
 			if (curr_tok.type() == ';')
 				bump();
 			DEFAULT_PARSE_END();
-	}
+		}
 	}
 	else has_init = false;
 
@@ -1391,7 +1391,7 @@ Error* Parser::enum_item(const Recovery& recovery) {
 		if (auto err = expr(1)) {
 			recover_to(recovery);
 			DEFAULT_PARSE_END(err);
-	}
+		}
 	}
 	else if (curr_tok.type() == '(') {
 		struct_tuple_block();
@@ -1463,17 +1463,28 @@ void Parser::decl_trait() {
 	end_trace();
 }
 
+// trait_block : '{' (decl_type | decl_fun)* '}'
 void Parser::trait_block() {
 	trace("trait_block");
 
 	if (expect_symbol('{'))
 		bug("trait_block not checked before invoking");
 
-	// FIXME: 
-	unimpl("trait block");
-
 	while (curr_tok.type() != '}') {
-		bump();
+
+		auto attr = attributes();
+
+		switch (curr_tok.type()) {
+			case (int)TokenType::TYPE:
+				decl_type();
+				break;
+			case (int)TokenType::FUN:
+				decl_fun(true);
+				break;
+			default:
+				err_expected(translate::tk_type(curr_tok), "one of 'fun' or 'type'");
+				recover_to(recover::decl_start + Recovery{'}'});
+		}
 	}
 
 	end_trace();
