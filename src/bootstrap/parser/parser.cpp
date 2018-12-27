@@ -7,6 +7,7 @@
 #define DEFAULT_PARSE_END(x) { { end_trace(); return x; }; }
 #define	EXPECT_OR_PASS(x) { if (expect_symbol(x, recover::decl_start + Recovery{x})) if (curr_tok.type() == x) bump(); }
 
+/* Contains recovery point presets */
 namespace recover {
 
 	static const Recovery decl_start = {
@@ -88,6 +89,35 @@ bool Attributes::contains(TokenType ty) {
 		if (attr.ty == ty)
 			return true;
 	return false;
+}
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////      Operators / OPInfo      ////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+/* A single operator-opinfo pair.
+ * Key - operator (char)
+ * Value - OPInfo. */
+struct OPInfoPair {
+	const char key;
+	OPInfo value;
+};
+/* Maps operators to their OPInfo. */
+constexpr static OPInfoPair opinfo_map[] {
+	{'+',    {1, OPInfo::LEFT}},
+	{'-',    {1, OPInfo::LEFT}},
+	{'*',    {2, OPInfo::LEFT}},
+	{'/',    {2, OPInfo::LEFT}},
+	{'^',    {3, OPInfo::RIGHT}}
+};
+/* Attempts to find the given operator in the OPInfo map.
+ * If no operations match, a nullptr is returned. */
+constexpr const OPInfoPair* op_find(char key) {
+	for (unsigned long i = 0; i < sizeof(opinfo_map)/sizeof(*opinfo_map); i++)
+		if (opinfo_map[i].key == key)
+			return &opinfo_map[i];
+	return nullptr;
 }
 
 
@@ -728,12 +758,12 @@ void Parser::arg_list(const Recovery& recovery) {
 
 	if (curr_tok.type() != ')') {
 
-		arg();
+		arg(recovery + Recovery{',', ')'});
 
 		while (curr_tok.type() == ',') {
 			bump();
 
-			arg();
+			arg(recovery + Recovery{',', ')'});
 
 			if (curr_tok.type() == ')')
 				break;
@@ -751,15 +781,16 @@ void Parser::arg_list(const Recovery& recovery) {
 }
 
 // arg : expr
-void Parser::arg() {
+Error* Parser::arg(const Recovery& recovery) {
 	trace("arg");
 
-	// The expression parse should handle any unexpected characters
-	// We should have recovered to 'expr_end' if any unexpected
-	// characters followed
-	expr();
+	if (auto err = expr(1)) {
+		recover_to(recovery);
+		DEFAULT_PARSE_END(err);
+	}
 
 	end_trace();
+	return nullptr;
 }
 
 // return_type: type
@@ -969,7 +1000,12 @@ void Parser::decl_var(bool is_const, bool is_static) {
 	bool has_init = true;
 	if (curr_tok.type() == '=') {
 		bump();
-		expr();
+		if (expr(1)) {
+			recover_to(recover::decl_start + recover::semi);
+			if (curr_tok.type() == ';')
+				bump();
+			DEFAULT_PARSE_END();
+	}
 	}
 	else has_init = false;
 
@@ -1352,7 +1388,10 @@ Error* Parser::enum_item(const Recovery& recovery) {
 
 	if (curr_tok.type() == '=') {
 		bump();
-		expr();
+		if (auto err = expr(1)) {
+			recover_to(recovery);
+			DEFAULT_PARSE_END(err);
+	}
 	}
 	else if (curr_tok.type() == '(') {
 		struct_tuple_block();
@@ -1512,23 +1551,41 @@ void Parser::impl_block() {
 
 // TODO:  we want fun_blocks to also work as expressions
 //        e.g 'var foo: Bar = { ... };'
-// expr : val (binop val)*
-void Parser::expr() {
+// expr : val (binop expr)*
+Error* Parser::expr(int min_prec) {
 	trace("expr");
 
-	val(recover::expr_end + Recovery{'+', '-', '*', '/', '^'});
+	if (auto err = val(recover::expr_end + Recovery{'+', '-', '*', '/', '^'})) {
+		if (!is_binop(curr_tok))
+			DEFAULT_PARSE_END(err);
+	}
 
 	while (is_binop(curr_tok)) {
-		binop();
-		val(recover::expr_end + Recovery{'+', '-', '*', '/', '^'});
+		
+		auto opinfo = op_find(curr_tok.type());
+		if (!opinfo)
+			bug("inconsistent binary operator definitions");
+
+		if (opinfo->value.prec < min_prec)
+			break;
+
+		trace("binop: " + std::string(curr_tok.raw()));
+
+		bump();
+		int next_prec = opinfo->value.assoc == OPInfo::LEFT ? opinfo->value.prec + 1 : opinfo->value.prec;
+
+		end_trace();
+		if (auto err = expr(next_prec))
+			DEFAULT_PARSE_END(err);
 	}
 
-	if (std::find(recover::expr_end.begin(), recover::expr_end.end(), curr_tok.type()) == recover::expr_end.end()) {
-		err_expected(translate::tk_type(curr_tok), "the end of the expression");
+	/*if (std::find(recover::expr_end.begin(), recover::expr_end.end(), curr_tok.type()) == recover::expr_end.end()) {
+		return err_expected(translate::tk_type(curr_tok), "the end of the expression");
 		recover_to(recover::expr_end);
-	}
+	}*/
 
 	end_trace();
+	return nullptr;
 }
 
 // val  : literal
@@ -1539,31 +1596,30 @@ void Parser::expr() {
 Error* Parser::val(const Recovery& recovery) {
 	trace("val");
 
-	if (is_unaryop(curr_tok)) {
-		if (unaryop()) {
-			bug("inconsistent unary operator definitions");
-		}
-		if (auto err = val(recovery))
-			DEFAULT_PARSE_END(err);
+	if (curr_tok == TokenType::ID) {				// path
+		auto p = path(recovery);
+		if (curr_tok.type() == '(')					// path '(' arg_list ')'
+			arg_list(Recovery{')'});
 	}
-
-	else if (curr_tok.type() == '(') {
+	else if (curr_tok.type() == '(') {				// '(' expr ')'
 		bump();
-		expr();
+		expr(1);
 		if (auto err = expect_symbol(')', recovery + Recovery{')'})) {
 			if (curr_tok.type() == ')')
 				bump();
 			else DEFAULT_PARSE_END(err);
 		}
 	}
-	else if (curr_tok == TokenType::ID) {
-		auto p = path(recovery);
-		if (curr_tok.type() == '(')
-			arg_list(recovery);
-	}
-	else if (is_literal(curr_tok)) {
+	else if (is_literal(curr_tok)) {				// literal
 		if (literal())
 			bug("inconsistent literal definitions");
+	}
+	else if (is_unaryop(curr_tok)) {						// unaryop val
+		if (unaryop()) {
+			bug("inconsistent unary operator definitions");
+		}
+		if (auto err = val(recovery))
+			DEFAULT_PARSE_END(err);
 	}
 	else {
 		auto err = err_expected(translate::tk_type(curr_tok), "an expression");
@@ -1641,7 +1697,11 @@ Error* Parser::type(const Recovery& recovery) {
 				}
 				if (curr_tok.type() == ';') {
 					bump();
-					expr();									// '[' type ';' expr ']
+					if (auto err = expr(1)) {				// '[' type ';' expr ']	
+						recover_to(recovery + Recovery{']'});
+						if (curr_tok.type() != ']')
+							DEFAULT_PARSE_END(err);
+					}
 				}
 				if (auto err = expect_symbol(']', recover::decl_start + Recovery{']', ';'})) {
 					if (curr_tok.type() == ']') {

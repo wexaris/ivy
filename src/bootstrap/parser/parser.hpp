@@ -32,6 +32,15 @@ struct SubPath {
 /* A vector of SubPaths. */
 using Path = std::vector<SubPath>;
 
+/* Info about a binary operator. */
+struct OPInfo {
+	int prec;
+	enum {
+		LEFT,
+		RIGHT
+	} assoc;
+};
+
 /* The workhorse of the compiler's frontend.
  * Responsible for scanning the input grammar.
  * Internally uses a Lexer for text reading and tokenization. */
@@ -119,7 +128,7 @@ private:
 	Error* param(const Recovery& recovery);
 	Error* param_self(const Recovery& recovery);
 	void arg_list(const Recovery& recovery);
-	void arg();
+	Error* arg(const Recovery& recovery);
 	Error* return_type(const Recovery& recovery);
 	
 	// type
@@ -159,7 +168,7 @@ private:
 	Error* enum_item(const Recovery& recovery);
 
 	// expr
-	void expr();
+	Error* expr(int min_prec);
 	Error* val(const Recovery& recovery);
 
 	/* There shouldn't be any reason to contstruct multiples of the same parser. */
