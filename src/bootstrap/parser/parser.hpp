@@ -170,6 +170,11 @@ private:
 	// expr
 	Error* expr(int min_prec);
 	Error* val(const Recovery& recovery);
+	
+	void struct_init(const Recovery& recovery);
+	Error* struct_field(const Recovery& recovery);
+	void arr_init(const Recovery& recovery);
+	Error* arr_field();
 
 	/* There shouldn't be any reason to contstruct multiples of the same parser. */
 	Parser(const Parser& other) = delete;

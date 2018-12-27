@@ -1590,27 +1590,32 @@ Error* Parser::expr(int min_prec) {
 			DEFAULT_PARSE_END(err);
 	}
 
-	/*if (std::find(recover::expr_end.begin(), recover::expr_end.end(), curr_tok.type()) == recover::expr_end.end()) {
-		return err_expected(translate::tk_type(curr_tok), "the end of the expression");
-		recover_to(recover::expr_end);
-	}*/
-
 	end_trace();
 	return nullptr;
 }
 
-// val  : literal
+// val  : unaryop val
+//      | literal
 //      | path
-//      | fun_call
+//      | path arg_list
+//      | path struct_init
+//      | path arr_size_decl
 //      | '(' expr ')'
-//      | unaryop val
 Error* Parser::val(const Recovery& recovery) {
 	trace("val");
 
 	if (curr_tok == TokenType::ID) {				// path
 		auto p = path(recovery);
-		if (curr_tok.type() == '(')					// path '(' arg_list ')'
-			arg_list(Recovery{')'});
+
+		if (curr_tok.type() == '(')	{				// path arg_list
+			arg_list(recovery);
+		}
+		else if (curr_tok.type() == '{') {			// path struct_init
+			struct_init(recovery);
+		}
+		else if (curr_tok.type() == '[') {			// path arr_init
+			arr_init(recovery);
+		}
 	}
 	else if (curr_tok.type() == '(') {				// '(' expr ')'
 		bump();
@@ -1626,9 +1631,9 @@ Error* Parser::val(const Recovery& recovery) {
 			bug("inconsistent literal definitions");
 	}
 	else if (is_unaryop(curr_tok)) {						// unaryop val
-		if (unaryop()) {
+		if (unaryop())
 			bug("inconsistent unary operator definitions");
-		}
+
 		if (auto err = val(recovery))
 			DEFAULT_PARSE_END(err);
 	}
@@ -1640,6 +1645,91 @@ Error* Parser::val(const Recovery& recovery) {
 
 	end_trace();
 	return nullptr;
+}
+
+// struct_init : '{' '}'
+//             | '{' struct_init_item (',' struct_init_item)*     '}'
+//             | '{' struct_init_item (',' struct_init_item)* ',' '}'
+void Parser::struct_init(const Recovery& recovery) {
+	trace("struct_init");
+
+	if (expect_symbol('{'))
+		bug("struct_init not checked before invoking");
+
+	if (curr_tok.type() != '}') {
+		
+		struct_field(recovery + Recovery{',' , '}'});
+
+		while (curr_tok.type() == ',') {
+			bump();
+
+			if (curr_tok.type() == '}')
+				break;
+
+			struct_field(recovery + Recovery{',' , '}'});
+		}
+
+	}
+
+	if (expect_symbol('}', recovery + Recovery{'}'})) {
+		if (curr_tok.type() == '}')
+			bump();
+	}
+
+	end_trace();
+}
+
+// struct_field : ident (':' expr)?
+Error* Parser::struct_field(const Recovery& recovery) {
+	trace("struct_field");
+
+	auto err = ident(recovery + Recovery{':'});
+	if (curr_tok.type() == ':') {
+		bump();
+		expr(1);
+	}
+
+	DEFAULT_PARSE_END(err);
+}
+
+// arr_init : '[' ']'
+//          | '{' arr_field (',' arr_field)*     '}'
+//          | '{' arr_field (',' arr_field)* ',' '}'
+void Parser::arr_init(const Recovery& recovery) {
+	trace("arr_init");
+
+	if (expect_symbol('['))
+		bug("arr_init not checked before invoking");
+
+	if (curr_tok.type() != ']') {
+		
+		arr_field();
+
+		while (curr_tok.type() == ',') {
+			bump();
+
+			if (curr_tok.type() == ']')
+				break;
+
+			arr_field();
+		}
+	}
+
+	if (expect_symbol(']', recovery + Recovery{']'})) {
+		if (curr_tok.type() == ']')
+			bump();
+	}
+
+	end_trace();
+}
+
+// arr_field : expr
+Error* Parser::arr_field() {
+	trace("arr_field");
+
+	auto err = expr(1);
+
+	DEFAULT_PARSE_END(err);
 }
 
 
