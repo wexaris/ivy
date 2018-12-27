@@ -45,6 +45,8 @@ constexpr static const Keyword keywords[] = {
 	{ "const",		(int)TokenType::CONST },
 	{ "static",		(int)TokenType::STATIC },
 	{ "type",		(int)TokenType::TYPE },
+	{ "if",			(int)TokenType::IF },
+	{ "else",		(int)TokenType::ELSE },
 	{ "loop",		(int)TokenType::LOOP },
 	{ "while",		(int)TokenType::WHILE },
 	{ "do",			(int)TokenType::DO },
@@ -56,6 +58,7 @@ constexpr static const Keyword keywords[] = {
 	{ "where",		(int)TokenType::WHERE },
 	{ "return",		(int)TokenType::RETURN },
 	{ "break",		(int)TokenType::BREAK },
+	{ "continue",	(int)TokenType::CONTINUE },
 	{ "pub",		(int)TokenType::PUB },
 	{ "priv",		(int)TokenType::PRIV },
 	{ "mut",		(int)TokenType::MUT }

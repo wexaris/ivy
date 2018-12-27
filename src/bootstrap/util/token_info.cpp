@@ -104,6 +104,8 @@ std::string translate::tk_type(int type) {
 		case (int)TokenType::CONST:			return "const";
 		case (int)TokenType::TYPE:			return "type";
 
+		case (int)TokenType::IF:			return "if";
+		case (int)TokenType::ELSE:			return "else";
 		case (int)TokenType::LOOP:			return "loop";
 		case (int)TokenType::WHILE:			return "while";
 		case (int)TokenType::DO:			return "do";
@@ -115,6 +117,7 @@ std::string translate::tk_type(int type) {
 		case (int)TokenType::WHERE:			return "where";
 		case (int)TokenType::RETURN:		return "return";
 		case (int)TokenType::BREAK:			return "break";
+		case (int)TokenType::CONTINUE:		return "continue";
 
 		case (int)TokenType::PUB:			return "pub";
 		case (int)TokenType::PRIV:			return "priv";

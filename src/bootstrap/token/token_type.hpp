@@ -89,6 +89,8 @@ enum class TokenType {
 	CONST,
 	TYPE,
 	
+	IF,
+	ELSE,
 	LOOP,
 	WHILE,
 	DO,
@@ -100,6 +102,7 @@ enum class TokenType {
 	WHERE,
 	RETURN,
 	BREAK,
+	CONTINUE,
 
 	PUB,
 	PRIV,
