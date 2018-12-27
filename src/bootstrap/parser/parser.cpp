@@ -1783,19 +1783,7 @@ Error* Parser::type(const Recovery& recovery) {
 				bump();										// '[' ']'
 			}
 			else {
-				Error* passed_on = nullptr;
-				if (auto err = type(recover::decl_start + Recovery{']', ';'})) {		// '[' type ']' | '[' type ';' expr ']'
-					if (curr_tok.type() == ']') {
-						bump();
-						DEFAULT_PARSE_END(err);
-					}
-					else if (curr_tok.type() == ';') {
-						bump();
-						passed_on = err;
-						// Doesn't fail
-						// Attempts to contilue parsing type
-					}
-				}
+				auto err = type(recover::decl_start + Recovery{']', ';'});
 				if (curr_tok.type() == ';') {
 					bump();
 					if (auto err = expr(1)) {				// '[' type ';' expr ']	
@@ -1817,9 +1805,7 @@ Error* Parser::type(const Recovery& recovery) {
 						DEFAULT_PARSE_END(err);
 					}
 				}
-				if (passed_on) {
-					DEFAULT_PARSE_END(passed_on);
-				}
+				DEFAULT_PARSE_END(err);
 			}
 			end_trace();
 			break;
