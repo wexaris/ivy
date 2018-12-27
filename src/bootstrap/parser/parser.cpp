@@ -369,11 +369,13 @@ inline Error* Parser::expect_symbol(char sym) {
 		return nullptr;
 	}
 	else {
+		Token backup = curr_tok;
 		auto tk = split_multi_binop();
 		if (tk.type() == (int)sym) {
 			bump();
 			return nullptr;
 		}
+		curr_tok = backup;
 	}
 	std::string found = curr_tok.type() < 256 ?
 		std::string{'\'', (char)curr_tok.type(), '\'' } :	// TRUE
