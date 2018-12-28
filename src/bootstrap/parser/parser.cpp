@@ -1134,9 +1134,11 @@ void Parser::block_decl() {
 		case (int)TokenType::IMPL:
 			decl_impl();
 			break;
-		default:
-			if (expect_block_decl(recover::decl_start))
+		default: {
+				err_expected(translate::tk_type(curr_tok), "a declaration");
+				recover_to(recover::decl_start);
 				DEFAULT_PARSE_END();
+	}
 	}
 
 	end_trace();
