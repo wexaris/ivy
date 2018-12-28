@@ -52,7 +52,7 @@ public:
 	 * If no argument is provided, characters are bumped by one. */
 	void bump(int n = 1);
 
-	/* A pointer to the current source file */
+	/* A reference to the current source file */
 	inline const TranslationUnit& trans_unit() const { return translation_unit; }
 
 	/* The current character in the source file */
