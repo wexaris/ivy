@@ -54,7 +54,7 @@ public:
 	inline std::string_view source() const		{ return src; }
 
 	/* Start position in the CodeMap. */
-	inline int start_pos() const				{ return start_position; }
+	inline size_t start_pos() const				{ return start_position; }
 	/* End position in the CodeMap. */
 	inline size_t end_pos() const				{ return start_position + src.length(); }
 };
