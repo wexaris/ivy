@@ -41,6 +41,7 @@ constexpr static const Keyword keywords[] = {
 	{ "enum",		(int)TokenType::ENUM },
 	{ "union",		(int)TokenType::UNION },
 	{ "macro",		(int)TokenType::MACRO },
+	{ "trait",		(int)TokenType::TRAIT },
 	{ "impl",		(int)TokenType::IMPL },
 	{ "const",		(int)TokenType::CONST },
 	{ "static",		(int)TokenType::STATIC },
