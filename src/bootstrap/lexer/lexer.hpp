@@ -137,4 +137,7 @@ public:
 	 * Tokens get marked with a type, location and value if necessary.
 	 * Once EOF has been reached, '\0' will be returned. */
 	Token next_token();
+
+	/* A reference to the current source file */
+	inline const TranslationUnit& trans_unit() const { return translation_unit; }
 };
