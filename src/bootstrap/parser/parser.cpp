@@ -1629,15 +1629,24 @@ Error* Parser::expr(int min_prec) {
 // val  : unaryop val
 //      | literal
 //      | path
-//      | path arg_list
-//      | path struct_init
-//      | path arr_size_decl
-//      | '(' expr ')'
+//      | path arg_list              // fun call
+//      | path '!' arg_list          // macro invocation
+//      | path struct_init           // struct creation
+//      | path arr_size_decl         // array creation
+//      | '(' expr (',' expr)? ')'
+//      | '(' ')'
 Error* Parser::val(const Recovery& recovery) {
 	trace("val");
 
 	if (curr_tok == TokenType::ID) {				// path
 		auto p = path(recovery);
+		bool macro_invoc = false;
+
+		if(curr_tok.type() == '!') {				// '!'     macro invocation
+			trace("macro_invoc");
+			macro_invoc = true;
+			bump();
+		}
 
 		if (curr_tok.type() == '(')	{				// path arg_list
 			arg_list(recovery);
@@ -1648,10 +1657,22 @@ Error* Parser::val(const Recovery& recovery) {
 		else if (curr_tok.type() == '[') {			// path arr_init
 			arr_init(recovery);
 		}
+
+		if (macro_invoc)
+			end_trace();
 	}
-	else if (curr_tok.type() == '(') {				// '(' expr ')'
+	else if (curr_tok.type() == '(') {				// '('
 		bump();
+		if (curr_tok.type() != ')') {				// '(' ')'
+			expr(1);
+
+			while (curr_tok.type() == ',') {		// '(' expr* ')'
+		bump();
+
 		expr(1);
+			}
+		}
+		
 		if (auto err = expect_symbol(')', recovery + Recovery{')'})) {
 			if (curr_tok.type() == ')')
 				bump();
@@ -1662,7 +1683,7 @@ Error* Parser::val(const Recovery& recovery) {
 		if (literal())
 			bug("inconsistent literal definitions");
 	}
-	else if (is_unaryop(curr_tok)) {						// unaryop val
+	else if (is_unaryop(curr_tok)) {				// unaryop val
 		if (unaryop())
 			bug("inconsistent unary operator definitions");
 
