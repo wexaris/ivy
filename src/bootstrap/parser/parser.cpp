@@ -1871,17 +1871,17 @@ Error* Parser::type(const Recovery& recovery) {
 				bump();				
 			}
 			else {
-				auto err = type({';', ']', ')', '}'});
-				DEFAULT_PARSE_END(err);
+				auto err = type({',', ')'});
 				while(curr_tok.type() == ',') {
 					bump();
-					err = type(recovery);						// '(' type (',' type)* ')'
-					DEFAULT_PARSE_END(err);
+					err = type(recovery + Recovery{',', ')'});	// '(' type (',' type)* ')'
 				}
 				if (auto err = expect_symbol(')')) {
 					recover_to({')'});
 					DEFAULT_PARSE_END(err);
 				}
+				if (err)
+					DEFAULT_PARSE_END(err);
 			}
 			break;
 
