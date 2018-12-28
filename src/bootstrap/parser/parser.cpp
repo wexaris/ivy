@@ -27,6 +27,17 @@ namespace recover {
 		(int)TokenType::TRAIT,
 		(int)TokenType::IMPL,
 
+		(int)TokenType::PUB,
+		(int)TokenType::PRIV,
+		(int)TokenType::STATIC,
+		(int)TokenType::CONST,
+		(int)TokenType::MUT,
+	};
+
+	static const Recovery stmt_start = {
+		(int)TokenType::VAR,
+		(int)TokenType::FUN,
+
 		(int)TokenType::LOOP,
 		(int)TokenType::WHILE,
 		(int)TokenType::DO,
@@ -34,15 +45,12 @@ namespace recover {
 		(int)TokenType::MATCH,
 		(int)TokenType::SWITCH,
 		(int)TokenType::CASE,
+		(int)TokenType::CONTINUE,
 		(int)TokenType::RETURN,
 		(int)TokenType::BREAK,
 
-		(int)TokenType::CONST,
 		(int)TokenType::STATIC,
-
-		(int)TokenType::PUB,
-		(int)TokenType::PRIV,
-
+		(int)TokenType::CONST,
 		(int)TokenType::MUT,
 	};
 
@@ -1138,7 +1146,7 @@ void Parser::block_decl() {
 				err_expected(translate::tk_type(curr_tok), "a declaration");
 				recover_to(recover::decl_start);
 				DEFAULT_PARSE_END();
-	}
+			}
 	}
 
 	end_trace();
@@ -1187,17 +1195,20 @@ void Parser::decl_fun(bool is_method) {
 	end_trace();
 }
 
+// fun_block : '{' stmt* '}'
 void Parser::fun_block() {
 	trace("fun_block");
 
 	if (expect_symbol('{'))
 		bug("fun_block not checked before invoking");
 
-	// FIXME: 
-	unimpl("function block");
-
 	while (curr_tok.type() != '}') {
-		bump();
+		stmt({'}'});
+	}
+
+	if (expect_symbol('}', recover::decl_start + Recovery{'}'})) {
+		if (curr_tok.type() == '}')
+			bump();
 	}
 
 	end_trace();
@@ -1589,6 +1600,290 @@ void Parser::impl_block() {
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////    Stmt    ///////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+void Parser::stmt(const Recovery& recovery) {
+	trace("stmt");
+	
+	auto attr = attributes();
+	bool is_const = attr.contains(TokenType::CONST);
+	bool is_static = attr.contains(TokenType::STATIC);
+
+	switch (curr_tok.type()) {
+		case (int)TokenType::VAR:
+			decl_var(is_const, is_static);
+			break;
+
+		case (int)TokenType::FUN:
+			decl_fun(false);
+			break;
+
+		case (int)TokenType::IF:
+			stmt_if(recover::stmt_start + recovery);
+			break;
+
+		case (int)TokenType::ELSE:
+			handler.make_error_higligted("missing 'if' statement", curr_tok.span());
+			stmt_else(recover::stmt_start + recovery);
+			break;
+
+		case (int)TokenType::LOOP:
+			stmt_loop(recover::stmt_start + recovery);
+			break;
+
+		case (int)TokenType::WHILE:
+			stmt_while(recover::stmt_start + recovery);
+			break;
+
+		case (int)TokenType::DO:
+			stmt_do(recover::stmt_start + recovery);
+			break;
+
+		case (int)TokenType::FOR:
+			stmt_for(recover::stmt_start + recovery);
+			break;
+
+		case (int)TokenType::MATCH:
+			stmt_match(recover::stmt_start + recovery);
+			break;
+
+		case (int)TokenType::SWITCH:
+			stmt_switch(recover::stmt_start + recovery);
+			break;
+
+		case (int)TokenType::CASE:
+			stmt_case(recover::stmt_start + recovery);
+			break;
+
+		case (int)TokenType::RETURN:
+			stmt_return(recover::stmt_start + recovery);
+			break;
+
+		case (int)TokenType::BREAK:
+			stmt_break(recover::stmt_start + recovery);
+			break;
+
+		case (int)TokenType::CONTINUE:
+			stmt_continue(recover::stmt_start + recovery);
+			break;
+
+		default:
+			expr(1);
+			if (expect_symbol(';', recovery + recover::semi)) {
+				if (curr_tok.type() == ';')
+					bump();
+			}
+			//err_expected(translate::tk_type(curr_tok), "a statement");
+			//recover_to(recover::stmt_start + recovery);
+	}
+
+	end_trace();
+}
+
+void Parser::stmt_if(const Recovery& recovery) {
+	trace("stmt_if");
+
+	if (expect_keyword(TokenType::IF))
+		bug("stmt_if not checked before invoking");
+
+	expr(1);
+
+	expect_symbol('{');
+
+	while (curr_tok.type() != '}')
+		stmt({'}'});
+
+	expect_symbol('}');
+
+	if (curr_tok == TokenType::ELSE)
+		stmt_else(recovery);
+
+	end_trace();
+}
+
+void Parser::stmt_else(const Recovery& recovery) {
+	trace("stmt_else");
+
+	if (expect_keyword(TokenType::ELSE))
+		bug("stmt_else not checked before invoking");
+
+	if (curr_tok == TokenType::IF)
+		expr(1);
+
+	expect_symbol('{');
+
+	while (curr_tok.type() != '}')
+		stmt({'}'});
+
+	expect_symbol('}');
+
+	(void)recovery;
+	end_trace();
+}
+
+void Parser::stmt_loop(const Recovery& recovery) {
+	trace("stmt_loop");
+
+	if (expect_keyword(TokenType::LOOP))
+		bug("stmt_loop not checked before invoking");
+
+	expect_symbol('{');
+
+	while (curr_tok.type() != '}')
+		stmt({'}'});
+
+	expect_symbol('}');
+
+	(void)recovery;
+	end_trace();
+}
+
+void Parser::stmt_while(const Recovery& recovery) {
+	trace("stmt_while");
+
+	if (expect_keyword(TokenType::WHILE))
+		bug("stmt_while not checked before invoking");
+
+	expr(1);
+
+	expect_symbol('{');
+
+	while (curr_tok.type() != '}')
+		stmt({'}'});
+
+	expect_symbol('}');
+
+	(void)recovery;
+	end_trace();
+}
+
+void Parser::stmt_do(const Recovery& recovery) {
+	trace("stmt_do");
+
+	if (expect_keyword(TokenType::DO))
+		bug("stmt_do not checked before invoking");
+
+	expect_symbol('{');
+
+	while (curr_tok.type() != '}')
+		stmt({'}'});
+
+	expect_symbol('}');
+
+	expect_keyword(TokenType::WHILE);
+
+	if (expect_symbol(';', recover::stmt_start + recover::semi + recovery)) {
+		if (curr_tok.type() == ';')
+			bump();
+	}
+
+	end_trace();
+}
+
+void Parser::stmt_for(const Recovery& recovery) {
+	trace("stmt_for");
+
+	if (expect_keyword(TokenType::FOR))
+		bug("stmt_for not checked before invoking");
+
+	unimpl("stmt_for");
+
+	(void)recovery;
+	end_trace();
+}
+
+void Parser::stmt_match(const Recovery& recovery) {
+	trace("stmt_match");
+
+	if (expect_keyword(TokenType::MATCH))
+		bug("stmt_match not checked before invoking");
+
+	unimpl("stmt_match");
+
+	(void)recovery;
+	end_trace();
+}
+
+void Parser::stmt_switch(const Recovery& recovery) {
+	trace("stmt_switch");
+
+	if (expect_keyword(TokenType::SWITCH))
+		bug("stmt_switch not checked before invoking");
+
+	unimpl("stmt_switch");
+
+	(void)recovery;
+	end_trace();
+}
+
+// stmt_case : CASE expr ':'
+void Parser::stmt_case(const Recovery& recovery) {
+	trace("stmt_case");
+
+	if (expect_keyword(TokenType::CASE))
+		bug("stmt_case not checked before invoking");
+
+	expr(1);
+
+	if (expect_symbol(':', recovery + Recovery{':'})) {
+		if (curr_tok.type() == ':')
+			bump();
+	}
+
+	end_trace();
+}
+
+// stmt_return : RETURN expr? ';'
+void Parser::stmt_return(const Recovery& recovery) {
+	trace("stmt_return");
+
+	if (expect_keyword(TokenType::RETURN))
+		bug("stmt_return not checked before invoking");
+
+	if (curr_tok.type() != ';')
+		expr(1);
+
+	if (expect_symbol(';', recovery + recover::semi)) {
+		if (curr_tok.type() == ';')
+			bump();
+	}
+
+	end_trace();
+}
+
+// stmt_break : BREAK ';'
+void Parser::stmt_break(const Recovery& recovery) {
+	trace("stmt_break");
+
+	if (expect_keyword(TokenType::BREAK))
+		bug("stmt_break not checked before invoking");
+
+	if (expect_symbol(';', recovery + recover::semi)) {
+		if (curr_tok.type() == ';')
+			bump();
+	}
+
+	end_trace();
+}
+
+// stmt_continue : CONTINUE ';'
+void Parser::stmt_continue(const Recovery& recovery) {
+	trace("stmt_continue");
+
+	if (expect_keyword(TokenType::CONTINUE))
+		bug("stmt_continue not checked before invoking");
+
+	if (expect_symbol(';', recovery + recover::semi)) {
+		if (curr_tok.type() == ';')
+			bump();
+	}
+
+	end_trace();
+}
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////    Expr    ///////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -1667,9 +1962,9 @@ Error* Parser::val(const Recovery& recovery) {
 			expr(1);
 
 			while (curr_tok.type() == ',') {		// '(' expr* ')'
-		bump();
+				bump();
 
-		expr(1);
+				expr(1);
 			}
 		}
 		

@@ -177,6 +177,21 @@ private:
 	Error* expr(int min_prec);
 	Error* val(const Recovery& recovery);
 
+	// stmt
+	void stmt(const Recovery& recovery);
+	void stmt_if(const Recovery& recovery);
+	void stmt_else(const Recovery& recovery);
+	void stmt_loop(const Recovery& recovery);
+	void stmt_while(const Recovery& recovery);
+	void stmt_do(const Recovery& recovery);
+	void stmt_for(const Recovery& recovery);
+	void stmt_match(const Recovery& recovery);
+	void stmt_switch(const Recovery& recovery);
+	void stmt_case(const Recovery& recovery);
+	void stmt_return(const Recovery& recovery);
+	void stmt_break(const Recovery& recovery);
+	void stmt_continue(const Recovery& recovery);
+
 	// type
 	Error* type(const Recovery& recovery);
 	Error* type_or_lt(const Recovery& recovery);
