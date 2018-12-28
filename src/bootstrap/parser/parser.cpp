@@ -1518,6 +1518,7 @@ void Parser::trait_block() {
 		}
 	}
 
+	EXPECT_OR_PASS('}')
 	end_trace();
 }
 
