@@ -46,6 +46,8 @@ enum class TokenType {
 	FATARROW,		// =>
 
 	// Literal
+	LIT_TRUE,
+	LIT_FALSE,
 	LIT_STRING,
 	LIT_CHAR,
 	LIT_INTEGER,		// Unsigned. Lexing with a minus could cause lots of overlap while parsing

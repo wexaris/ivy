@@ -13,6 +13,8 @@ struct Keyword {
 /* A map of keywords.
  * Matches a string to a keyword type. */
 constexpr static const Keyword keywords[] = {
+	{ "true",		(int)TokenType::LIT_TRUE },
+	{ "false",		(int)TokenType::LIT_FALSE },
 	{ "thing",		(int)TokenType::THING },
 	{ "str",		(int)TokenType::STR },
 	{ "char",		(int)TokenType::CHAR },

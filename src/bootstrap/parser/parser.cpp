@@ -292,7 +292,9 @@ inline bool is_type(const Token& tk) {
 
 /* True if the provided token's type is a literal. */
 inline bool is_literal(const Token& tk) {
-	return tk == TokenType::LIT_STRING		||
+	return tk == TokenType::LIT_TRUE		||
+			tk == TokenType::LIT_FALSE		||
+			tk == TokenType::LIT_STRING		||
 			tk == TokenType::LIT_CHAR		||
 			tk == TokenType::LIT_INTEGER	||
 			tk == TokenType::LIT_FLOAT;
@@ -534,12 +536,22 @@ inline Error* Parser::lifetime(const Recovery& to) {
 	return nullptr;
 }
 
-// literal : LIT_STRING
+// literal : LIT_TRUE
+//         | LIT_FALSE
+//         | LIT_STRING
 //         | LIT_CHAR
 //         | LIT_INTEGER
 //         | LIT_FLOAT
 inline Error* Parser::literal() {
 	switch (curr_tok.type()) {
+		case (int)TokenType::LIT_TRUE:
+			trace("literal: bool: true");
+			bump();
+			break;
+		case (int)TokenType::LIT_FALSE:
+			trace("literal: bool: false");
+			bump();
+			break;
 		case (int)TokenType::LIT_STRING:
 			trace("literal: string: " + translate::tk_info(curr_tok));
 			bump();
@@ -557,12 +569,16 @@ inline Error* Parser::literal() {
 			bump();
 			break;
 		default:
+			if (is_literal(curr_tok))
+				bug("inconsistent literal definitions");
 			trace("literal: invalid: " + std::string(curr_tok.raw()));
 			DEFAULT_PARSE_END(err_expected(translate::tk_type(curr_tok), "a literal"));
 	}
 	DEFAULT_PARSE_END(nullptr);
 }
-// literal : LIT_STRING
+// literal : LIT_TRUE
+//         | LIT_FALSE
+//         | LIT_STRING
 //         | LIT_CHAR
 //         | LIT_INTEGER
 //         | LIT_FLOAT

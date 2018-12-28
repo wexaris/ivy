@@ -80,6 +80,8 @@ std::string translate::tk_type(int type) {
 		case (int)TokenType::F64:		return "f64";
 
 		// Literal
+		case (int)TokenType::LIT_TRUE:		return "boolean literal";
+		case (int)TokenType::LIT_FALSE:		return "boolean literal";
 		case (int)TokenType::LIT_STRING:	return "string literal";
 		case (int)TokenType::LIT_CHAR:		return "char literal";
 		case (int)TokenType::LIT_INTEGER:	return "integer literal";
