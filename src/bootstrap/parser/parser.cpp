@@ -1797,7 +1797,7 @@ Error* Parser::arr_field() {
 //      | '[' type ';' expr ']'
 //      | '(' ')'
 //      | '(' type (',' type)* ')'
-//      | ID
+//      | path
 //      | primitive
 Error* Parser::type(const Recovery& recovery) {
 
@@ -1805,7 +1805,7 @@ Error* Parser::type(const Recovery& recovery) {
 		// reference type
 		case '&':
 			bump();
-			if (curr_tok == TokenType::MUT) {		// '&' MUT
+			if (curr_tok == TokenType::MUT) {				// '&' MUT
 				bump();
 				trace("type: mut ref");
 			}
@@ -1818,7 +1818,7 @@ Error* Parser::type(const Recovery& recovery) {
 		// pointer type
 		case '*':
 			bump();
-			if (curr_tok == TokenType::MUT) {		// '*' MUT
+			if (curr_tok == TokenType::MUT) {				// '*' MUT
 				bump();
 				trace("type: mut ptr");
 			}
@@ -1886,14 +1886,13 @@ Error* Parser::type(const Recovery& recovery) {
 			break;
 
 		// custom type
-		case (int)TokenType::ID:
-			trace("type: ident");
-			//auto type_name = curr_tok.raw();
-			if (auto err = ident()) {							// ident
-				recover_to(recovery);
-				DEFAULT_PARSE_END(err);
+		case (int)TokenType::ID: {
+				trace("type: path");
+				auto path = this->path(recovery);
+				if (curr_tok.type() == '<')
+					generic_params(recovery);
+				break;
 			}
-			break;
 
 		// primitive type
 		default:
