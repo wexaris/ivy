@@ -23,7 +23,7 @@ mod sub {
 
 	impl Pos {
 		pub fun make(x: i32, y: i32) -> Pos {
-			Pos { x: x, y: y }
+			return Pos { x: x, y: y };
 		}
 	}
 
@@ -41,7 +41,7 @@ mod sub {
 
 	impl Raw for Pos {
 		pub fun raw(&self) -> (i32, i32) {
-			(x, y)
+			return (x, y);
 		}
 	}
 }
