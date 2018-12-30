@@ -69,6 +69,11 @@ private:
 	inline Error* expect_keyword(TokenType ty);
 	inline Error* expect_keyword(TokenType ty, const Recovery& to);
 
+	/* Expect a symbol, recover on failure and check again.
+	 * A lot of parse items end with a symbol check, recovery, recheck,
+	 * so this small fucntion does that very same thing for us. */
+	void expect_sym_recheck(char expr, const Recovery& recov);
+
 // Parsing functions based on BNFs
 private:
 	// items

@@ -453,6 +453,14 @@ inline Error* Parser::expect_block_decl(const Recovery& to) {
 	return err;
 }
 
+inline void Parser::expect_sym_recheck(char sym, const Recovery& recov) {
+	if (expect_symbol(sym)) {
+		recover_to(recov + Recovery{sym});
+		if (curr_tok.type() == sym)
+			bump();
+	}
+}
+
 inline void Parser::bug(const std::string& msg) {
 	handler.make_bug(msg).emit();
 }
