@@ -2,44 +2,9 @@
 #include "driver/session.hpp"
 #include "source/source_map.hpp"
 #include "lexer/lexer.hpp"
-
-struct Node;
-
-/* A single attribute.
- * Has an int for the type and a Span. */
-struct Attr {
-	TokenType ty;
-	Span sp;
-};
-/* A vector of attributes. */
-struct Attributes : std::vector<Attr> {
-
-	bool contains(TokenType ty);
-
-	inline bool none() {
-		return this->size() == 0;
-	}
-};
+#include "ast/ast.hpp"
 
 using Recovery = std::vector<int>;
-
-/* A single part of a path.
- * Has a string and Span. */
-struct SubPath {
-	std::string_view id;
-	Span span;
-};
-/* A vector of SubPaths. */
-using Path = std::vector<SubPath>;
-
-/* Info about a binary operator. */
-struct OPInfo {
-	int prec;
-	enum {
-		LEFT,
-		RIGHT
-	} assoc;
-};
 
 /* The workhorse of the compiler's frontend.
  * Responsible for scanning the input grammar.

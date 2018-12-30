@@ -1,7 +1,6 @@
 #include "parser.hpp"
 #include "util/ranges.hpp"
 #include "util/token_info.hpp"
-#include "ast/ast.hpp"
 #include <algorithm>
 
 #define DEFAULT_PARSE_END(x) { { end_trace(); return x; }; }
