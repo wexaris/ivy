@@ -1793,10 +1793,13 @@ void Parser::stmt_do(const Recovery& recovery) {
 
 	expect_keyword(TokenType::WHILE);
 
-	if (expect_symbol(';', recover::stmt_start + recover::semi + recovery)) {
-		if (curr_tok.type() == ';')
-			bump();
-	}
+	expect_symbol('(');
+
+	while (curr_tok.type() != ')')
+		stmt({')', ';'});
+
+	expect_sym_recheck(')', recover::stmt_start + recovery + Recovery{';'});
+	expect_sym_recheck(';', recover::stmt_start + recovery);
 
 	end_trace();
 }
