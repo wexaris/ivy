@@ -1696,6 +1696,7 @@ void Parser::stmt(const Recovery& recovery) {
 	end_trace();
 }
 
+// FIXME:  add error handling
 void Parser::stmt_if(const Recovery& recovery) {
 	trace("stmt_if");
 
@@ -1717,6 +1718,7 @@ void Parser::stmt_if(const Recovery& recovery) {
 	end_trace();
 }
 
+// FIXME:  add error handling
 void Parser::stmt_else(const Recovery& recovery) {
 	trace("stmt_else");
 
@@ -1737,6 +1739,7 @@ void Parser::stmt_else(const Recovery& recovery) {
 	end_trace();
 }
 
+// FIXME:  add error handling
 void Parser::stmt_loop(const Recovery& recovery) {
 	trace("stmt_loop");
 
@@ -1754,6 +1757,7 @@ void Parser::stmt_loop(const Recovery& recovery) {
 	end_trace();
 }
 
+// FIXME:  add error handling
 void Parser::stmt_while(const Recovery& recovery) {
 	trace("stmt_while");
 
@@ -1773,6 +1777,7 @@ void Parser::stmt_while(const Recovery& recovery) {
 	end_trace();
 }
 
+// FIXME:  add error handling
 void Parser::stmt_do(const Recovery& recovery) {
 	trace("stmt_do");
 
@@ -1796,6 +1801,7 @@ void Parser::stmt_do(const Recovery& recovery) {
 	end_trace();
 }
 
+// FIXME:
 void Parser::stmt_for(const Recovery& recovery) {
 	trace("stmt_for");
 
@@ -1808,6 +1814,7 @@ void Parser::stmt_for(const Recovery& recovery) {
 	end_trace();
 }
 
+// FIXME:
 void Parser::stmt_match(const Recovery& recovery) {
 	trace("stmt_match");
 
@@ -1820,6 +1827,7 @@ void Parser::stmt_match(const Recovery& recovery) {
 	end_trace();
 }
 
+// FIXME:
 void Parser::stmt_switch(const Recovery& recovery) {
 	trace("stmt_switch");
 
