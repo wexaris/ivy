@@ -372,6 +372,25 @@ Token Parser::split_multi_binop() {
 	}
 }
 
+void Parser::recover_to(const Recovery& to) {
+	while (curr_tok != TokenType::END) {
+		for (auto c : to)
+			if (curr_tok.type() == c)
+				return;
+		bump();
+	}
+}
+
+inline Recovery operator+(Recovery first, const Recovery& second) {
+	first.reserve(first.size() + second.size());
+	first.insert(
+		std::end(first),
+		std::begin(second),
+		std::end(second)
+	);
+	return first;
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////    Expects    ///////////////////////////////////////////
@@ -480,28 +499,8 @@ inline void Parser::unimpl(const std::string& msg) {
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////      Helper Methods      /////////////////////////////////////
+/////////////////////////////////////      Parse Helpers      /////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-
-inline Recovery operator+(Recovery first, const Recovery& second) {
-	first.reserve(first.size() + second.size());
-	first.insert(
-		std::end(first),
-		std::begin(second),
-		std::end(second)
-	);
-	return first;
-}
-
-void Parser::recover_to(const Recovery& to) {
-	while (curr_tok != TokenType::END)
-	{
-		for (auto c : to)
-			if (curr_tok.type() == c)
-				return;
-		bump();
-	}
-}
 
 // primitive : THING | STR | CHAR
 //           | INT | I64 | I32 | I16 | I8
