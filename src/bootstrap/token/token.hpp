@@ -39,8 +39,7 @@ public:
 
 	/* Returns the span of the token.
 	 * Contains information about the origin file, absolute position,
-	 * as well as start and end position- line and col.
-	 * If the token's span hasn't been set, an exception is thrown. */
+	 * as well as start and end position- line and col. */
 	inline const Span& span() const { return tk_span; }
 
 	/* Returns the literal string of text that the token was built from. */
