@@ -77,54 +77,52 @@ private:
 // Parsing functions based on BNFs
 private:
 	// items
-	inline Error* primitive();
-	inline Error* primitive(const Recovery& recovery);
-	inline Error* ident();
-	inline Error* ident(const Recovery& recovery);
-	inline Error* lifetime();
-	inline Error* lifetime(const Recovery& recovery);
-	inline Error* literal();
+	ast::TypePrimitive* primitive();
+	std::tuple<Error*, ast::Ident*> ident();
+	std::tuple<Error*, ast::Lifetime*> lifetime();
+	Error* literal();
+	Error* binop();
+	Error* unaryop();
+	inline std::tuple<Error*, ast::Ident*> ident(const Recovery& recovery);
+	inline std::tuple<Error*, ast::Lifetime*> lifetime(const Recovery& recovery);
 	inline Error* literal(const Recovery& recovery);
-	inline Error* binop();
 	inline Error* binop(const Recovery& recovery);
-	inline Error* unaryop();
 	inline Error* unaryop(const Recovery& recovery);
 
 	// collectors
 	inline Attributes attributes();
-	Path path(const Recovery& to);
+	ast::Path* path(const Recovery& to);
 
 	// helping item collections
-	void generic_params(const Recovery& recovery);
-	Error* generic_param(const Recovery& recovery);
+	GenericParamVec generic_params(const Recovery& recovery);
+	std::tuple<Error*, ast::GenericParam*> generic_param(const Recovery& recovery);
 
-	void param_list(bool is_method, const Recovery& recovery);
-	Error* param(const Recovery& recovery);
+	ParamVec param_list(bool is_method, const Recovery& recovery);
+	std::tuple<Error*, ast::Param*> param(const Recovery& recovery);
 	Error* param_self(const Recovery& recovery);
 
 	void arg_list(const Recovery& recovery);
-	Error* arg(const Recovery& recovery);
+	std::tuple<Error*, ast::Expr*> arg(const Recovery& recovery);
 
-	Error* return_type(const Recovery& recovery);
+	std::tuple<Error*, ast::Type*> return_type(const Recovery& recovery);
 
 	void struct_init(const Recovery& recovery);
 	Error* struct_field(const Recovery& recovery);
 
 	void arr_init(const Recovery& recovery);
-	Error* arr_field();
+	std::tuple<Error*, ast::Expr*> arr_field();
 
 	// decl
-	void decl();
-	void decl_file_module();
-	void decl_sub_module();
-	void decl_import_item();
-	void decl_var(bool is_const, bool is_static);
-	void decl_type();
-	void decl_use();
-	void block_decl();
+	ast::Decl* decl(bool is_global);
+	ast::DeclModule* decl_module(bool is_global);
+	std::vector<std::unique_ptr<ast::Decl>> module_block();
+	ast::Decl* decl_import_item();
+	ast::DeclVar* decl_var(bool is_const, bool is_static);
+	ast::DeclType* decl_type();
+	ast::DeclUse* decl_use();
 
-	void decl_fun(bool is_method);
-	void fun_block();
+	ast::DeclFun* decl_fun(bool is_method);
+	FunBlock fun_block();
 
 	void decl_trait();
 	void trait_block();
@@ -135,20 +133,21 @@ private:
 	void decl_union();
 	void decl_struct();
 	void struct_tuple_block();
-	void struct_tuple_item();
+	void struct_tuple_item(const Recovery& recovery);
 	void struct_named_block();
-	void struct_named_item();
+	void struct_named_item(const Recovery& recovery);
 
 	void decl_enum();
 	void enum_block();
 	Error* enum_item(const Recovery& recovery);
 
 	// expr
-	Error* expr(int min_prec);
+	std::tuple<Error*, ast::Expr*> expr(int min_prec);
+	std::tuple<Error*, ast::Expr*> expr(int min_prec, const Recovery& recovery);
 	Error* val(const Recovery& recovery);
 
 	// stmt
-	void stmt(const Recovery& recovery);
+	ast::Stmt* stmt(const Recovery& recovery);
 	void stmt_if(const Recovery& recovery);
 	void stmt_else(const Recovery& recovery);
 	void stmt_loop(const Recovery& recovery);
@@ -163,10 +162,16 @@ private:
 	void stmt_continue(const Recovery& recovery);
 
 	// type
-	Error* type(const Recovery& recovery);
-	Error* type_or_lt(const Recovery& recovery);
-	Error* type_with_lt(const Recovery& recovery);
-	Error* type_sum(const Recovery& recovery);
+	std::tuple<Error*, ast::Type*> type(const Recovery& recovery);
+	std::tuple<Error*, ast::TypeRef*> type_ref(const Recovery& recovery);
+	std::tuple<Error*, ast::TypePtr*> type_ptr(const Recovery& recovery);
+	std::tuple<Error*, ast::Type*> type_tuple(const Recovery& recovery);
+	std::tuple<Error*, ast::Type*> type_arr_or_slice(const Recovery& recovery);
+	ast::TypePath* type_path(const Recovery& recovery);
+	ast::TypeInfer* type_infer();
+	ast::TypePrimitive* type_primitive();
+	std::tuple<Error*, ast::GenericParam*> type_or_lt(const Recovery& recovery);
+	std::tuple<Error*, ast::Lifetime*, ast::Type*> type_with_lt(const Recovery& recovery);
 
 public:
 	/* Constructs a parser for the file at the provided location. */
@@ -179,5 +184,5 @@ public:
 
 	/* Begins the process of parsing the package.
 	 * Returns the root node of the abstract syntax tree. */
-	Node* parse();
+	std::shared_ptr<ASTRoot> parse();
 };

@@ -90,12 +90,14 @@ namespace recover {
 	static const Recovery semi = { ';' };
 }
 
-bool Attributes::contains(TokenType ty) {
-	for (auto attr : *this)
-		if (attr.ty == ty)
-			return true;
-	return false;
-}
+/* Info about a binary operator. */
+struct OPInfo {
+	int prec;
+	enum {
+		LEFT,
+		RIGHT
+	} assoc;
+};
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -505,57 +507,112 @@ inline void Parser::unimpl(const std::string& msg) {
 //           | INT | I64 | I32 | I16 | I8
 //           | UINT | U64 | U32 | U16 | U8
 //           | FLOAT | F64 | F32
-inline Error* Parser::primitive() {
+ast::TypePrimitive* Parser::primitive() { // FIXME:  add missing types
 	trace("primitive: " + std::string(curr_tok.raw()));
-	if (!is_primitive(curr_tok))
-		DEFAULT_PARSE_END(err_expected(translate::tk_type(curr_tok), "a primitive type"));
-	bump();
-	DEFAULT_PARSE_END(nullptr);
-}
-// primitive : THING | STR | CHAR
-//           | INT | I64 | I32 | I16 | I8
-//           | UINT | U64 | U32 | U16 | U8
-//           | FLOAT | F64 | F32
-inline Error* Parser::primitive(const Recovery& to) {
-	if (auto err = primitive()) {
-		recover_to(to);
-		return err;
-	}
-	return nullptr;
+
+	auto sp = Span(curr_tok.span());
+	ast::TypePrimitive* ret = nullptr;
+
+	switch (curr_tok.type()) {
+		case (int)TokenType::THING:
+			bump();
+			break;
+		case (int)TokenType::STR:
+			bump();
+			break;
+		case (int)TokenType::CHAR:
+			bump();
+			break;
+		case (int)TokenType::INT:
+			ret = new ast::TypeIsize(sp);
+			bump();
+			break;
+		case (int)TokenType::I64:
+			ret = new ast::TypeI64(sp);
+			bump();
+			break;
+		case (int)TokenType::I32:
+			ret = new ast::TypeI32(sp);
+			bump();
+			break;
+		case (int)TokenType::I16:
+			ret = new ast::TypeI16(sp);
+			bump();
+			break;
+		case (int)TokenType::I8:
+			ret = new ast::TypeI8(sp);
+			bump();
+			break;
+		case (int)TokenType::UINT:
+			bump();
+			break;
+		case (int)TokenType::U64:
+			bump();
+			break;
+		case (int)TokenType::U32:
+			bump();
+			break;
+		case (int)TokenType::U16:
+			bump();
+			break;
+		case (int)TokenType::U8:
+			bump();
+			break;
+		case (int)TokenType::FLOAT:
+			bump();
+			break;
+		case (int)TokenType::F32:
+			bump();
+			break;
+		case (int)TokenType::F64:
+			bump();
+			break;
+		default: {
+			bug("primitive not checked before invoking");
+		}
+	}	
+
+	DEFAULT_PARSE_END(ret);
 }
 
 // ident : ID
-inline Error* Parser::ident() {
+std::tuple<Error*, ast::Ident*> Parser::ident() {
 	trace("ident: " + std::string(curr_tok.raw()));
+	auto sp = Span(curr_tok.span());
+	auto id = new ast::Ident(curr_tok.raw(), sp);
+
+	Error* err = nullptr;
 	if (curr_tok != TokenType::ID)
-		DEFAULT_PARSE_END(err_expected(translate::tk_type(curr_tok), "an identifier"));
-	bump();
-	DEFAULT_PARSE_END(nullptr);
+		err = err_expected(translate::tk_type(curr_tok), "an identifier");
+	else bump();
+
+	DEFAULT_PARSE_END(std::tuple(err, id));
 }
 // ident : ID
-inline Error* Parser::ident(const Recovery& to) {
-	if (auto err = ident()) {
-		recover_to(to);
-		return err;
-	}
-	return nullptr;
+inline std::tuple<Error*, ast::Ident*> Parser::ident(const Recovery& to) {
+	auto id_ret = ident();
+	if (std::get<0>(id_ret)) { recover_to(to); }
+	return id_ret;
 }
 
 // lifetime : LF
-inline Error* Parser::lifetime() {
+std::tuple<Error*, ast::Lifetime*> Parser::lifetime() {
 	trace("lifetime: " + std::string(curr_tok.raw()));
+	auto sp = Span(curr_tok.span());
+	auto lf = new ast::Lifetime(curr_tok.raw(), sp);
+
+	Error* err = nullptr;
 	if (!is_lifetime(curr_tok))
-		DEFAULT_PARSE_END(err_expected(translate::tk_type(curr_tok), "a lifetime"));
-	bump();
-	DEFAULT_PARSE_END(nullptr);
+		err = err_expected(translate::tk_type(curr_tok), "a lifetime");
+	else bump();
+
+	DEFAULT_PARSE_END(std::tuple(err, lf));
 }
 // lifetime : LF
-inline Error* Parser::lifetime(const Recovery& to) {
-	if (auto err = lifetime()) {
-		recover_to(to);
-		return err;
-	}
-	return nullptr;
+inline std::tuple<Error*, ast::Lifetime*> Parser::lifetime(const Recovery& to) {
+	auto lf_ret = lifetime();
+	if (std::get<0>(lf_ret)) { recover_to(to); }
+	return lf_ret;
 }
 
 // literal : LIT_TRUE
@@ -656,59 +713,55 @@ inline Attributes Parser::attributes() {
 	return attributes;
 }
 
-// SubPath(TokenType, Span)
-// path : SubPath (',' SubPath)*
-Path Parser::path(const Recovery& to) {
+// Path : ast::Ident (SCOPE ast::Ident)*
+ast::Path* Parser::path(const Recovery& to) {
 	trace("path");
+	size_t start = curr_tok.span().lo_bit;
+	Path path;
 
-	bool bad_path = false;
-
-	Path path = { SubPath{ curr_tok.raw(), curr_tok.span() } };
-
-	if (ident(to + Recovery{(int)TokenType::SCOPE}))
-		bad_path = true;
+	// Add current token to path
+	auto id_ret = ident(to + Recovery{(int)TokenType::SCOPE});
+	path.push_back(std::unique_ptr<ast::Ident>(std::get<1>(id_ret)));
 
 	while (curr_tok == TokenType::SCOPE) {
 		bump();
-		path.push_back(SubPath{ curr_tok.raw(), curr_tok.span() });
 
-		if (ident(to + Recovery{(int)TokenType::SCOPE}))
-			bad_path = true;
+		// Add current token to path
+		id_ret = ident(to + Recovery{(int)TokenType::SCOPE});
+		path.push_back(std::unique_ptr<ast::Ident>(std::get<1>(id_ret)));
 	}
 
-	end_trace();
-	return !bad_path ? path : Path();
+	auto sp = concat_span(start, curr_tok.span());
+	auto decl = new ast::Path(path, sp);
+	DEFAULT_PARSE_END(decl)
 }
 
 // generic_params : '<' type_or_lt (',' type_or_lt)* '>'
-void Parser::generic_params(const Recovery& recovery) {
-	trace("generic_params");
+GenericParamVec Parser::generic_params(const Recovery& recovery) {
+	GenericParamVec generics;
 
-	if (expect_symbol('<'))
-		bug("generic_params not checked before invoking");
+	if (curr_tok.type() != '<')
+		return generics;
+	else bump();
+
+	trace("generic_params");
 	
 	if (curr_tok.type() != '>') {
 
-		if (auto err = generic_param(recovery + Recovery{',', '>'})) {
-			if (curr_tok.type() != ',' && curr_tok.type() != '>') {
-				err->cancel();
-				handler.make_error_higligted("unterminated generic clause", curr_tok.span());
-				DEFAULT_PARSE_END();
-			}
-		}
+		auto param_ret = generic_param(recovery + Recovery{',', '>'});
+		generics.push_back(std::unique_ptr<ast::GenericParam>(std::get<1>(param_ret)));
 
 		while (curr_tok.type() == ',') {
 			bump();
 
-			if (curr_tok.type() == '>') {
+			if (curr_tok.type() == '>')
 				break;
-			}
 
-			if (auto err = generic_param(recovery + Recovery{',', '>'})) {
+			param_ret = generic_param(recovery + Recovery{',', '>'});
+			generics.push_back(std::unique_ptr<ast::GenericParam>(std::get<1>(param_ret)));
+			if (std::get<0>(param_ret)) {
 				if (curr_tok.type() != ',' && curr_tok.type() != '>') {
-					err->cancel();
-					handler.make_error_higligted("unterminated generic clause", curr_tok.span());
-					DEFAULT_PARSE_END();
+					break;
 				}
 			}
 		}
@@ -716,65 +769,74 @@ void Parser::generic_params(const Recovery& recovery) {
 	if (auto err = expect_symbol('>', recovery)) {
 		err->set_msg("unterminated generic clause");
 	}
-	
-	expect_symbol('>', recovery);
-	end_trace();
+
+	DEFAULT_PARSE_END(generics);
 }
 
 // generic_params : type_or_lt
-Error* Parser::generic_param(const Recovery& recovery) {
+std::tuple<Error*, ast::GenericParam*> Parser::generic_param(const Recovery& recovery) {
 	trace("generic_param");
-	auto err = type_or_lt(recovery);
-	DEFAULT_PARSE_END(err);
+	auto ret = type_or_lt(recovery);
+	DEFAULT_PARSE_END(ret);
 }
 
 // param_list : '(' ')'
 //            | '(' param (',' param)* ')'
-void Parser::param_list(bool is_method, const Recovery& recovery) {
+ParamVec Parser::param_list(bool is_method, const Recovery& recovery) {
 	trace("param_list");
 
-	if (expect_symbol('('))
-		bug("param_list not checked before invoking");
+	ParamVec params;
+
+	if (expect_symbol('(', recovery + Recovery{'('})) {
+		if (curr_tok.type() == '(')
+			bump();
+		else DEFAULT_PARSE_END(params);
+	}
 
 	if (curr_tok.type() != ')') {
-
+		
 		if (is_method && is_type(curr_tok) && curr_tok != TokenType::ID) {
-			param_self(recovery + Recovery{','});
+			param_self(recovery + Recovery{',', ')'});
 		}
-		else param(recovery + Recovery{',', ')'});
+		else {
+			auto param_ret = param(recovery + Recovery{',', ')'});
+			params.push_back(std::unique_ptr<ast::Param>(std::get<1>(param_ret)));
+		}
 
 		while (curr_tok.type() == ',') {
 			bump();
 
-			param(recovery + Recovery{',', ')'});
+			auto param_ret = param(recovery + Recovery{',', ')'});
+			params.push_back(std::unique_ptr<ast::Param>(std::get<1>(param_ret)));
 
-			if (curr_tok.type() == ')')
+			if (curr_tok.type() == ')' || curr_tok.type() != ',')
 				break;
 		} 
 	}
 	expect_sym_recheck(')', recovery);
-	
 
-	end_trace();
+
+	DEFAULT_PARSE_END(params);
 }
 
 // param : ident ':' type
-Error* Parser::param(const Recovery& recovery) {
+std::tuple<Error*, ast::Param*> Parser::param(const Recovery& recovery) {
 	trace("param");
+	size_t start = curr_tok.span().lo_bit;
 
-	if (auto err = ident(recovery))
-		DEFAULT_PARSE_END(err);
+	auto id_ret = ident(recovery + Recovery{':'});
+	auto err = std::get<0>(id_ret);
 
-	if (auto err = expect_symbol(':', recovery + recover::type_start)) {
-		if (!is_type(curr_tok))
-			DEFAULT_PARSE_END(err);
+	if (auto exp_err = expect_symbol(':', recovery + recover::type_start)) {
+		if (!err) { err = exp_err; }
 	}
 
-	if (auto err = type(recovery))
-		DEFAULT_PARSE_END(err);
+	auto ty_ret = type(recovery);
+	if (!err && std::get<0>(ty_ret)) { err = std::get<0>(ty_ret); }
 
-	end_trace();
-	return nullptr;
+	auto sp = concat_span(start, curr_tok.span());
+	auto param = new ast::Param(std::get<1>(id_ret), std::get<1>(ty_ret), sp);
+	DEFAULT_PARSE_END(std::tuple(err, param));
 }
 
 // param_self : (& MUT?)? SELF
@@ -826,71 +888,45 @@ void Parser::arg_list(const Recovery& recovery) {
 }
 
 // arg : expr
-Error* Parser::arg(const Recovery& recovery) {
+std::tuple<Error*, ast::Expr*> Parser::arg(const Recovery& recovery) {
 	trace("arg");
-
-	if (auto err = expr(1)) {
-		recover_to(recovery);
-		DEFAULT_PARSE_END(err);
-	}
-
-	end_trace();
-	return nullptr;
+	auto ret = expr(1, recovery);
+	DEFAULT_PARSE_END(ret);
 }
 
 // return_type: type
-Error* Parser::return_type(const Recovery& recovery) {
+std::tuple<Error*, ast::Type*> Parser::return_type(const Recovery& recovery) {
 	trace("return_type");
-	auto err = type(recovery);
-	DEFAULT_PARSE_END(err);
+	std::tuple<Error*, ast::Type*> ret;
+	if (curr_tok == TokenType::RARROW) {
+		bump();
+		ret = type(recovery);
+	}
+	else {
+		auto sp = Span(curr_tok.span());
+		ret = std::tuple(nullptr, new ast::TypeVoid(sp));
+	}
+	DEFAULT_PARSE_END(ret);
 }
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////    Parse    ///////////////////////////////////////////
+//////////////////////////  ////  ////         Parse         ////  ////  //////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-// file : module_decl decl*
-Node* Parser::parse() {
+// parse : decl*
+std::shared_ptr<ASTRoot> Parser::parse() {
 	trace("parse");
 
-	// TODO: Create appropriate root node type
-	Node* ast = nullptr;
-
-	// Every file begins with a declaration of the module the file is part of
-	decl_file_module();
+	auto ast = std::make_shared<ASTRoot>(&lexer.trans_unit());
 
 	// As long as the end of the file has not been reached,
 	// expect to find decls
 	while (curr_tok != TokenType::END) {
-		decl();
+		ast->add_decl(decl(true));
 	}
 
-	end_trace();
-	return ast;
-}
-
-// decl_file_module : MOD path ';'
-void Parser::decl_file_module() {
-	trace("decl_file_module");
-
-	if (auto err = expect_keyword(TokenType::MOD, recover::decl_start + recover::semi)) {
-		err->add_help("Files are expected to start with a module declaration");
-		if (curr_tok.type() == ';')
-			bump();
-		DEFAULT_PARSE_END();
-	}
-
-	auto mod_path = path(recover::decl_start + recover::semi);
-	if (mod_path.empty()) {
-		if (curr_tok.type() == ';')
-			bump();
-		DEFAULT_PARSE_END();
-	}
-
-	EXPECT_OR_PASS(';');
-
-	end_trace();
+	DEFAULT_PARSE_END(ast);
 }
 
 
@@ -898,14 +934,21 @@ void Parser::decl_file_module() {
 ////////////////////////////////////////////    Decl    ///////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-// decl : attributes? decl_sub_module
+// decl : attributes? decl_module
 //      | attributes? decl_import_item
 //		| attributes? decl_var
 //      | attributes? decl_type
 //      | attributes? decl_use
-//      | attributes? block_decl
-void Parser::decl() {
+//      | attributes? decl_fun
+//      | attributes? decl_struct
+//      | attributes? decl_enum
+//      | attributes? decl_union
+//      | attributes? decl_trait
+//      | attributes? decl_impl
+ast::Decl* Parser::decl(bool is_global) {
 	trace("decl");
+
+	ast::Decl* decl = nullptr;
 
 	auto attr = this->attributes();
 	bool is_const = attr.contains(TokenType::CONST);
@@ -914,313 +957,315 @@ void Parser::decl() {
 	switch (curr_tok.type()) 
 	{
 		case (int)TokenType::MOD:
-			decl_sub_module();
+			decl = decl_module(is_global);
 			break;
-
 		case (int)TokenType::IMPORT:
-			decl_import_item();
+			decl = decl_import_item();
 			break;
-
 		case (int)TokenType::VAR:
-			decl_var(is_const, is_static);
+			decl = decl_var(is_const, is_static);
 			break;
-
 		case (int)TokenType::TYPE:
-			decl_type();
+			decl = decl_type();
+			break;
+		case (int)TokenType::USE:
+			decl = decl_use();
+			break;
+		case (int)TokenType::FUN:
+			decl = nullptr; decl_fun(false);
+			break;
+		case (int)TokenType::STRUCT:
+			decl = nullptr; decl_struct();
+			break;
+		case (int)TokenType::ENUM:
+ 			decl = nullptr; decl_enum();
+			break;
+		case (int)TokenType::UNION:
+			decl = nullptr; decl_union();
+			break;
+		case (int)TokenType::TRAIT:
+			decl = nullptr; decl_trait();
+			break;
+		case (int)TokenType::IMPL:
+			decl = nullptr; decl_impl();
 			break;
 
-		case (int)TokenType::USE:
-			decl_use();
-			break;
-			
-		default: block_decl();
+		default: {
+			size_t start = curr_tok.span().lo_bit;
+
+			err_expected(translate::tk_type(curr_tok), "a declaration");
+			recover_to(recover::decl_start);
+				
+			auto sp = concat_span(start, curr_tok.span());
+			DEFAULT_PARSE_END(new ast::BadDecl(sp));
+		}
 	}
 
-	end_trace();
+	DEFAULT_PARSE_END(decl);
 }
 
-// decl_sub_module : MOD path '{' decl* '}'
-void Parser::decl_sub_module() {
-	trace("decl_sub_module");
+// decl_module : MOD path module_block
+//             | MOD path ';'               // if global
+ast::DeclModule* Parser::decl_module(bool is_global) {
+	trace("decl_module");
+	size_t start = curr_tok.span().lo_bit;
 
 	if (expect_keyword(TokenType::MOD))
 		bug("decl_sub_module not checked before invoking");
 
-	auto mod_path = path(recover::decl_start + Recovery{'{', ';'});
+	// Split global and non-global recoveries
+	Recovery rec = is_global ? Recovery{';', '{'} : Recovery{'{'};
 
-	if (auto err = expect_symbol('{', recover::decl_start + Recovery{'{', ';'})) {
-		if (curr_tok.type() == ';') {
-			err->set_msg("Cannot declare file module in the middle of source");
-			err->add_help("To declare a file module, place the declaration at the top of the file");
-			err->add_help("If you wanted a sub-module, it should be contained in braces");
+	auto mod_path = path(recover::decl_start + rec);
+
+	std::vector<std::unique_ptr<ast::Decl>> decls;	
+	if (curr_tok.type() == ';') {
+		// Handle non-global file modules
+		// Make an error
+		// Cut the module short
+		if (!is_global) {
+			auto err = handler.make_error_higligted("invalid file module declaration", concat_span(start, curr_tok.span()));
+			err->add_help("you can only use file module declaration in the global scope");
 			bump();
 		}
-		DEFAULT_PARSE_END();
+		else {
+			// Collect the proceding declaraions under this module
+			bump();
+			trace("module_block");
+			while (curr_tok != TokenType::END)
+				decls.push_back(std::unique_ptr<ast::Decl>(decl(false)));
+			end_trace();
+		}
 	}
-	else bump();
+	if (curr_tok.type() == '{') {
+		decls = module_block();
+	}
 
-	// Keep expecting decls until a bracket is found
+	// Get the modules span
+	auto sp = concat_span(start, curr_tok.span());
+	auto decl = new ast::DeclModule(mod_path, decls, sp);
+	DEFAULT_PARSE_END(decl);
+}
+
+// module_block : '{' decl* '}'
+std::vector<std::unique_ptr<ast::Decl>> Parser::module_block() {
+	trace("module_block");
+
+	if (expect_symbol('{'))
+		bug("module_block not checked before invoking");
+
+	// Keep collection declarations until a bracket is found
 	// Fail if the file abruptly ends 
+	std::vector<std::unique_ptr<ast::Decl>> decls;
 	while (curr_tok.type() != '}') {
 		if (curr_tok == TokenType::END) {
+			// Fail if the file ends inside the module block
 			handler.emit_fatal_higligted("unexpected end of file", curr_tok.span());
-			DEFAULT_PARSE_END();
+			return decls;
 		}
-		decl();
+		// Save declarations
+		decls.push_back(std::unique_ptr<ast::Decl>(decl(false)));
 	}
 	expect_sym_recheck('}', recover::decl_start);
 
-	EXPECT_OR_PASS('}');
-
-	end_trace();
+	DEFAULT_PARSE_END(decls);
 }
 
 // decl_import_item : IMPORT MOD path ';'
 //                  | IMPORT PACKAGE path ';'
-void Parser::decl_import_item() {
+ast::Decl* Parser::decl_import_item() {
 	trace("decl_import_item");
+	size_t start = curr_tok.span().lo_bit;
 
 	if (expect_keyword(TokenType::IMPORT))
 		bug("decl_import_item not checked before invoking");
 
+	enum {
+		MOD,
+		PACKAGE
+	} import_ty;
+
 	if (curr_tok == TokenType::MOD) {
+		import_ty = MOD;
 		bump();
-
-		auto import_path = path(recover::decl_start + recover::semi);
-		if (import_path.empty()) {
-			if (curr_tok.type() == ';')
-				bump();
-			DEFAULT_PARSE_END();
-		}
-
-		// TODO:  
 	}
 	else if (curr_tok == TokenType::PACKAGE) {
+		import_ty = PACKAGE;
 		bump();
-
-		auto import_path = path(recover::decl_start + recover::semi);
-		if (import_path.empty()) {
-			if (curr_tok.type() == ';')
-				bump();
-			DEFAULT_PARSE_END();
-		}
-
-		// TODO:  
 	}
-	else expect_mod_or_package();
+	else {
+		expect_mod_or_package(recover::decl_start + Recovery{';'});
+		if (curr_tok.type() == ';')
+			bump();
 
-	EXPECT_OR_PASS(';');
+		auto sp = concat_span(start, curr_tok.span());
+		DEFAULT_PARSE_END(new ast::BadDecl(sp));
+	}
 
-	end_trace();
+	auto import_path = path(recover::decl_start + recover::semi);
+
+	expect_sym_recheck(';', recover::decl_start);
+
+	auto sp = concat_span(start, curr_tok.span());
+	auto decl = (import_ty == MOD) ?
+		(ast::Decl*) new ast::DeclModuleImport(import_path, sp) :
+		(ast::Decl*) new ast::DeclPackageImport(import_path, sp);
+
+	DEFAULT_PARSE_END(decl);
 }
 
-// decl_var : VAR ident (':' type_with_lf)? ('=' type_sum)? ';'
-void Parser::decl_var(bool is_const, bool is_static) {
+// decl_var : VAR ident (':' type_with_lf)? ('=' expr)? ';'
+ast::DeclVar* Parser::decl_var(bool is_const, bool is_static) {
 	trace("decl_var");
+	size_t start = curr_tok.span().lo_bit;
 
 	if (expect_keyword(TokenType::VAR))
 		bug("decl_var not checked before invoking");
 
-	//auto name = curr_tok.raw();
-	if (ident(recover::decl_start + recover::semi)) {
-		if (curr_tok.type() == ';')
-			bump();
-		DEFAULT_PARSE_END();
-	}
-
 	bool has_type = true;
-	Span type_pos = curr_tok.span();
+	bool has_init = true;
+
+	auto id_ret = ident(recover::decl_start + Recovery{':', '=', ';'});
+
+	ast::Lifetime* lifetime = nullptr;
+	ast::Type* type = nullptr;
+	ast::Expr* value = nullptr;
+
+	auto type_pos = curr_tok.span();
 	if (curr_tok.type() == ':') {
 		bump();
 		type_pos = curr_tok.span();
-		if (type_with_lt(recover::decl_start + Recovery{'='})) {
-			if (curr_tok.type() != ';')
-				DEFAULT_PARSE_END();
-			has_type = false;
-			bump();
-		}
+
+		auto ty_lt_ret = type_with_lt(recover::decl_start + Recovery{'=', ';'});
+
+		lifetime = std::get<1>(ty_lt_ret);
+		type = std::get<2>(ty_lt_ret);
 	}
 	else has_type = false;
 
-	bool has_init = true;
 	if (curr_tok.type() == '=') {
 		bump();
-		if (expr(1)) {
-			recover_to(recover::decl_start + recover::semi);
-			if (curr_tok.type() == ';')
-				bump();
-			DEFAULT_PARSE_END();
-		}
+		auto expr_ret = expr(1, recover::decl_start + recover::semi);
+		value = std::get<1>(expr_ret);
 	}
 	else has_init = false;
 
 	if (!has_type && !has_init) {
-		if (is_const) {
-			auto err = handler.make_error_higligted("const variable missing type", type_pos);
+		auto err = handler.make_error_higligted("variable missing type", type_pos);
+		if (is_const)
 			err->add_note("a constant variable needs to have a type deducable at compile time");
-		}
-		if (is_static) {
-			auto err = handler.make_error_higligted("static variable missing type", type_pos);
+		if (is_static)
 			err->add_note("a static variable needs to have a type deducable at compile time");
-		}
 	}
 
 	expect_sym_recheck(';', recover::decl_start);
 
-	end_trace();
+	auto sp = concat_span(start, curr_tok.span());
+	auto decl = new ast::DeclVar(std::get<1>(id_ret), lifetime, type, value, sp);
+	DEFAULT_PARSE_END(decl);
 }
 
 // decl_type : TYPE ident ';'
-//           | TYPE ident '=' type_sum ';'
-void Parser::decl_type() {
+//           | TYPE ident '=' type ';'
+ast::DeclType* Parser::decl_type() {
 	trace("decl_type");
+	size_t start = curr_tok.span().lo_bit;
 
 	if (expect_keyword(TokenType::TYPE))
 		bug("decl_type not checked before invoking");
 
-	//auto name = curr_tok.raw();
-	if (ident(recover::decl_start + recover::semi)) {
-		if (curr_tok.type() == ';')
-			bump();
-		DEFAULT_PARSE_END();
-	}
+	auto id_ret = ident(recover::decl_start + recover::semi);
 
-	if (curr_tok.type() == ';') {
+	ast::Type* ty = nullptr;
+	if (curr_tok.type() == '=') {
 		bump();
-		DEFAULT_PARSE_END();
-	}
 
-	if (expect_symbol('=', recover::decl_start + recover::semi))
-		DEFAULT_PARSE_END();
-
-	if (type(recover::decl_start + recover::semi)) {
-		if (curr_tok.type() == ';')
-			bump();
+		auto ty_ret = type(recover::decl_start + recover::semi);
+		ty = std::get<1>(ty_ret);
 	}
 
 	expect_sym_recheck(';', recover::decl_start);
 
-	end_trace();
+	auto sp = concat_span(start, curr_tok.span());
+	auto decl = new ast::DeclType(std::get<1>(id_ret), ty, sp);
+	DEFAULT_PARSE_END(decl);
 }
 
 // decl_use : USE path ';'
-void Parser::decl_use() {
+ast::DeclUse* Parser::decl_use() {
 	trace("decl_use");
+	size_t start = curr_tok.span().lo_bit;
 
 	if (expect_keyword(TokenType::USE))
 		bug("decl_use not checked before invoking");
 
 	auto path = this->path(recover::decl_start + recover::semi);
-	if (path.empty()) {
-		if (curr_tok.type() == ';')
-			bump();
-		DEFAULT_PARSE_END();
-	}
 
 	expect_sym_recheck(';', recover::decl_start);
-			
-	end_trace();
-}
 
-// block_decl : decl_fun
-//            | decl_struct
-//            | decl_enum
-//            | decl_union
-//            | decl_trait
-//            | decl_impl
-void Parser::block_decl() {
-	trace("block_decl");
-
-	switch (curr_tok.type()) {
-		case (int)TokenType::FUN:
-			decl_fun(false);
-			break;
-		case (int)TokenType::STRUCT:
-			decl_struct();
-			break;
-		case (int)TokenType::ENUM:
- 			decl_enum();
-			break;
-		case (int)TokenType::UNION:
-			decl_union();
-			break;
-		case (int)TokenType::TRAIT:
-			decl_trait();
-			break;
-		case (int)TokenType::IMPL:
-			decl_impl();
-			break;
-		default: {
-				err_expected(translate::tk_type(curr_tok), "a declaration");
-				recover_to(recover::decl_start);
-				DEFAULT_PARSE_END();
-			}
-	}
-
-	end_trace();
+	auto sp = concat_span(start, curr_tok.span());
+	auto decl = new ast::DeclUse(path, sp);
+	DEFAULT_PARSE_END(decl);
 }
 
 // decl_fun : FUN ident generic_params? param_list (RARROW return_type)? ';'
 //          | FUN ident generic_params? param_list (RARROW return_type)? fun_block
-void Parser::decl_fun(bool is_method) {
+ast::DeclFun* Parser::decl_fun(bool is_method) {
 	trace("decl_fun");
+	size_t start = curr_tok.span().lo_bit;
 
 	if (expect_keyword(TokenType::FUN))
 		bug("decl_fun not checked before invoking");
 
-	//auto name = curr_tok.raw();
-	ident(recover::decl_start + Recovery{'<', '(', (int)TokenType::RARROW, ';', '{'});
+	auto id_ret = ident(recover::decl_start + Recovery{(int)TokenType::ID, '<', '(', (int)TokenType::RARROW, ';', '{'});
+	if (curr_tok.type() == (int)TokenType::ID)
+		id_ret = ident();
 
-	if (curr_tok.type() == '<')
-		generic_params(recover::decl_start + Recovery{'(', (int)TokenType::RARROW, '{'});
+	auto generics = generic_params(recover::decl_start + Recovery{'(', (int)TokenType::RARROW, '{'});
 
-	if (curr_tok.type() == '(')
-		param_list(is_method, {(int)TokenType::RARROW, '{'});
+	auto params = param_list(is_method, {(int)TokenType::RARROW, '{'});
+	
+	auto ret_type = return_type(recover::decl_start + Recovery{'{', ';'});
 
-	if (curr_tok == TokenType::RARROW) {
-		bump();
-		if (return_type(recover::decl_start + Recovery{'{', ';'})) {
-			if (curr_tok.type() != '{' && curr_tok.type() != ';')
-				DEFAULT_PARSE_END();
-		}
-	}
-
+	FunBlock block;
 	if (curr_tok.type() == ';') {
 		bump();
-		DEFAULT_PARSE_END();
 	}
 	else if (curr_tok.type() != '{') {
+		// Attempt recovery to the next declaration or
+		// to the continuation of the function definition
 		expect_symbol('{', recover::decl_start + Recovery{'{', ';'});
 		if (curr_tok.type() != '{') {
 			if (curr_tok.type() == ';')
 				bump();
-			DEFAULT_PARSE_END();
 		}
+		else block = fun_block();
 	}
-
-	fun_block();
-
-	end_trace();
+	else block = fun_block();
+	
+	auto sp = concat_span(start, curr_tok.span());
+	auto decl = new ast::DeclFun(std::get<1>(id_ret), generics, params, std::get<1>(ret_type), block, sp);
+	DEFAULT_PARSE_END(decl);
 }
 
 // fun_block : '{' stmt* '}'
-void Parser::fun_block() {
+FunBlock Parser::fun_block() {
 	trace("fun_block");
+	size_t start = curr_tok.span().lo_bit;
 
 	if (expect_symbol('{'))
 		bug("fun_block not checked before invoking");
 
+	// Collect statements 
+	StmtVec stmts;
 	while (curr_tok.type() != '}') {
-		stmt({'}'});
+		stmts.push_back(std::unique_ptr<ast::Stmt>(stmt({'}'})));
 	}
 	expect_sym_recheck('}', recover::decl_start);
 
-	if (expect_symbol('}', recover::decl_start + Recovery{'}'})) {
-		if (curr_tok.type() == '}')
-			bump();
-	}
-
-	end_trace();
+	auto sp = concat_span(start, curr_tok.span());
+	FunBlock block = FunBlock(stmts, sp);
+	DEFAULT_PARSE_END(block);
 }
 
 // decl_struct : STRUCT ident generic_params? ';'
@@ -1275,7 +1320,7 @@ void Parser::struct_tuple_block() {
 
 	while (curr_tok.type() != ')') {
 		
-		struct_tuple_item();
+		struct_tuple_item(recover::decl_start + Recovery{',', ')'});
 
 		while (curr_tok.type() == ',') {
 			bump();
@@ -1283,7 +1328,7 @@ void Parser::struct_tuple_block() {
 			if (curr_tok.type() == ')')
 				break;
 
-			struct_tuple_item();
+			struct_tuple_item(recover::decl_start + Recovery{',', ')'});
 		}
 	}
 	expect_sym_recheck(')', recover::decl_start);
@@ -1292,17 +1337,12 @@ void Parser::struct_tuple_block() {
 }
 
 // struct_tuple_item  : attributes? type
-void Parser::struct_tuple_item() {
+void Parser::struct_tuple_item(const Recovery& recovery) {
 	trace("struct_tuple_item");
 
 	Attributes attr = attributes();
 
-	if (type_with_lt(recover::decl_start + Recovery{',', ')'})) {
-		if (curr_tok.type() != ',' && curr_tok.type() != ')') {
-			end_trace();
-			DEFAULT_PARSE_END();
-		}
-	}
+	type_with_lt(recovery);
 
 	end_trace();
 }
@@ -1315,7 +1355,7 @@ void Parser::struct_named_block() {
 		bug("struct_named_block not checked before invoking");
 
 	while (curr_tok.type() != '}') {
-		struct_named_item();
+		struct_named_item(recover::decl_start + Recovery{'}'});
 	}
 	expect_sym_recheck('}', recover::decl_start);
 
@@ -1323,27 +1363,28 @@ void Parser::struct_named_block() {
 }
 
 // struct_named_item  : attributes? ident ':' type_with_lt ';' 
-void Parser::struct_named_item() {
+void Parser::struct_named_item(const Recovery& recovery) {
 	trace("struct_named_item");
 
 	auto attr = attributes();
 
-	if (ident(recover::decl_start + Recovery{':', ';'})) {
-		if (curr_tok.type() == ';') {
-			bump();
+	auto id_ret = ident(recovery + Recovery{':', ';'});
+	if (std::get<0>(id_ret)) {
+		if (curr_tok.type() != ':') {
+			if (curr_tok.type() == ';')
+				bump();
 			DEFAULT_PARSE_END();
 		}
-		if (curr_tok.type() != ':')
-			DEFAULT_PARSE_END();
+		else bump();
 	}
 
-	if (expect_symbol(':', recover::decl_start + Recovery{':', ';'})) {
-		if (curr_tok.type() == ';') {
-			bump();
+	if (expect_symbol(':', recovery + Recovery{':', ';'})) {
+		if (curr_tok.type() != ':') {
+			if (curr_tok.type() == ';')
+				bump();
 			DEFAULT_PARSE_END();
 		}
-		if (curr_tok.type() != ':')
-			DEFAULT_PARSE_END();
+		else bump();
 	}
 
 	type_with_lt(recovery + recover::semi);
@@ -1428,17 +1469,18 @@ void Parser::enum_block() {
 Error* Parser::enum_item(const Recovery& recovery) {
 	trace("enum_item");
 
-	//auto name = curr_tok.raw();
-	if (auto err = ident(recovery + Recovery{'=', '('})) {
+	auto id_ret = ident(recovery + Recovery{'=', '('});
+	if (std::get<0>(id_ret)) {
 		if (curr_tok.type() != '=' && curr_tok.type() != '(')
-			DEFAULT_PARSE_END(err);
+			DEFAULT_PARSE_END(std::get<0>(id_ret));
 	}
 
 	if (curr_tok.type() == '=') {
 		bump();
-		if (auto err = expr(1)) {
+		auto expr_ret = expr(1);
+		if (std::get<0>(expr_ret)) {
 			recover_to(recovery);
-			DEFAULT_PARSE_END(err);
+			DEFAULT_PARSE_END(std::get<0>(expr_ret));
 		}
 	}
 	else if (curr_tok.type() == '(') {
@@ -1535,7 +1577,7 @@ void Parser::trait_block() {
 		}
 	}
 	expect_sym_recheck('}', recover::decl_start);
-	
+
 	end_trace();
 }
 
@@ -1550,7 +1592,8 @@ void Parser::decl_impl() {
 	if (curr_tok.type() == '<')
 		generic_params({'{', ';'});
 
-	if (ident(recover::decl_start + Recovery{'{', '<', ';'})) {
+	auto id_ret = ident(recover::decl_start + Recovery{'{', '<', ';'});
+	if (std::get<0>(id_ret)) {
 		if (curr_tok.type() != '{' && curr_tok.type() != '<' && curr_tok.type() != ';')
 			DEFAULT_PARSE_END();
 	}
@@ -1560,7 +1603,8 @@ void Parser::decl_impl() {
 	if (curr_tok == TokenType::FOR) {
 		bump();
 
-		if (ident(recover::decl_start + Recovery{'{', '<', ';'})) {
+		auto id_ret = ident(recover::decl_start + Recovery{'{', '<', ';'});
+		if (std::get<0>(id_ret)) {
 			if (curr_tok.type() != '{' && curr_tok.type() != '<' && curr_tok.type() != ';')
 				DEFAULT_PARSE_END();
 		}
@@ -1609,82 +1653,94 @@ void Parser::impl_block() {
 ////////////////////////////////////////////    Stmt    ///////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Parser::stmt(const Recovery& recovery) {
+ast::Stmt* Parser::stmt(const Recovery& recovery) {
 	trace("stmt");
 	
+	ast::Stmt* stmt = nullptr;
+
 	auto attr = attributes();
 	bool is_const = attr.contains(TokenType::CONST);
 	bool is_static = attr.contains(TokenType::STATIC);
 
 	switch (curr_tok.type()) {
 		case (int)TokenType::VAR:
-			decl_var(is_const, is_static);
+			stmt = decl_var(is_const, is_static);
 			break;
 
 		case (int)TokenType::FUN:
-			decl_fun(false);
+			stmt = nullptr; decl_fun(false);
 			break;
 
 		case (int)TokenType::IF:
-			stmt_if(recover::stmt_start + recovery);
+			stmt = nullptr; stmt_if(recover::stmt_start + recovery);
 			break;
 
 		case (int)TokenType::ELSE:
 			handler.make_error_higligted("missing 'if' statement", curr_tok.span());
-			stmt_else(recover::stmt_start + recovery);
+			stmt = nullptr; stmt_else(recover::stmt_start + recovery);
 			break;
 
 		case (int)TokenType::LOOP:
-			stmt_loop(recover::stmt_start + recovery);
+			stmt = nullptr; stmt_loop(recover::stmt_start + recovery);
 			break;
 
 		case (int)TokenType::WHILE:
-			stmt_while(recover::stmt_start + recovery);
+			stmt = nullptr; stmt_while(recover::stmt_start + recovery);
 			break;
 
 		case (int)TokenType::DO:
-			stmt_do(recover::stmt_start + recovery);
+			stmt = nullptr; stmt_do(recover::stmt_start + recovery);
 			break;
 
 		case (int)TokenType::FOR:
-			stmt_for(recover::stmt_start + recovery);
+			stmt = nullptr; stmt_for(recover::stmt_start + recovery);
 			break;
 
 		case (int)TokenType::MATCH:
-			stmt_match(recover::stmt_start + recovery);
+			stmt = nullptr; stmt_match(recover::stmt_start + recovery);
 			break;
 
 		case (int)TokenType::SWITCH:
-			stmt_switch(recover::stmt_start + recovery);
+			stmt = nullptr; stmt_switch(recover::stmt_start + recovery);
 			break;
 
 		case (int)TokenType::CASE:
-			stmt_case(recover::stmt_start + recovery);
+			stmt = nullptr; stmt_case(recover::stmt_start + recovery);
 			break;
 
 		case (int)TokenType::RETURN:
-			stmt_return(recover::stmt_start + recovery);
+			stmt = nullptr; stmt_return(recover::stmt_start + recovery);
 			break;
 
 		case (int)TokenType::BREAK:
-			stmt_break(recover::stmt_start + recovery);
+			stmt = nullptr; stmt_break(recover::stmt_start + recovery);
 			break;
 
 		case (int)TokenType::CONTINUE:
-			stmt_continue(recover::stmt_start + recovery);
+			stmt = nullptr; stmt_continue(recover::stmt_start + recovery);
 			break;
 
-		default:
-			expr(1);
-			if (expect_symbol(';', recovery + recover::semi)) {
-				if (curr_tok.type() == ';')
-					bump();
+		default: {
+				size_t start = curr_tok.span().lo_bit;
+
+				// Attempt to parse an expression, since no other statemnts match
+				auto expr_ret = expr(1);
+
+				// If we haven't moved forward after parsing an expression,
+				// somthing is wrong, so make an error about expecting a statement.
+				// 
+				// After that try to recover to the given recovery or a semicolon.
+				if (start == curr_tok.span().lo_bit) {
+					std::get<0>(expr_ret)->cancel();
+					err_expected(translate::tk_type(curr_tok), "a statement");
+					recover_to(recovery + Recovery{';'});
+				}
+
+				expect_sym_recheck(';', recovery);
 			}
-			//err_expected(translate::tk_type(curr_tok), "a statement");
-			//recover_to(recover::stmt_start + recovery);
 	}
 
-	end_trace();
+	DEFAULT_PARSE_END(stmt);
 }
 
 // FIXME:  add error handling
@@ -1895,12 +1951,12 @@ void Parser::stmt_continue(const Recovery& recovery) {
 // TODO:  we want fun_blocks to also work as expressions
 //        e.g 'var foo: Bar = { ... };'
 // expr : val (binop expr)*
-Error* Parser::expr(int min_prec) {
+std::tuple<Error*, ast::Expr*> Parser::expr(int min_prec) {
 	trace("expr");
 
 	if (auto err = val(recover::expr_end + Recovery{'+', '-', '*', '/', '^'})) {
 		if (!is_binop(curr_tok))
-			DEFAULT_PARSE_END(err);
+			DEFAULT_PARSE_END(std::tuple(err, nullptr));
 	}
 
 	while (is_binop(curr_tok)) {
@@ -1918,12 +1974,19 @@ Error* Parser::expr(int min_prec) {
 		int next_prec = opinfo->value.assoc == OPInfo::LEFT ? opinfo->value.prec + 1 : opinfo->value.prec;
 
 		end_trace();
-		if (auto err = expr(next_prec))
-			DEFAULT_PARSE_END(err);
+		auto expr_ret = expr(next_prec);
+		if (std::get<0>(expr_ret))
+			DEFAULT_PARSE_END(std::tuple(std::get<0>(expr_ret), nullptr));
 	}
 
-	end_trace();
-	return nullptr;
+	DEFAULT_PARSE_END(std::tuple(nullptr, nullptr));
+}
+
+// expr : val (binop expr)*
+std::tuple<Error*, ast::Expr*> Parser::expr(int min_prec, const Recovery& recovery) {
+	auto ret = expr(min_prec);
+	if (std::get<0>(ret)) recover_to(recovery);
+	return ret;
 }
 
 // val  : unaryop val
@@ -1939,7 +2002,8 @@ Error* Parser::val(const Recovery& recovery) {
 	trace("val");
 
 	if (curr_tok == TokenType::ID) {				// path
-		auto p = path(recovery);
+		auto val_path = path(recovery);
+		(void)val_path;
 		bool macro_invoc = false;
 
 		if(curr_tok.type() == '!') {				// '!'     macro invocation
@@ -2032,13 +2096,13 @@ void Parser::struct_init(const Recovery& recovery) {
 Error* Parser::struct_field(const Recovery& recovery) {
 	trace("struct_field");
 
-	auto err = ident(recovery + Recovery{':'});
+	auto id_ret = ident(recovery + Recovery{':'});
 	if (curr_tok.type() == ':') {
 		bump();
 		expr(1);
 	}
 
-	DEFAULT_PARSE_END(err);
+	DEFAULT_PARSE_END(std::get<0>(id_ret));
 }
 
 // arr_init : '[' ']'
@@ -2069,12 +2133,10 @@ void Parser::arr_init(const Recovery& recovery) {
 }
 
 // arr_field : expr
-Error* Parser::arr_field() {
+std::tuple<Error*, ast::Expr*> Parser::arr_field() {
 	trace("arr_field");
-
-	auto err = expr(1);
-
-	DEFAULT_PARSE_END(err);
+	auto ret = expr(1);
+	DEFAULT_PARSE_END(ret);
 }
 
 
@@ -2082,173 +2144,273 @@ Error* Parser::arr_field() {
 ////////////////////////////////////////////    Type    ///////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-// type : '&' MUT? type
-//      | '*' MUT? type
-//      | '[' ']'
-//      | '[' type ']'
-//      | '[' type ';' expr ']'
-//      | '(' ')'
-//      | '(' type (',' type)* ')'
-//      | path
+// type : type_ref
+//      | type_ptr
+//      | type_arr_or_slice
+//      | type_tuple
+//      | type_path
+//      | type_infer
 //      | primitive
-Error* Parser::type(const Recovery& recovery) {
+std::tuple<Error*, ast::Type*> Parser::type(const Recovery& recovery) {
+	trace("type");
+
+	std::tuple<Error*, ast::Type*> ret;
 
 	switch (curr_tok.type()) {
-		// reference type
 		case '&':
-			bump();
-			if (curr_tok == TokenType::MUT) {				// '&' MUT
-				bump();
-				trace("type: mut ref");
-			}
-			else trace("type: ref");
-			if (auto err = type(recovery)) {				// '&' type
-				DEFAULT_PARSE_END(err);
-			}
+			ret = type_ref(recovery);
 			break;
-	
-		// pointer type
+
 		case '*':
-			bump();
-			if (curr_tok == TokenType::MUT) {				// '*' MUT
-				bump();
-				trace("type: mut ptr");
-			}
-			else trace("type: ptr");
-			if (auto err = type(recovery)) {				// '*' type
-				DEFAULT_PARSE_END(err);
-			}
+			ret = type_ptr(recovery);
 			break;
 
-		// array type
 		case '[':
-			bump();
-			trace("type: array");
-			if (curr_tok.type() == ']') {
-				bump();										// '[' ']'
-			}
-			else {
-				auto err = type(recover::decl_start + Recovery{']', ';'});
-				if (curr_tok.type() == ';') {
-					bump();
-					if (auto err = expr(1)) {				// '[' type ';' expr ']	
-						recover_to(recovery + Recovery{']'});
-						if (curr_tok.type() != ']')
-							DEFAULT_PARSE_END(err);
-					}
-				}
-				if (auto err = expect_symbol(']', recover::decl_start + Recovery{']', ';'})) {
-					if (curr_tok.type() == ']') {
-						bump();
-						DEFAULT_PARSE_END(err);
-					}
-					else if (curr_tok.type() == ';') {
-						bump();
-						DEFAULT_PARSE_END(err);
-					}
-					else {
-						DEFAULT_PARSE_END(err);
-					}
-				}
-				DEFAULT_PARSE_END(err);
-			}
-			end_trace();
+			ret = type_arr_or_slice(recovery);
 			break;
 
-		// tuple type
-		case '(':
-			trace("type: tuple");
-			bump();
-			if (curr_tok.type() == ')') {						// '(' ')'
-				bump();				
-			}
-			else {
-				auto err = type({',', ')'});
-				while(curr_tok.type() == ',') {
-					bump();
-					err = type(recovery + Recovery{',', ')'});	// '(' type (',' type)* ')'
-				}
-				if (auto err = expect_symbol(')')) {
-					recover_to({')'});
-					DEFAULT_PARSE_END(err);
-				}
-				if (err)
-					DEFAULT_PARSE_END(err);
-			}
+		case '(': {
+			ret = type_tuple(recovery);
 			break;
+		}
 
-		// custom type
 		case (int)TokenType::ID: {
-				trace("type: path");
-				auto path = this->path(recovery);
-				if (curr_tok.type() == '<')
-					generic_params(recovery);
-				break;
-			}
+			ret = std::tuple(nullptr, type_path(recovery));
+			break;
+		}
 
-		// primitive type
-		default:
+		case '_': {
+			ret = std::tuple(nullptr, type_infer());
+			break;
+		}
+
+		default: {
 			if (is_primitive(curr_tok)) {
-				trace("type: primitive");
-				primitive();
+				ret = std::tuple(nullptr, type_primitive());
 			}
 			else {
 				auto err = err_expected(translate::tk_type(curr_tok), "a type");
 				recover_to(recovery);
-				return err;
+
+				auto sp = Span(curr_tok.span());
+				auto ty = new ast::BadType(sp);
+
+				ret = std::tuple(err, ty);
  			}
+		}
 	}
 
-	end_trace();
-	return nullptr;
+	DEFAULT_PARSE_END(ret);
+}
+
+std::tuple<Error*, ast::TypeRef*> Parser::type_ref(const Recovery& recovery) {
+	trace("type_ref");
+	size_t start = curr_tok.span().lo_bit;
+
+	if (expect_symbol('&'))
+		bug("type_ptr not checked before invoking");
+
+	auto mut = Mutability::Immutable;
+	if (curr_tok == TokenType::MUT) {
+		bump();
+		mut = Mutability::Mutable;
+	}
+
+	auto ty_ret = type(recovery);
+
+	auto sp = concat_span(start, curr_tok.span());
+	auto ty = new ast::TypeRef(std::get<1>(ty_ret), mut, sp);
+
+	auto ret = std::tuple(std::get<0>(ty_ret), ty);
+	DEFAULT_PARSE_END(ret);
+}
+
+std::tuple<Error*, ast::TypePtr*> Parser::type_ptr(const Recovery& recovery) {
+	trace("type_ptr");
+	size_t start = curr_tok.span().lo_bit;
+
+	if (expect_symbol('*'))
+		bug("type_ptr not checked before invoking");
+
+	auto mut = Mutability::Immutable;
+	if (curr_tok == TokenType::MUT) {
+		bump();
+		mut = Mutability::Mutable;
+	}
+
+	auto ty_ret = type(recovery);
+
+	auto sp = concat_span(start, curr_tok.span());
+	auto ty = new ast::TypePtr(std::get<1>(ty_ret), mut, sp);
+
+	auto ret = std::tuple(std::get<0>(ty_ret), ty);
+	DEFAULT_PARSE_END(ret)
+}
+
+// type_tuple : '(' ')'                      // TypeVoid
+//            | '(' typle ')'                // Type
+//            | '(' typle (',' type)* ')'    // TypeTuple
+std::tuple<Error*, ast::Type*> Parser::type_tuple(const Recovery& recovery) {
+	trace("type_tuple");
+	size_t start = curr_tok.span().lo_bit;
+
+	std::tuple<Error*, ast::Type*> ret;
+
+	if (expect_symbol('('))
+		bug("type_tuple not checked before invoking");
+
+	if (curr_tok.type() == ')') {
+		bump();	
+
+		auto sp = concat_span(start, curr_tok.span());
+		auto ty = new ast::TypeVoid(sp);
+
+		ret = std::tuple(nullptr, ty);			
+	}
+	else {
+		auto ty_ret = type(recovery + Recovery{',', ')'});
+		Error* err = std::get<0>(ty_ret);
+
+		TypeVec types;
+		types.push_back(std::unique_ptr<ast::Type>(std::get<1>(ty_ret)));
+
+		while(curr_tok.type() != ')') {
+			
+			if (curr_tok.type() == ',') {
+				bump();
+			} else break;
+
+			auto ty_ret = type(recovery + Recovery{',', ')'});
+			if (!err) { err = std::get<0>(ty_ret); }
+			types.push_back(std::unique_ptr<ast::Type>(std::get<1>(ty_ret)));
+		}
+
+		expect_sym_recheck(')', recovery);
+
+		auto sp = concat_span(start, curr_tok.span());
+		ast::Type* ty = types.size() == 1 ? types[0].release() : (ast::Type*)new ast::TypeTuple(types, sp);
+
+		ret = std::tuple(err, ty);
+	}
+
+	DEFAULT_PARSE_END(ret);
+}
+
+// type_arr_or_slice : '[' type ']'
+//                   | '[' typle ';' expr ']'
+std::tuple<Error*, ast::Type*> Parser::type_arr_or_slice(const Recovery& recovery) {
+	trace("type_arr_or_slice");
+	size_t start = curr_tok.span().lo_bit;
+
+	if (expect_symbol('['))
+		bug("type_arr_or_slice not checked before invoking");
+
+	auto ty_ret = type(recover::decl_start + Recovery{';', ']'});
+	Error* err = std::get<0>(ty_ret);
+
+	ast::Type* type = nullptr;
+
+	if (curr_tok.type() == ';') {
+		bump();
+
+		auto expr_ret = expr(1, recovery + Recovery{']'});
+		if (!err) { err = std::get<0>(expr_ret); }
+
+		auto sp = concat_span(start, curr_tok.span());
+		type = new ast::TypeArray(std::get<1>(ty_ret), std::get<1>(expr_ret), sp);
+	}
+	else {
+		auto sp = concat_span(start, curr_tok.span());
+		type = new ast::TypeSlice(std::get<1>(ty_ret), sp);
+	}
+
+	expect_sym_recheck(']', recover::decl_start);
+
+	auto ret = std::tuple(err, type);
+	DEFAULT_PARSE_END(ret);
+}
+
+// type_path : path
+ast::TypePath* Parser::type_path(const Recovery& recovery) {
+	trace("type_path");
+	size_t start = curr_tok.span().lo_bit;
+
+	auto p = path(recovery);
+	auto generics = generic_params(recovery);
+
+	auto sp = concat_span(start, curr_tok.span());
+	auto ty = new ast::TypePath(p, generics, sp);
+	DEFAULT_PARSE_END(ty);
+}
+
+// type_infer : '_'
+ast::TypeInfer* Parser::type_infer() {
+	trace("type_infer");
+	auto sp = Span(curr_tok.span());
+
+	if (expect_symbol('_'))
+		bug("type_infer not checked before invoking");
+
+	auto ty = new ast::TypeInfer(sp);
+	DEFAULT_PARSE_END(ty);
+}
+
+// type_primitive : primitive
+ast::TypePrimitive* Parser::type_primitive() {
+	trace("type_primitive");
+	auto ret = primitive();
+	DEFAULT_PARSE_END(ret);
 }
 
 // type_or_lt : type
 //            | lifetime
-Error* Parser::type_or_lt(const Recovery& recovery) {
+std::tuple<Error*, ast::GenericParam*> Parser::type_or_lt(const Recovery& recovery) {
 	trace("type_or_lt");
 
-	if (is_lifetime(curr_tok)) lifetime();
-	else if (is_type(curr_tok)) {
-		auto err = type(recovery); 
-		DEFAULT_PARSE_END(err);
+	Error* err = nullptr;
+	ast::GenericParam* ty_or_lf = nullptr;
+
+	if (is_lifetime(curr_tok)) {
+		auto lf_ret = lifetime();
+		err = std::get<0>(lf_ret);
+
+		ty_or_lf = new ast::GenericLifetime(std::get<1>(lf_ret), std::get<1>(lf_ret)->span);
 	}
 	else {
-		auto err = err_expected(translate::tk_type(curr_tok), "a type or lifetime", 0);
-		recover_to(recovery);
-		DEFAULT_PARSE_END(err);
+		auto ty_ret = type(recovery);
+
+		if (auto err = std::get<0>(ty_ret)) {
+			auto tmp_err = err_expected(translate::tk_type(curr_tok), "a type or lifetime", 0);
+			err->set_msg(tmp_err->message());
+			if (!err) { err = std::get<0>(ty_ret); }
+		}
+
+		ty_or_lf = new ast::GenericType(std::get<1>(ty_ret), std::get<1>(ty_ret)->span);
 	}
 
-	end_trace();
-	return nullptr;
+	auto ret = std::tuple(err, ty_or_lf);
+	DEFAULT_PARSE_END(ret);
 }
 
 // type_with_lt : lifetime? type
-Error* Parser::type_with_lt(const Recovery& recovery) {
+std::tuple<Error*, ast::Lifetime*, ast::Type*> Parser::type_with_lt(const Recovery& recovery) {
 	trace("type_with_lt");
 
-	if (is_lifetime(curr_tok))
-		lifetime();
-	if (auto err = type(recovery))
-		DEFAULT_PARSE_END(err);
+	Error* err;
+	ast::Lifetime* lf;
 
-	end_trace();
-	return nullptr;
-}
-
-// type_sum : type ('+' type)*
-Error* Parser::type_sum(const Recovery& recovery) {
-	trace("type_sum");
-
-	if (auto err = type(recovery))
-		DEFAULT_PARSE_END(err);
-
-	while (curr_tok.type() == '+') {
-		bump();
-		if (auto err = type(recovery + Recovery{'+'}))
-			DEFAULT_PARSE_END(err);
+	// A lifetime is not manditory, so expect to find it only if it is given
+	// If the lifetime returns with an error, store that aswell
+	if (is_lifetime(curr_tok)) {
+		auto lf_ret = lifetime();
+		err = std::get<0>(lf_ret);
+		lf = std::get<1>(lf_ret);
 	}
+	auto type_ret = type(recovery);
+	// If the lifetime didn't give errors,
+	// store a possible type error
+	if (!err) { err = std::get<0>(type_ret); }
 
-	end_trace();
-	return nullptr;
+	auto ret = std::tuple(err, lf, std::get<1>(type_ret));
+	DEFAULT_PARSE_END(ret);
 }

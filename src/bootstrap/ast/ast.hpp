@@ -32,6 +32,11 @@ struct Attributes : std::vector<Attr> {
 	inline bool is_empty() { return this->size() == 0; }
 };
 
+enum class Mutability {
+	Mutable,
+	Immutable,
+};
+
 /* A vector of identifier nodes. */
 using Path = std::vector<std::unique_ptr<ast::Ident>>;
 
@@ -49,9 +54,14 @@ using ParamVec = std::vector<std::unique_ptr<ast::Param>>;
 struct FunBlock {
 	Span sp;
 	StmtVec stmts;
+	bool defined;
+
+	FunBlock() = default;
+
 	FunBlock(StmtVec& stmts, Span& span) :
 		sp(std::move(span)),
-		stmts(std::move(stmts))
+		stmts(std::move(stmts)),
+		defined(true)
 	{}
 };
 
@@ -86,20 +96,32 @@ namespace ast {
 		ExprBool,
 		ExprString,
 		ExprChar,
-		ExprInteger,
+		ExprInt,
 		ExprFloat,
 		ExprIdent,
 		ExprTuple,
 
 		// type
 		BadType,
-		TypeUnknown,
+		TypeThing,
 		TypeBool,
 		TypeString,
 		TypeChar,
-		TypeInteger,
+		TypeIsize,
+		TypeI8,
+		TypeI16,
+		TypeI32,
+		TypeI64,
+		TypeI128,
 		TypeFloat,
+		TypeVoid,
+		TypeInfer,
 		TypeTuple,
+		TypeRef,
+		TypePtr,
+		TypeSlice,
+		TypeArray,
+		TypeSelf,
 
 		// other
 		Lifetime,
@@ -140,14 +162,14 @@ namespace ast {
 		virtual std::string accept(Visitor& visitor) const override = 0;
 	};
 
-	/* Base declaration node. */
+	/* Base declaration statement node. */
 	struct Decl : public Stmt {
 		Decl(NodeType type, Span&& span) : Stmt(type, std::move(span)) {}
 		virtual ~Decl() = default;
 		virtual std::string accept(Visitor& visitor) const override = 0;
 	};
 
-	/* Base expression node. */
+	/* Base expression statement node. */
 	struct Expr : public Stmt {
 		Expr(NodeType type, Span&& span) : Stmt(type, std::move(span)) {}
 		virtual ~Expr() = default;
@@ -158,6 +180,13 @@ namespace ast {
 	struct Type : public Node {
 		Type(NodeType type, Span&& span) : Node(type, std::move(span)) {}
 		virtual ~Type() = default;
+		virtual std::string accept(Visitor&) const override = 0;
+	};
+
+	/* Base primitive type node. */
+	struct TypePrimitive : public Type {
+		TypePrimitive(NodeType type, Span&& span) : Type(type, std::move(span)) {}
+		virtual ~TypePrimitive() = default;
 		virtual std::string accept(Visitor&) const override = 0;
 	};
 
@@ -200,7 +229,7 @@ namespace ast {
 		std::string accept(Visitor&) const override { return std::string(); }
 	};
 
-	/* A generic parameter  node. */
+	/* A generic parameter node. */
 	struct GenericParam : public Node {
 		GenericParam(NodeType type, Span&& span) : Node(type, std::move(span)) {}
 		virtual ~GenericParam() = default;
@@ -237,6 +266,20 @@ namespace ast {
 		Param(Ident* name, Type* type, Span& span) : Node(NodeType::Param, std::move(span)),
 			name(name),
 			type(type)
+		{}
+
+		std::string accept(Visitor&) const override { return std::string(); }
+	};
+
+	/* A type and lifetime node.
+	 * Used in variable declaration. */
+	struct TypeWithLifetime : public Node {
+		std::unique_ptr<Type> type;
+		std::unique_ptr<Lifetime> lf;
+
+		TypeWithLifetime(Type* type, Lifetime* lf, Span& span) : Node(NodeType::Param, std::move(span)),
+			type(type),
+			lf(lf)
 		{}
 
 		std::string accept(Visitor&) const override { return std::string(); }
@@ -309,15 +352,17 @@ namespace ast {
 
 	/* A variable declaration node.
 	 * Has an Ident* name,
-	 * Has a Path* type,  FIXME:  add 'Type' container
+	 * Has a Path* type,
 	 * Has an Expr* expr,  */
 	struct DeclVar : public Decl {
 		std::unique_ptr<Ident> name;
-		std::unique_ptr<Path> type;
+		std::unique_ptr<Lifetime> lf;
+		std::unique_ptr<Type> type;
 		std::unique_ptr<Expr> expr;
 
-		DeclVar(Ident* name, Path* type, Expr* expr, Span& span) : Decl(NodeType::DeclVar, std::move(span)),
+		DeclVar(Ident* name, Lifetime* lf, Type* type, Expr* expr, Span& span) : Decl(NodeType::DeclVar, std::move(span)),
 			name(name),
+			lf(lf),
 			type(type),
 			expr(expr)
 		{}
@@ -327,12 +372,12 @@ namespace ast {
 
 	/* A type declaration node.
 	 * Has an Ident* name,
-	 * Has a Path* type,  FIXME:  add 'Type' container */
+	 * Has a Path* type, */
 	struct DeclType : public Decl {
 		std::unique_ptr<Ident> name;
-		std::unique_ptr<Path> type;
+		std::unique_ptr<Type> type;
 
-		DeclType(Ident* name, Path* type, Span& span) : Decl(NodeType::DeclType, std::move(span)),
+		DeclType(Ident* name, Type* type, Span& span) : Decl(NodeType::DeclType, std::move(span)),
 			name(name),
 			type(type)	
 		{}
@@ -475,7 +520,7 @@ namespace ast {
 
 	/* An expression node with a character value. */
 	struct ExprChar : public Expr {
-		int value;
+		int64_t value;
 
 		ExprChar(int val, Span& span) : Expr(NodeType::ExprChar, std::move(span)),
 			value(val)
@@ -484,10 +529,10 @@ namespace ast {
 	};
 
 	/* An expression node with an integer value. */
-	struct ExprInteger : public Expr {
-		size_t value;
+	struct ExprInt : public Expr {
+		int64_t value;
 
-		ExprInteger(size_t val, Span& span) : Expr(NodeType::ExprInteger, std::move(span)),
+		ExprInt(size_t val, Span& span) : Expr(NodeType::ExprInt, std::move(span)),
 			value(val)
 		{}
 		std::string accept(Visitor&) const override { return std::string(); }
@@ -525,15 +570,58 @@ namespace ast {
 		std::string accept(Visitor&) const override { return std::string(); }
 	};
 
-	/* An empty 'void' type node. */
-	struct TypeVoid : public Type {
-		explicit TypeVoid(Span& span) : Type(NodeType::TypeTuple, std::move(span)) {}
+	/* A primitive isize type node. */
+	struct TypeIsize : public TypePrimitive {
+		TypeIsize(Span& span) : TypePrimitive(NodeType::TypeIsize, std::move(span)) {}
 		std::string accept(Visitor&) const override { return std::string(); }
 	};
 
-	/* A 'self' type node. */
-	struct TypeSelf : public Type {
-		explicit TypeSelf(Span& span) : Type(NodeType::TypeTuple, std::move(span)) {}
+	/* A primitive i8 type node. */
+	struct TypeI8 : public TypePrimitive {
+		TypeI8(Span& span) : TypePrimitive(NodeType::TypeI8, std::move(span)) {}
+		std::string accept(Visitor&) const override { return std::string(); }
+	};
+
+	/* A primitive i16 type node. */
+	struct TypeI16 : public TypePrimitive {
+		TypeI16(Span& span) : TypePrimitive(NodeType::TypeI16, std::move(span)) {}
+		std::string accept(Visitor&) const override { return std::string(); }
+	};
+
+	/* A primitive i32 type node. */
+	struct TypeI32 : public TypePrimitive {
+		TypeI32(Span& span) : TypePrimitive(NodeType::TypeI32, std::move(span)) {}
+		std::string accept(Visitor&) const override { return std::string(); }
+	};
+
+	/* A primitive i64 type node. */
+	struct TypeI64 : public TypePrimitive {
+		TypeI64(Span& span) : TypePrimitive(NodeType::TypeI64, std::move(span)) {}
+		std::string accept(Visitor&) const override { return std::string(); }
+	};
+
+	/* An primitive 'void' type node. */
+	struct TypeVoid : public TypePrimitive {
+		explicit TypeVoid(Span& span) : TypePrimitive(NodeType::TypeVoid, std::move(span)) {}
+		std::string accept(Visitor&) const override { return std::string(); }
+	};
+
+	/* An omitted type, that still needs to be inferred. */
+	struct TypeInfer : public Type {
+		explicit TypeInfer(Span& span) : Type(NodeType::TypeInfer, std::move(span)) {}
+		std::string accept(Visitor&) const override { return std::string(); }
+	};
+
+	/* A path to a non-primitive type node. */
+	struct TypePath : public Type {
+		std::unique_ptr<Path> path;
+		GenericParamVec generics;
+
+		TypePath(Path* path, GenericParamVec& generics, Span& span) : Type(NodeType::TypeTuple, std::move(span)),
+			path(path),
+			generics(std::move(generics))
+		{}
+
 		std::string accept(Visitor&) const override { return std::string(); }
 	};
 
@@ -545,6 +633,62 @@ namespace ast {
 		TypeTuple(TypeVec& items, Span& span) : Type(NodeType::TypeTuple, std::move(span)),
 			items(std::move(items))
 		{}
+		std::string accept(Visitor&) const override { return std::string(); }
+	};
+
+	/* A reference type node to another type. */
+	struct TypeRef : public Type {
+		std::unique_ptr<Type> type;
+		Mutability mut;
+
+		TypeRef(Type* type, Mutability mut, Span& span) : Type(NodeType::TypeRef, std::move(span)),
+			type(type),
+			mut(mut)
+		{}
+
+		std::string accept(Visitor&) const override { return std::string(); }
+	};
+
+	/* A pointer type node to another type. */
+	struct TypePtr : public Type {
+		std::unique_ptr<Type> type;
+		Mutability mut;
+
+		TypePtr(Type* type, Mutability mut, Span& span) : Type(NodeType::TypePtr, std::move(span)),
+			type(type),
+			mut(mut)
+		{}
+
+		std::string accept(Visitor&) const override { return std::string(); }
+	};
+
+	/* An unknown-size array slice type node. */
+	struct TypeSlice : public Type {
+		std::unique_ptr<Type> type;
+
+		TypeSlice(Type* type, Span& span) : Type(NodeType::TypeSlice, std::move(span)),
+			type(type)
+		{}
+
+		std::string accept(Visitor&) const override { return std::string(); }
+	};
+
+	/* A fixed size array type node. */
+	struct TypeArray : public Type {
+		std::unique_ptr<Type> type;
+		std::unique_ptr<Expr> len;
+
+		TypeArray(Type* type, Expr* len, Span& span) : Type(NodeType::TypeArray, std::move(span)),
+			type(type),
+			len(len)
+		{}
+
+		std::string accept(Visitor&) const override { return std::string(); }
+	};
+
+	/* A 'self' type node. */ // FIXME:  'self' should be implemented differently
+	struct TypeSelf : public Type {
+		explicit TypeSelf(Span& span) : Type(NodeType::TypeSelf, std::move(span)) {}
 		std::string accept(Visitor&) const override { return std::string(); }
 	};
 }

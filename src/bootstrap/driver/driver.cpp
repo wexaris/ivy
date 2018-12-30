@@ -32,12 +32,13 @@ bool compile(const std::vector<std::string>& input, const std::string& output) {
 	try {
 		// Must exist outside the Parser
 		SourceMap src_map = SourceMap(Session::handler);
+		std::shared_ptr<ASTRoot> ast;
 
 		// TODO:  Store the AST
 		// FIXME:  This is in a try-catch because 'expressions not implemented yet'
 		try {
 			Parser parser = Parser(src_map, input[0]);
-			parser.parse();
+			ast = parser.parse();
 		}
 		catch (const InternalException& e) {}
 
