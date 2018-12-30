@@ -277,6 +277,15 @@ constexpr const OPInfoPair* op_find(char key) {
 	//return Token(LIT_INT, (intmax_t)parsed);
 }*/
 
+/* Concatenate a low span and hi span into a new span. */
+inline Span concat_span(const Span& start, const Span& end) {
+	return Span(*start.tu, start.lo_bit, end.hi_bit);
+}
+/* Concatenate a low pos and hi span into a new span. */
+inline Span concat_span(size_t lo, const Span& hi_sp) {
+	return Span(*hi_sp.tu, lo, hi_sp.hi_bit);
+}
+
 /* True if the provided token is a primitive. */
 inline bool is_primitive(const Token& tk) {
 	return tk == TokenType::THING || tk == TokenType::STR || tk == TokenType::CHAR ||

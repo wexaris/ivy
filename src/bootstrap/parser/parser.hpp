@@ -44,7 +44,7 @@ private:
 	/* Requests a level of indentation to be removed from trace messages. */
 	inline void end_trace() const { handler.end_trace(); }
 
-	/* Bump until one of a given set of characters has been reached */
+	/* Bump until one of a given set of characters has been reached. */
 	void recover_to(const Recovery& to);
 
 	/* Creates and emits an internal compiler failure error message.
