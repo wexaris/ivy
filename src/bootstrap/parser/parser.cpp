@@ -3,8 +3,7 @@
 #include "util/token_info.hpp"
 #include <algorithm>
 
-#define DEFAULT_PARSE_END(x) { { end_trace(); return x; }; }
-#define	EXPECT_OR_PASS(x) { if (expect_symbol(x, recover::decl_start + Recovery{x})) if (curr_tok.type() == x) bump(); }
+#define DEFAULT_PARSE_END(x) { end_trace(); return x; }
 
 /* Contains recovery point presets */
 namespace recover {
@@ -452,7 +451,7 @@ inline Error* Parser::expect_mod_or_package() {
 		bump();
 		return nullptr;
 	}
-	return err_expected(translate::tk_type(curr_tok), "either 'mod' or 'package'");
+	return err_expected(translate::tk_type(curr_tok), "one of 'mod' or 'package'");
 }
 
 inline Error* Parser::expect_mod_or_package(const Recovery& to) {
@@ -714,6 +713,9 @@ void Parser::generic_params(const Recovery& recovery) {
 			}
 		}
 	}
+	if (auto err = expect_symbol('>', recovery)) {
+		err->set_msg("unterminated generic clause");
+	}
 	
 	expect_symbol('>', recovery);
 	end_trace();
@@ -750,13 +752,8 @@ void Parser::param_list(bool is_method, const Recovery& recovery) {
 				break;
 		} 
 	}
+	expect_sym_recheck(')', recovery);
 	
-	if (expect_symbol(')', recovery + Recovery{')'})) {
-		if (curr_tok.type() == ')') {
-			bump();
-		}
-		DEFAULT_PARSE_END();
-	}
 
 	end_trace();
 }
@@ -823,12 +820,7 @@ void Parser::arg_list(const Recovery& recovery) {
 		} 
 	}
 	
-	if (expect_symbol(')', recovery + Recovery{')'})) {
-		if (curr_tok.type() == ')') {
-			bump();
-		}
-		DEFAULT_PARSE_END();
-	}
+	expect_sym_recheck(')', recovery);
 
 	end_trace();
 }
@@ -976,6 +968,7 @@ void Parser::decl_sub_module() {
 		}
 		decl();
 	}
+	expect_sym_recheck('}', recover::decl_start);
 
 	EXPECT_OR_PASS('}');
 
@@ -1072,7 +1065,7 @@ void Parser::decl_var(bool is_const, bool is_static) {
 		}
 	}
 
-	EXPECT_OR_PASS(';');
+	expect_sym_recheck(';', recover::decl_start);
 
 	end_trace();
 }
@@ -1105,7 +1098,7 @@ void Parser::decl_type() {
 			bump();
 	}
 
-	EXPECT_OR_PASS(';');
+	expect_sym_recheck(';', recover::decl_start);
 
 	end_trace();
 }
@@ -1124,7 +1117,7 @@ void Parser::decl_use() {
 		DEFAULT_PARSE_END();
 	}
 
-	EXPECT_OR_PASS(';');
+	expect_sym_recheck(';', recover::decl_start);
 			
 	end_trace();
 }
@@ -1220,6 +1213,7 @@ void Parser::fun_block() {
 	while (curr_tok.type() != '}') {
 		stmt({'}'});
 	}
+	expect_sym_recheck('}', recover::decl_start);
 
 	if (expect_symbol('}', recover::decl_start + Recovery{'}'})) {
 		if (curr_tok.type() == '}')
@@ -1292,8 +1286,8 @@ void Parser::struct_tuple_block() {
 			struct_tuple_item();
 		}
 	}
+	expect_sym_recheck(')', recover::decl_start);
 
-	EXPECT_OR_PASS(')');
 	end_trace();
 }
 
@@ -1323,8 +1317,8 @@ void Parser::struct_named_block() {
 	while (curr_tok.type() != '}') {
 		struct_named_item();
 	}
+	expect_sym_recheck('}', recover::decl_start);
 
-	EXPECT_OR_PASS('}');
 	end_trace();
 }
 
@@ -1352,13 +1346,10 @@ void Parser::struct_named_item() {
 			DEFAULT_PARSE_END();
 	}
 
-	if (type_with_lt(recover::decl_start + recover::semi)) {
-		if (curr_tok.type() == ';')
-			bump();
-		DEFAULT_PARSE_END();
-	}
+	type_with_lt(recovery + recover::semi);
 
-	EXPECT_OR_PASS(';');
+	expect_sym_recheck(';', recover::decl_start);
+
 	end_trace();
 }
 
@@ -1426,8 +1417,8 @@ void Parser::enum_block() {
 			}
 		}
 	}
+	expect_sym_recheck('}', recover::decl_start);
 
-	EXPECT_OR_PASS('}');
 	end_trace();
 }
 
@@ -1543,8 +1534,8 @@ void Parser::trait_block() {
 				recover_to(recover::decl_start + Recovery{'}'});
 		}
 	}
-
-	EXPECT_OR_PASS('}')
+	expect_sym_recheck('}', recover::decl_start);
+	
 	end_trace();
 }
 
@@ -1608,8 +1599,8 @@ void Parser::impl_block() {
 		else if (curr_tok == TokenType::FUN)
 			decl_fun(true);
 	}
+	expect_sym_recheck('}', recover::decl_start);
 
-	EXPECT_OR_PASS('}');
 	end_trace();
 }
 
@@ -1852,10 +1843,7 @@ void Parser::stmt_case(const Recovery& recovery) {
 
 	expr(1);
 
-	if (expect_symbol(':', recovery + Recovery{':'})) {
-		if (curr_tok.type() == ':')
-			bump();
-	}
+	expect_sym_recheck(':', recovery);
 
 	end_trace();
 }
@@ -1870,10 +1858,7 @@ void Parser::stmt_return(const Recovery& recovery) {
 	if (curr_tok.type() != ';')
 		expr(1);
 
-	if (expect_symbol(';', recovery + recover::semi)) {
-		if (curr_tok.type() == ';')
-			bump();
-	}
+	expect_sym_recheck(';', recovery);
 
 	end_trace();
 }
@@ -1885,10 +1870,7 @@ void Parser::stmt_break(const Recovery& recovery) {
 	if (expect_keyword(TokenType::BREAK))
 		bug("stmt_break not checked before invoking");
 
-	if (expect_symbol(';', recovery + recover::semi)) {
-		if (curr_tok.type() == ';')
-			bump();
-	}
+	expect_sym_recheck(';', recovery);
 
 	end_trace();
 }
@@ -1900,10 +1882,7 @@ void Parser::stmt_continue(const Recovery& recovery) {
 	if (expect_keyword(TokenType::CONTINUE))
 		bug("stmt_continue not checked before invoking");
 
-	if (expect_symbol(';', recovery + recover::semi)) {
-		if (curr_tok.type() == ';')
-			bump();
-	}
+	expect_sym_recheck(';', recovery);
 
 	end_trace();
 }
@@ -2044,11 +2023,7 @@ void Parser::struct_init(const Recovery& recovery) {
 		}
 
 	}
-
-	if (expect_symbol('}', recovery + Recovery{'}'})) {
-		if (curr_tok.type() == '}')
-			bump();
-	}
+	expect_sym_recheck('}', recovery);
 
 	end_trace();
 }
@@ -2088,11 +2063,7 @@ void Parser::arr_init(const Recovery& recovery) {
 			arr_field();
 		}
 	}
-
-	if (expect_symbol(']', recovery + Recovery{']'})) {
-		if (curr_tok.type() == ']')
-			bump();
-	}
+	expect_sym_recheck(']', recovery);
 
 	end_trace();
 }
