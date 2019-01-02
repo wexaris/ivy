@@ -78,14 +78,12 @@ private:
 private:
 	// items
 	ast::TypePrimitive* primitive();
-	std::tuple<Error*, ast::Ident*> ident();
-	std::tuple<Error*, ast::Lifetime*> lifetime();
-	Error* literal();
+	ast::Ident* ident();
+	ast::Lifetime* lifetime();
 	Error* binop();
 	Error* unaryop();
-	inline std::tuple<Error*, ast::Ident*> ident(const Recovery& recovery);
-	inline std::tuple<Error*, ast::Lifetime*> lifetime(const Recovery& recovery);
-	inline Error* literal(const Recovery& recovery);
+	inline ast::Ident* ident(const Recovery& recovery);
+	inline ast::Lifetime* lifetime(const Recovery& recovery);
 	inline Error* binop(const Recovery& recovery);
 	inline Error* unaryop(const Recovery& recovery);
 

@@ -576,43 +576,45 @@ ast::TypePrimitive* Parser::primitive() { // FIXME:  add missing types
 }
 
 // ident : ID
-std::tuple<Error*, ast::Ident*> Parser::ident() {
+ast::Ident* Parser::ident() {
 	trace("ident: " + std::string(curr_tok.raw()));
+
+	ast::Ident* id = nullptr;
+	if (curr_tok == TokenType::ID) {
 	auto sp = Span(curr_tok.span());
-	auto id = new ast::Ident(curr_tok.raw(), sp);
+		id = new ast::Ident(curr_tok.raw(), sp);
+		bump();
+	}
+	else err_expected(translate::tk_type(curr_tok), "an identifier");
 
-	Error* err = nullptr;
-	if (curr_tok != TokenType::ID)
-		err = err_expected(translate::tk_type(curr_tok), "an identifier");
-	else bump();
-
-	DEFAULT_PARSE_END(std::tuple(err, id));
+	DEFAULT_PARSE_END(id);
 }
 // ident : ID
-inline std::tuple<Error*, ast::Ident*> Parser::ident(const Recovery& to) {
-	auto id_ret = ident();
-	if (std::get<0>(id_ret)) { recover_to(to); }
-	return id_ret;
+inline ast::Ident* Parser::ident(const Recovery& to) {
+	auto ret = ident();
+	if (!ret) { recover_to(to); }
+	return ret;
 }
 
 // lifetime : LF
-std::tuple<Error*, ast::Lifetime*> Parser::lifetime() {
+ast::Lifetime* Parser::lifetime() {
 	trace("lifetime: " + std::string(curr_tok.raw()));
+
+	ast::Lifetime* lf = nullptr;
+	if (is_lifetime(curr_tok)) {
 	auto sp = Span(curr_tok.span());
-	auto lf = new ast::Lifetime(curr_tok.raw(), sp);
+		lf = new ast::Lifetime(curr_tok.raw(), sp);
+		bump();
+	}
+	else err_expected(translate::tk_type(curr_tok), "a lifetime");
 
-	Error* err = nullptr;
-	if (!is_lifetime(curr_tok))
-		err = err_expected(translate::tk_type(curr_tok), "a lifetime");
-	else bump();
-
-	DEFAULT_PARSE_END(std::tuple(err, lf));
+	DEFAULT_PARSE_END(lf);
 }
 // lifetime : LF
-inline std::tuple<Error*, ast::Lifetime*> Parser::lifetime(const Recovery& to) {
-	auto lf_ret = lifetime();
-	if (std::get<0>(lf_ret)) { recover_to(to); }
-	return lf_ret;
+inline ast::Lifetime* Parser::lifetime(const Recovery& to) {
+	auto ret = lifetime();
+	if (!ret) { recover_to(to); }
+	return ret;
 }
 
 // literal : LIT_TRUE
@@ -721,14 +723,14 @@ ast::Path* Parser::path(const Recovery& to) {
 
 	// Add current token to path
 	auto id_ret = ident(to + Recovery{(int)TokenType::SCOPE});
-	path.push_back(std::unique_ptr<ast::Ident>(std::get<1>(id_ret)));
+	path.push_back(std::unique_ptr<ast::Ident>(id_ret));
 
 	while (curr_tok == TokenType::SCOPE) {
 		bump();
 
 		// Add current token to path
-		id_ret = ident(to + Recovery{(int)TokenType::SCOPE});
-		path.push_back(std::unique_ptr<ast::Ident>(std::get<1>(id_ret)));
+		auto id_ret = ident(to + Recovery{(int)TokenType::SCOPE});
+		path.push_back(std::unique_ptr<ast::Ident>(id_ret));
 	}
 
 	auto sp = concat_span(start, curr_tok.span());
@@ -823,9 +825,11 @@ ParamVec Parser::param_list(bool is_method, const Recovery& recovery) {
 std::tuple<Error*, ast::Param*> Parser::param(const Recovery& recovery) {
 	trace("param");
 	size_t start = curr_tok.span().lo_bit;
+	Error* err = nullptr;
 
 	auto id_ret = ident(recovery + Recovery{':'});
-	auto err = std::get<0>(id_ret);
+	if (!id_ret)
+		err = &handler.last();
 
 	if (auto exp_err = expect_symbol(':', recovery + recover::type_start)) {
 		if (!err) { err = exp_err; }
@@ -835,7 +839,7 @@ std::tuple<Error*, ast::Param*> Parser::param(const Recovery& recovery) {
 	if (!err && std::get<0>(ty_ret)) { err = std::get<0>(ty_ret); }
 
 	auto sp = concat_span(start, curr_tok.span());
-	auto param = new ast::Param(std::get<1>(id_ret), std::get<1>(ty_ret), sp);
+	auto param = new ast::Param(id_ret, std::get<1>(ty_ret), sp);
 	DEFAULT_PARSE_END(std::tuple(err, param));
 }
 
@@ -1154,7 +1158,7 @@ ast::DeclVar* Parser::decl_var(bool is_const, bool is_static) {
 	expect_sym_recheck(';', recover::decl_start);
 
 	auto sp = concat_span(start, curr_tok.span());
-	auto decl = new ast::DeclVar(std::get<1>(id_ret), lifetime, type, value, sp);
+	auto decl = new ast::DeclVar(id_ret, lifetime, type, value, sp);
 	DEFAULT_PARSE_END(decl);
 }
 
@@ -1180,7 +1184,7 @@ ast::DeclType* Parser::decl_type() {
 	expect_sym_recheck(';', recover::decl_start);
 
 	auto sp = concat_span(start, curr_tok.span());
-	auto decl = new ast::DeclType(std::get<1>(id_ret), ty, sp);
+	auto decl = new ast::DeclType(id_ret, ty, sp);
 	DEFAULT_PARSE_END(decl);
 }
 
@@ -1237,7 +1241,7 @@ ast::DeclFun* Parser::decl_fun(bool is_method) {
 	else block = fun_block();
 	
 	auto sp = concat_span(start, curr_tok.span());
-	auto decl = new ast::DeclFun(std::get<1>(id_ret), generics, params, std::get<1>(ret_type), block, sp);
+	auto decl = new ast::DeclFun(id_ret, generics, params, std::get<1>(ret_type), block, sp);
 	DEFAULT_PARSE_END(decl);
 }
 
@@ -1362,7 +1366,7 @@ void Parser::struct_named_item(const Recovery& recovery) {
 	auto attr = attributes();
 
 	auto id_ret = ident(recovery + Recovery{':', ';'});
-	if (std::get<0>(id_ret)) {
+	if (!id_ret) {
 		if (curr_tok.type() != ':') {
 			if (curr_tok.type() == ';')
 				bump();
@@ -1463,9 +1467,9 @@ Error* Parser::enum_item(const Recovery& recovery) {
 	trace("enum_item");
 
 	auto id_ret = ident(recovery + Recovery{'=', '('});
-	if (std::get<0>(id_ret)) {
+	if (!id_ret) {
 		if (curr_tok.type() != '=' && curr_tok.type() != '(')
-			DEFAULT_PARSE_END(std::get<0>(id_ret));
+			DEFAULT_PARSE_END(&handler.last());
 	}
 
 	if (curr_tok.type() == '=') {
@@ -1586,7 +1590,7 @@ void Parser::decl_impl() {
 		generic_params({'{', ';'});
 
 	auto id_ret = ident(recover::decl_start + Recovery{'{', '<', ';'});
-	if (std::get<0>(id_ret)) {
+	if (!id_ret) {
 		if (curr_tok.type() != '{' && curr_tok.type() != '<' && curr_tok.type() != ';')
 			DEFAULT_PARSE_END();
 	}
@@ -1597,7 +1601,7 @@ void Parser::decl_impl() {
 		bump();
 
 		auto id_ret = ident(recover::decl_start + Recovery{'{', '<', ';'});
-		if (std::get<0>(id_ret)) {
+		if (!id_ret) {
 			if (curr_tok.type() != '{' && curr_tok.type() != '<' && curr_tok.type() != ';')
 				DEFAULT_PARSE_END();
 		}
@@ -2090,12 +2094,17 @@ Error* Parser::struct_field(const Recovery& recovery) {
 	trace("struct_field");
 
 	auto id_ret = ident(recovery + Recovery{':'});
+	Error* err = nullptr;
+	if (!id_ret)
+		err = &handler.last();
+
 	if (curr_tok.type() == ':') {
 		bump();
-		expr(1);
+		auto expr_ret = expr(1);
+		if (!err) { err = std::get<0>(expr_ret); }
 	}
 
-	DEFAULT_PARSE_END(std::get<0>(id_ret));
+	DEFAULT_PARSE_END(err);
 }
 
 // arr_init : '[' ']'
@@ -2362,9 +2371,10 @@ std::tuple<Error*, ast::GenericParam*> Parser::type_or_lt(const Recovery& recove
 
 	if (is_lifetime(curr_tok)) {
 		auto lf_ret = lifetime();
-		err = std::get<0>(lf_ret);
+		if (!lf_ret)
+			err = &handler.last();
 
-		ty_or_lf = new ast::GenericLifetime(std::get<1>(lf_ret), std::get<1>(lf_ret)->span);
+		ty_or_lf = new ast::GenericLifetime(lf_ret, lf_ret->span);
 	}
 	else {
 		auto ty_ret = type(recovery);
@@ -2386,15 +2396,16 @@ std::tuple<Error*, ast::GenericParam*> Parser::type_or_lt(const Recovery& recove
 std::tuple<Error*, ast::Lifetime*, ast::Type*> Parser::type_with_lt(const Recovery& recovery) {
 	trace("type_with_lt");
 
-	Error* err;
-	ast::Lifetime* lf;
+	ast::Lifetime* lf = nullptr;
+	Error* err = nullptr;
 
 	// A lifetime is not manditory, so expect to find it only if it is given
 	// If the lifetime returns with an error, store that aswell
 	if (is_lifetime(curr_tok)) {
 		auto lf_ret = lifetime();
-		err = std::get<0>(lf_ret);
-		lf = std::get<1>(lf_ret);
+		if (!lf_ret)
+			err = &handler.last();
+		lf = lf_ret;
 	}
 	auto type_ret = type(recovery);
 	// If the lifetime didn't give errors,
