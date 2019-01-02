@@ -72,7 +72,6 @@ namespace ast {
 	enum class NodeType {
 
 		// decl
-		BadDecl,
 		DeclTransUnit,
 		DeclModule,
 		DeclModuleImport,
@@ -84,10 +83,8 @@ namespace ast {
 		DeclStruct,
 
 		// stmt
-		BadStmt,
 
 		// expr
-		BadExpr,
 		ExprSum,
 		ExprSub,
 		ExprMul,
@@ -102,7 +99,6 @@ namespace ast {
 		ExprTuple,
 
 		// type
-		BadType,
 		TypeThing,
 		TypeBool,
 		TypeString,
@@ -421,22 +417,12 @@ namespace ast {
 	////////////////////////////////////    Statements    /////////////////////////////////////////
 	///////////////////////////////////////////////////////////////////////////////////////////////
 
-	/* A placeholder node for statements with errors. */
-	struct BadStmt : public Stmt {
-		explicit BadStmt(Span& span) : Stmt(NodeType::BadStmt, std::move(span)) {}
-		std::string accept(Visitor&) const override { return std::string(); }
-	};
+
 
 
 	///////////////////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////    Expressions    ////////////////////////////////////////
 	///////////////////////////////////////////////////////////////////////////////////////////////
-
-	/* A placeholder node for expressions with errors. */
-	struct BadExpr : public Expr {
-		explicit BadExpr(Span& span) : Expr(NodeType::BadExpr, std::move(span)) {}
-		std::string accept(Visitor&) const override { return std::string(); }
-	};
 
 	/* A sum expression node. */
 	struct ExprSum : public Expr {
@@ -563,12 +549,6 @@ namespace ast {
 	///////////////////////////////////////////////////////////////////////////////////////////////
 	///////////////////////////////////////    Types    ///////////////////////////////////////////
 	///////////////////////////////////////////////////////////////////////////////////////////////
-
-	/* A placeholder node for types with errors. */
-	struct BadType : public Type {
-		explicit BadType(Span& span) : Type(NodeType::BadType, std::move(span)) {}
-		std::string accept(Visitor&) const override { return std::string(); }
-	};
 
 	/* A primitive isize type node. */
 	struct TypeIsize : public TypePrimitive {

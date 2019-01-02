@@ -991,13 +991,8 @@ ast::Decl* Parser::decl(bool is_global) {
 			break;
 
 		default: {
-			size_t start = curr_tok.span().lo_bit;
-
 			err_expected(translate::tk_type(curr_tok), "a declaration");
 			recover_to(recover::decl_start);
-				
-			auto sp = concat_span(start, curr_tok.span());
-			DEFAULT_PARSE_END(new ast::BadDecl(sp));
 		}
 	}
 
@@ -1097,9 +1092,7 @@ ast::Decl* Parser::decl_import_item() {
 		expect_mod_or_package(recover::decl_start + Recovery{';'});
 		if (curr_tok.type() == ';')
 			bump();
-
-		auto sp = concat_span(start, curr_tok.span());
-		DEFAULT_PARSE_END(new ast::BadDecl(sp));
+		DEFAULT_PARSE_END(nullptr);
 	}
 
 	auto import_path = path(recover::decl_start + recover::semi);
@@ -2192,10 +2185,7 @@ std::tuple<Error*, ast::Type*> Parser::type(const Recovery& recovery) {
 				auto err = err_expected(translate::tk_type(curr_tok), "a type");
 				recover_to(recovery);
 
-				auto sp = Span(curr_tok.span());
-				auto ty = new ast::BadType(sp);
-
-				ret = std::tuple(err, ty);
+				ret = std::tuple(err, nullptr);
  			}
 		}
 	}
