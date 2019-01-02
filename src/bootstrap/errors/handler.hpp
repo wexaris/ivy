@@ -71,6 +71,9 @@ public:
 	 * Returns the new error count. */
 	size_t recount_errors();
 
+	/* Returns the last error that was pushed back. */
+	inline Error& last() { return delayed_errors.back(); }
+
 	/* True is there have been any errors.
 	 * Does not recount the delayed errors. */
 	inline bool has_errors() const	{ return delayed_errors.size() > 0; }
