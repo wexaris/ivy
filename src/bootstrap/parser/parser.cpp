@@ -669,7 +669,7 @@ inline ast::Value* Parser::literal() {
 		case (int)TokenType::LIT_INTEGER: {
 			auto sp = Span(curr_tok.span());
 			auto str = std::string(curr_tok.raw());
-			val = new ast::ValueFloat(atof(str.c_str()), sp);
+			val = new ast::ValueInt(atoi(str.c_str()), sp);
 			bump();
 			break;
 		}
