@@ -80,10 +80,12 @@ private:
 	ast::TypePrimitive* primitive();
 	ast::Ident* ident();
 	ast::Lifetime* lifetime();
+	ast::Value* literal();
 	Error* binop();
 	Error* unaryop();
 	inline ast::Ident* ident(const Recovery& recovery);
 	inline ast::Lifetime* lifetime(const Recovery& recovery);
+	inline ast::Value* literal(const Recovery& recovery);
 	inline Error* binop(const Recovery& recovery);
 	inline Error* unaryop(const Recovery& recovery);
 
@@ -99,15 +101,15 @@ private:
 	std::tuple<Error*, ast::Param*> param(const Recovery& recovery);
 	Error* param_self(const Recovery& recovery);
 
-	void arg_list(const Recovery& recovery);
+	ExprVec arg_list(const Recovery& recovery);
 	std::tuple<Error*, ast::Expr*> arg(const Recovery& recovery);
 
 	std::tuple<Error*, ast::Type*> return_type(const Recovery& recovery);
 
-	void struct_init(const Recovery& recovery);
-	Error* struct_field(const Recovery& recovery);
+	StructFieldVec struct_init(const Recovery& recovery);
+	std::tuple<Error*, IDExprPair> struct_field(const Recovery& recovery);
 
-	void arr_init(const Recovery& recovery);
+	ExprVec arr_init(const Recovery& recovery);
 	std::tuple<Error*, ast::Expr*> arr_field();
 
 	// decl
@@ -142,7 +144,8 @@ private:
 	// expr
 	std::tuple<Error*, ast::Expr*> expr(int min_prec);
 	std::tuple<Error*, ast::Expr*> expr(int min_prec, const Recovery& recovery);
-	Error* val(const Recovery& recovery);
+	std::tuple<Error*, ast::Value*> val(const Recovery& recovery);
+	ast::UnaryOp* unary_op();
 
 	// stmt
 	ast::Stmt* stmt(const Recovery& recovery);

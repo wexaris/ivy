@@ -623,39 +623,59 @@ inline ast::Lifetime* Parser::lifetime(const Recovery& to) {
 //         | LIT_CHAR
 //         | LIT_INTEGER
 //         | LIT_FLOAT
-inline Error* Parser::literal() {
+inline ast::Value* Parser::literal() {
+	trace("literal: " + translate::tk_info(curr_tok));
+
+	ast::Value* val = nullptr;
 	switch (curr_tok.type()) {
-		case (int)TokenType::LIT_TRUE:
-			trace("literal: bool: true");
+		case (int)TokenType::LIT_TRUE: {
+			auto sp = Span(curr_tok.span());
+			val = new ast::ValueBool(true, sp);
 			bump();
 			break;
-		case (int)TokenType::LIT_FALSE:
-			trace("literal: bool: false");
+		}
+		case (int)TokenType::LIT_FALSE: {
+			auto sp = Span(curr_tok.span());
+			val = new ast::ValueBool(false, sp);
 			bump();
 			break;
-		case (int)TokenType::LIT_STRING:
-			trace("literal: string: " + translate::tk_info(curr_tok));
+		}
+		case (int)TokenType::LIT_STRING: {
+			auto sp = Span(curr_tok.span());
+			val = new ast::ValueString(curr_tok.raw(), sp);
 			bump();
 			break;
-		case (int)TokenType::LIT_CHAR:
-			trace("literal: char: " + translate::tk_info(curr_tok));
+		}
+		case (int)TokenType::LIT_CHAR: { // TODO:  This will have problems with character values larger than 256
+			auto sp = Span(curr_tok.span());
+			auto str = std::string(curr_tok.raw());
+			val = new ast::ValueChar(curr_tok.raw()[0], sp); /// <--
 			bump();
 			break;
-		case (int)TokenType::LIT_INTEGER:
-			trace("literal: int: " + translate::tk_info(curr_tok));
+		}
+		case (int)TokenType::LIT_INTEGER: {
+			auto sp = Span(curr_tok.span());
+			auto str = std::string(curr_tok.raw());
+			val = new ast::ValueFloat(atof(str.c_str()), sp);
 			bump();
 			break;
-		case (int)TokenType::LIT_FLOAT:
-			trace("literal: float: " + translate::tk_info(curr_tok));
+		}
+		case (int)TokenType::LIT_FLOAT: {
+			auto sp = Span(curr_tok.span());
+			auto str = std::string(curr_tok.raw());
+			val = new ast::ValueFloat(atof(str.c_str()), sp);
 			bump();
 			break;
+		}
 		default:
 			if (is_literal(curr_tok))
 				bug("inconsistent literal definitions");
-			trace("literal: invalid: " + std::string(curr_tok.raw()));
-			DEFAULT_PARSE_END(err_expected(translate::tk_type(curr_tok), "a literal"));
+			err_expected(translate::tk_type(curr_tok), "a literal");
+			val = nullptr;
+			bump();
 	}
-	DEFAULT_PARSE_END(nullptr);
+
+	DEFAULT_PARSE_END(val);
 }
 // literal : LIT_TRUE
 //         | LIT_FALSE
@@ -663,13 +683,11 @@ inline Error* Parser::literal() {
 //         | LIT_CHAR
 //         | LIT_INTEGER
 //         | LIT_FLOAT
-inline Error* Parser::literal(const Recovery& to) {
-	if (auto err = literal()) {
-		recover_to(to);
-		return err;
+inline ast::Value* Parser::literal(const Recovery& to) {
+	auto ret = literal();
+	if (!ret) { recover_to(to); }
+	return ret;
 	}
-	return nullptr;
-}
 
 // binop : '+' | '-' | '*' | '/' | '^'
 inline Error* Parser::binop() {
@@ -866,29 +884,34 @@ Error* Parser::param_self(const Recovery& recovery) {
 
 // arg_list : '(' ')'
 //          | '(' arg (',' arg)* ')'
-void Parser::arg_list(const Recovery& recovery) {
+ExprVec Parser::arg_list(const Recovery& recovery) {
 	trace("arg_list");
+
+	ExprVec exprs;
 
 	if (expect_symbol('('))
 		bug("arg_list not checked before invoking");
 
 	if (curr_tok.type() != ')') {
 
-		arg(recovery + Recovery{',', ')'});
+		auto arg_ret = arg(recovery + Recovery{',', ')'});
+		if (!std::get<0>(arg_ret))
+			exprs.push_back(std::unique_ptr<ast::Expr>(std::get<1>(arg_ret)));
 
 		while (curr_tok.type() == ',') {
 			bump();
 
-			arg(recovery + Recovery{',', ')'});
+			auto arg_ret = arg(recovery + Recovery{',', ')'});
+			if (!std::get<0>(arg_ret))
+				exprs.push_back(std::unique_ptr<ast::Expr>(std::get<1>(arg_ret)));
 
 			if (curr_tok.type() == ')')
 				break;
 		} 
 	}
-	
 	expect_sym_recheck(')', recovery);
 
-	end_trace();
+	DEFAULT_PARSE_END(exprs);
 }
 
 // arg : expr
@@ -1951,9 +1974,15 @@ void Parser::stmt_continue(const Recovery& recovery) {
 std::tuple<Error*, ast::Expr*> Parser::expr(int min_prec) {
 	trace("expr");
 
-	if (auto err = val(recover::expr_end + Recovery{'+', '-', '*', '/', '^'})) {
-		if (!is_binop(curr_tok))
-			DEFAULT_PARSE_END(std::tuple(err, nullptr));
+	std::tuple<Error*, ast::Expr*> ret;
+
+	auto val_ret = val(recover::expr_end + Recovery{'+', '-', '*', '/', '^'});
+	auto err = std::get<0>(val_ret);
+	if (err) {
+		if (!is_binop(curr_tok)) {
+			ret = std::tuple(err, nullptr);
+			bump();
+	}
 	}
 
 	while (is_binop(curr_tok)) {
@@ -1966,17 +1995,18 @@ std::tuple<Error*, ast::Expr*> Parser::expr(int min_prec) {
 			break;
 
 		trace("binop: " + std::string(curr_tok.raw()));
+		end_trace();
 
 		bump();
 		int next_prec = opinfo->value.assoc == OPInfo::LEFT ? opinfo->value.prec + 1 : opinfo->value.prec;
 
-		end_trace();
 		auto expr_ret = expr(next_prec);
-		if (std::get<0>(expr_ret))
-			DEFAULT_PARSE_END(std::tuple(std::get<0>(expr_ret), nullptr));
+		auto err = std::get<0>(expr_ret);
+		if (err)
+			ret = std::tuple(err, nullptr);
 	}
 
-	DEFAULT_PARSE_END(std::tuple(nullptr, nullptr));
+	DEFAULT_PARSE_END(ret);
 }
 
 // expr : val (binop expr)*
@@ -1992,87 +2022,190 @@ std::tuple<Error*, ast::Expr*> Parser::expr(int min_prec, const Recovery& recove
 //      | path arg_list              // fun call
 //      | path '!' arg_list          // macro invocation
 //      | path struct_init           // struct creation
-//      | path arr_size_decl         // array creation
-//      | '(' expr (',' expr)? ')'
+//      | '[' expr (',' expr)* ']'
+//      | '(' expr (',' expr)* ')'
 //      | '(' ')'
-Error* Parser::val(const Recovery& recovery) {
+std::tuple<Error*, ast::Value*> Parser::val(const Recovery& recovery) {
 	trace("val");
+	std::tuple<Error*, ast::Value*> ret;
 
 	if (curr_tok == TokenType::ID) {				// path
+		size_t start = curr_tok.span().lo_bit;
+
 		auto val_path = path(recovery);
-		(void)val_path;
-		bool macro_invoc = false;
 
-		if(curr_tok.type() == '!') {				// '!'     macro invocation
-			trace("macro_invoc");
-			macro_invoc = true;
+		switch(curr_tok.type()) {
+			case '!': {
 			bump();
+				auto args = arg_list(recovery);
+
+				auto sp = concat_span(start, curr_tok.span());
+				auto val = new ast::ValueMacroInvoc(val_path, args, sp);
+
+				ret = std::tuple(nullptr, val);
+				break;
 		}
 
-		if (curr_tok.type() == '(')	{				// path arg_list
-			arg_list(recovery);
+			case '(': {
+				auto args = arg_list(recovery);
+
+				auto sp = concat_span(start, curr_tok.span());
+				auto val = new ast::ValueFunCall(val_path, args, sp);
+
+				ret = std::tuple(nullptr, val);
+				break;
 		}
-		else if (curr_tok.type() == '{') {			// path struct_init
-			struct_init(recovery);
-		}
-		else if (curr_tok.type() == '[') {			// path arr_init
-			arr_init(recovery);
+			case '{': {
+				auto fields = struct_init(recovery);
+
+				auto sp = concat_span(start, curr_tok.span());
+				auto val = new ast::ValueStruct(val_path, fields, sp);
+
+				ret = std::tuple(nullptr, val);
+				break;
 		}
 
-		if (macro_invoc)
-			end_trace();
+			default:
+				auto sp = concat_span(start, curr_tok.span());
+				auto val = new ast::ValuePath(val_path, sp);
+
+				ret = std::tuple(nullptr, val);
+		}
 	}
 	else if (curr_tok.type() == '(') {				// '('
+		size_t start = curr_tok.span().lo_bit;
 		bump();
-		if (curr_tok.type() != ')') {				// '(' ')'
-			expr(1);
 
-			while (curr_tok.type() == ',') {		// '(' expr* ')'
+		ExprVec exprs;
+		Error* err = nullptr;
+
+		if (curr_tok.type() != ')') {				// '(' ')'
+			auto expr_ret = expr(1);
+			err = std::get<0>(expr_ret);
+			auto expr_1 = std::get<1>(expr_ret);
+			exprs.push_back(std::unique_ptr<ast::Expr>(expr_1));
+
+			while (curr_tok.type() == ',') {		// '(' expr (',' expr)* ')'
 				bump();
 
-				expr(1);
+				auto expr_ret = expr(1);
+				if (!err) { err = std::get<0>(expr_ret); }
+				auto expr_1 = std::get<1>(expr_ret);
+				exprs.push_back(std::unique_ptr<ast::Expr>(expr_1));
 			}
 		}
-		
-		if (auto err = expect_symbol(')', recovery + Recovery{')'})) {
-			if (curr_tok.type() == ')')
+		expect_sym_recheck(')', recovery);
+
+		auto sp = concat_span(start, curr_tok.span());
+		auto decl = new ast::ValueTuple(exprs, sp);
+		ret = std::tuple(err, decl);
+	}
+	else if (curr_tok.type() == '[') {
+		size_t start = curr_tok.span().lo_bit;
+		bump();
+
+		ExprVec exprs;
+		Error* err = nullptr;
+
+		if (curr_tok.type() != ']') {				// '(' ')'
+			auto expr_ret = expr(1);
+			err = std::get<0>(expr_ret);
+			auto expr_1 = std::get<1>(expr_ret);
+			exprs.push_back(std::unique_ptr<ast::Expr>(expr_1));
+
+			while (curr_tok.type() == ',') {		// '(' expr (',' expr)* ')'
 				bump();
-			else DEFAULT_PARSE_END(err);
+
+				auto expr_ret = expr(1);
+				if (!err) { err = std::get<0>(expr_ret); }
+				auto expr_1 = std::get<1>(expr_ret);
+				exprs.push_back(std::unique_ptr<ast::Expr>(expr_1));
+			}
 		}
+		expect_sym_recheck(']', recovery);
+
+		auto sp = concat_span(start, curr_tok.span());
+		auto decl = new ast::ValueArray(exprs, sp);
+		ret = std::tuple(err, decl);
 	}
 	else if (is_literal(curr_tok)) {				// literal
-		if (literal())
-			bug("inconsistent literal definitions");
+		auto lit_ret = literal();
+
+		ret = lit_ret ?
+			std::tuple((Error*)nullptr, lit_ret) :
+			std::tuple(&handler.last(), nullptr);
 	}
 	else if (is_unaryop(curr_tok)) {				// unaryop val
-		if (unaryop())
-			bug("inconsistent unary operator definitions");
+		auto uop = unary_op();
 
-		if (auto err = val(recovery))
-			DEFAULT_PARSE_END(err);
+		auto val_ret = val(recovery);
+		if (std::get<1>(val_ret))
+			std::get<1>(val_ret)->add_uop(uop);
+
+		ret = val_ret;
 	}
 	else {
 		auto err = err_expected(translate::tk_type(curr_tok), "an expression");
 		recover_to(recovery);
-		DEFAULT_PARSE_END(err);
+		ret = std::tuple(err, nullptr);
 	}
 
-	end_trace();
-	return nullptr;
+	DEFAULT_PARSE_END(ret);
 }
+
+ast::UnaryOp* Parser::unary_op() {
+	trace("unary_op: " + translate::tk_info(curr_tok));
+		
+	ast::UnaryOp* uop = nullptr;
+		switch (curr_tok.type()) {
+			case '-': {
+				auto sp = Span(curr_tok.span());
+				uop = new ast::UopNeg(sp);
+			bump();
+				break;
+			}
+			case '!': {
+				auto sp = Span(curr_tok.span());
+				uop = new ast::UopNot(sp);
+			bump();
+				break;
+		}
+			case '&': {
+				auto sp = Span(curr_tok.span());
+				uop = new ast::UopAddr(sp);
+			bump();
+				break;
+	}
+			case '*': {
+				auto sp = Span(curr_tok.span());
+				uop = new ast::UopDeref(sp);
+			bump();
+				break;
+	}
+			default:
+			if (is_unaryop(curr_tok))
+			bug("inconsistent unary operator definitions");
+		}
+
+	DEFAULT_PARSE_END(uop);
+	}
 
 // struct_init : '{' '}'
 //             | '{' struct_init_item (',' struct_init_item)*     '}'
 //             | '{' struct_init_item (',' struct_init_item)* ',' '}'
-void Parser::struct_init(const Recovery& recovery) {
+StructFieldVec Parser::struct_init(const Recovery& recovery) {
 	trace("struct_init");
+
+	StructFieldVec fields;
 
 	if (expect_symbol('{'))
 		bug("struct_init not checked before invoking");
 
 	if (curr_tok.type() != '}') {
 		
-		struct_field(recovery + Recovery{',' , '}'});
+		auto field_ret = struct_field(recovery + Recovery{',' , '}'});
+		if (std::get<0>(field_ret))
+			fields.push_back(std::move(std::get<1>(field_ret)));
 
 		while (curr_tok.type() == ',') {
 			bump();
@@ -2080,21 +2213,26 @@ void Parser::struct_init(const Recovery& recovery) {
 			if (curr_tok.type() == '}')
 				break;
 
-			struct_field(recovery + Recovery{',' , '}'});
+			auto field_ret = struct_field(recovery + Recovery{',' , '}'});
+			if (std::get<0>(field_ret))
+				fields.push_back(std::move(std::get<1>(field_ret)));
 		}
 
 	}
 	expect_sym_recheck('}', recovery);
 
-	end_trace();
+	DEFAULT_PARSE_END(fields);
 }
 
 // struct_field : ident (':' expr)?
-Error* Parser::struct_field(const Recovery& recovery) {
+std::tuple<Error*, IDExprPair> Parser::struct_field(const Recovery& recovery) {
 	trace("struct_field");
 
-	auto id_ret = ident(recovery + Recovery{':'});
 	Error* err = nullptr;
+	ast::Expr* expr_end = nullptr;
+
+	auto id_ret = ident(recovery + Recovery{':'});
+
 	if (!id_ret)
 		err = &handler.last();
 
@@ -2102,36 +2240,48 @@ Error* Parser::struct_field(const Recovery& recovery) {
 		bump();
 		auto expr_ret = expr(1);
 		if (!err) { err = std::get<0>(expr_ret); }
+		expr_end = std::get<1>(expr_ret);
 	}
 
-	DEFAULT_PARSE_END(err);
+	auto pair = IDExprPair(id_ret, expr_end);
+	auto ret = std::tuple(err, std::move(pair));
+
+	DEFAULT_PARSE_END(ret);
 }
 
 // arr_init : '[' ']'
-//          | '{' arr_field (',' arr_field)*     '}'
-//          | '{' arr_field (',' arr_field)* ',' '}'
-void Parser::arr_init(const Recovery& recovery) {
+//          | '[' arr_field (',' arr_field)*     ']'
+//          | '[' arr_field (',' arr_field)* ',' ']'
+ExprVec Parser::arr_init(const Recovery& recovery) {
 	trace("arr_init");
 
 	if (expect_symbol('['))
 		bug("arr_init not checked before invoking");
 
+	ExprVec fields;
+
 	if (curr_tok.type() != ']') {
 		
-		arr_field();
+		auto field_ret = arr_field();
+		if (std::get<0>(field_ret))
+			fields.push_back(std::unique_ptr<ast::Expr>(std::get<1>(field_ret)));
 
+		else {
 		while (curr_tok.type() == ',') {
 			bump();
 
 			if (curr_tok.type() == ']')
 				break;
 
-			arr_field();
+				auto field_ret = arr_field();
+				if (std::get<0>(field_ret))
+					fields.push_back(std::unique_ptr<ast::Expr>(std::get<1>(field_ret)));
+			}
 		}
 	}
 	expect_sym_recheck(']', recovery);
 
-	end_trace();
+	DEFAULT_PARSE_END(fields)
 }
 
 // arr_field : expr

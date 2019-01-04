@@ -11,6 +11,7 @@ namespace ast {
 	struct Type;
 	struct GenericParam;
 	struct Param;
+	struct UnaryOp;
 }
 
 /* A single attribute.
@@ -32,13 +33,26 @@ struct Attributes : std::vector<Attr> {
 	inline bool is_empty() { return this->size() == 0; }
 };
 
+/* An identifier-expression pair. */
+struct IDExprPair {
+	std::unique_ptr<ast::Ident> name;
+	std::unique_ptr<ast::Expr> value;
+
+	IDExprPair() = default;
+	IDExprPair(ast::Ident* name, ast::Expr* val) : name(name), value(val) {}
+};
+
 enum class Mutability {
 	Mutable,
 	Immutable,
 };
 
+
 /* A vector of identifier nodes. */
 using Path = std::vector<std::unique_ptr<ast::Ident>>;
+
+/* A vector of identifier nodes. */
+using StructFieldVec = std::vector<IDExprPair>;
 
 /* A vector of Type nodes. */
 using TypeVec = std::vector<std::unique_ptr<ast::Type>>;
@@ -50,6 +64,8 @@ using ExprVec = std::vector<std::unique_ptr<ast::Expr>>;
 using GenericParamVec = std::vector<std::unique_ptr<ast::GenericParam>>;
 /* A vector of parameter nodes. */
 using ParamVec = std::vector<std::unique_ptr<ast::Param>>;
+/* A vector of parameter nodes. */
+using UnaryOpVec = std::vector<std::unique_ptr<ast::UnaryOp>>;
 
 struct FunBlock {
 	Span sp;
@@ -90,13 +106,18 @@ namespace ast {
 		ExprMul,
 		ExprDiv,
 		ExprExp,
-		ExprBool,
-		ExprString,
-		ExprChar,
-		ExprInt,
-		ExprFloat,
-		ExprIdent,
-		ExprTuple,
+		ValueBool,
+		ValueString,
+		ValueChar,
+		ValueInt,
+		ValueFloat,
+		ValueVoid,
+		ValuePath,
+		ValueFunCall,
+		ValueMacroInvoc,
+		ValueStruct,
+		ValueArray,
+		ValueTuple,
 
 		// type
 		TypeThing,
@@ -118,6 +139,12 @@ namespace ast {
 		TypeSlice,
 		TypeArray,
 		TypeSelf,
+		
+		// unary op
+		UopNeg,
+		UopNot,
+		UopAddr,
+		UopDeref,
 
 		// other
 		Lifetime,
@@ -172,6 +199,15 @@ namespace ast {
 		virtual std::string accept(Visitor&) const override = 0;
 	};
 
+	/* Base expression value node. */
+	struct Value : public Expr {
+		UnaryOpVec uops;
+		Value(NodeType type, Span&& span) : Expr(type, std::move(span)) {}
+		virtual ~Value() = default;
+		inline void add_uop(UnaryOp* uop) { uops.push_back(std::unique_ptr<UnaryOp>(uop)); }
+		virtual std::string accept(Visitor&) const override = 0;
+	};
+
 	/* Base type node. */
 	struct Type : public Node {
 		Type(NodeType type, Span&& span) : Node(type, std::move(span)) {}
@@ -183,6 +219,12 @@ namespace ast {
 	struct TypePrimitive : public Type {
 		TypePrimitive(NodeType type, Span&& span) : Type(type, std::move(span)) {}
 		virtual ~TypePrimitive() = default;
+		virtual std::string accept(Visitor&) const override = 0;
+	};
+
+	struct UnaryOp : public Node {
+		UnaryOp(NodeType type, Span&& span) : Node(type, std::move(span)) {}
+		virtual ~UnaryOp() = default;
 		virtual std::string accept(Visitor&) const override = 0;
 	};
 
@@ -285,12 +327,6 @@ namespace ast {
 	///////////////////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////    Declarations    ////////////////////////////////////////
 	///////////////////////////////////////////////////////////////////////////////////////////////
-
-	/* A placeholder node for declarations with errors. */
-	struct BadDecl : public Decl {
-		explicit BadDecl(Span& span) : Decl(NodeType::BadDecl, std::move(span)) {}
-		std::string accept(Visitor&) const override { return std::string(); }
-	};
 
 	/* A translation unit declaration node. */
 	struct DeclTransUnit : public Decl {
@@ -484,62 +520,124 @@ namespace ast {
 		std::string accept(Visitor&) const override { return std::string(); }
 	};
 	
-	/* An expression node with a boolean value. */
-	struct ExprBool : public Expr {
+	/* A boolean value node. */
+	struct ValueBool : public Value {
 		bool value;
 
-		ExprBool(bool val, Span& span) : Expr(NodeType::ExprBool, std::move(span)),
+		ValueBool(bool val, Span& span) : Value(NodeType::ValueBool, std::move(span)),
 			value(val)
 		{}
 		std::string accept(Visitor&) const override { return std::string(); }
 	};
 
-	/* An expression node with a string value. */
-	struct ExprString : public Expr {
+	/* A string value node. */
+	struct ValueString : public Value {
 		std::string_view value;
 
-		ExprString(std::string_view val, Span& span) : Expr(NodeType::ExprString, std::move(span)),
+		ValueString(std::string_view val, Span& span) : Value(NodeType::ValueString, std::move(span)),
 			value(val)
 		{}
 		std::string accept(Visitor&) const override { return std::string(); }
 	};
 
-	/* An expression node with a character value. */
-	struct ExprChar : public Expr {
+	/* A character value node. */
+	struct ValueChar : public Value {
 		int64_t value;
 
-		ExprChar(int val, Span& span) : Expr(NodeType::ExprChar, std::move(span)),
+		ValueChar(int64_t val, Span& span) : Value(NodeType::ValueChar, std::move(span)),
 			value(val)
 		{}
 		std::string accept(Visitor&) const override { return std::string(); }
 	};
 
-	/* An expression node with an integer value. */
-	struct ExprInt : public Expr {
+	/* A integer value node. */
+	struct ValueInt : public Value {
 		int64_t value;
 
-		ExprInt(size_t val, Span& span) : Expr(NodeType::ExprInt, std::move(span)),
+		ValueInt(size_t val, Span& span) : Value(NodeType::ValueInt, std::move(span)),
 			value(val)
 		{}
 		std::string accept(Visitor&) const override { return std::string(); }
 	};
 
-	/* An expression node with a floating point value. */
-	struct ExprFloat : public Expr {
+	/* A floating point value node. */
+	struct ValueFloat : public Value {
 		double value;
 
-		ExprFloat(double val, Span& span) : Expr(NodeType::ExprFloat, std::move(span)),
+		ValueFloat(double val, Span& span) : Value(NodeType::ValueFloat, std::move(span)),
 			value(val)
 		{}
 		std::string accept(Visitor&) const override { return std::string(); }
 	};
 
-	/* A tuple expression node.
-	 * Contains a vector of sub-expressions. */
-	struct ExprTuple : public Expr {
+	/* A void value node. */
+	struct ValueVoid : public Value {
+		explicit ValueVoid(Span& span) : Value(NodeType::ValueVoid, std::move(span)) {}
+		std::string accept(Visitor&) const override { return std::string(); }
+	};
+
+	/* A value at some path. */
+	struct ValuePath : public Value {
+		std::unique_ptr<Path> path;
+
+		ValuePath(Path* path, Span& span) : Value(NodeType::ValuePath, std::move(span)),
+			path(path)
+		{}
+		std::string accept(Visitor&) const override { return std::string(); }
+	};
+
+	/* A value returned by some function call. */
+	struct ValueFunCall : public Value {
+		std::unique_ptr<Path> name;
+		ExprVec args;
+
+		ValueFunCall(Path* name, ExprVec& args, Span& span) : Value(NodeType::ValueFunCall, std::move(span)),
+			name(name),
+			args(std::move(args))
+		{}
+		std::string accept(Visitor&) const override { return std::string(); }
+	};
+
+	/* An struct creation value node. */
+	struct ValueStruct : public Value {
+		std::unique_ptr<Path> name;
+		StructFieldVec fields;
+
+		ValueStruct(Path* name, StructFieldVec& fields, Span& span) : Value(NodeType::ValueStruct, std::move(span)),
+			name(name),
+			fields(std::move(fields))
+		{}
+		std::string accept(Visitor&) const override { return std::string(); }
+	};
+
+	/* An array value node. */
+	struct ValueArray : public Value {
 		ExprVec items;
 
-		ExprTuple(ExprVec& items, Span& span) : Expr(NodeType::ExprTuple, std::move(span)),
+		ValueArray(ExprVec& items, Span& span) : Value(NodeType::ValueArray, std::move(span)),
+			items(std::move(items))
+		{}
+		std::string accept(Visitor&) const override { return std::string(); }
+	};
+
+	/* A value returned by some macro invocation. */
+	struct ValueMacroInvoc : public Value {
+		std::unique_ptr<Path> name;
+		ExprVec args;
+
+		ValueMacroInvoc(Path* name, ExprVec& args, Span& span) : Value(NodeType::ValueMacroInvoc, std::move(span)),
+			name(name),
+			args(std::move(args))
+		{}
+		std::string accept(Visitor&) const override { return std::string(); }
+	};
+
+	/* A tuple value node.
+	 * Contains a vector of sub-expressions. */
+	struct ValueTuple : public Value {
+		ExprVec items;
+
+		ValueTuple(ExprVec& items, Span& span) : Value(NodeType::ValueTuple, std::move(span)),
 			items(std::move(items))
 		{}
 		std::string accept(Visitor&) const override { return std::string(); }
@@ -670,6 +768,31 @@ namespace ast {
 	struct TypeSelf : public Type {
 		explicit TypeSelf(Span& span) : Type(NodeType::TypeSelf, std::move(span)) {}
 		std::string accept(Visitor&) const override { return std::string(); }
+	};
+
+
+	///////////////////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////    Unary Op    //////////////////////////////////////////
+	///////////////////////////////////////////////////////////////////////////////////////////////
+                                                
+	struct UopNeg : public UnaryOp {
+		explicit UopNeg(Span& span) : UnaryOp(NodeType::UopNeg, std::move(span)) {}
+		virtual std::string accept(Visitor&) const override { return std::string(); }
+	};
+
+	struct UopNot : public UnaryOp {
+		explicit UopNot(Span& span) : UnaryOp(NodeType::UopNot, std::move(span)) {}
+		virtual std::string accept(Visitor&) const override { return std::string(); }
+	};
+
+	struct UopAddr : public UnaryOp {
+		explicit UopAddr(Span& span) : UnaryOp(NodeType::UopAddr, std::move(span)) {}
+		virtual std::string accept(Visitor&) const override { return std::string(); }
+	};
+
+	struct UopDeref : public UnaryOp {
+		explicit UopDeref(Span& span) : UnaryOp(NodeType::UopDeref, std::move(span)) {}
+		virtual std::string accept(Visitor&) const override { return std::string(); }
 	};
 }
 
