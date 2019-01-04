@@ -99,6 +99,9 @@ namespace ast {
 		DeclStruct,
 
 		// stmt
+		StmtReturn,
+		StmtBreak,
+		StmtContinue,
 
 		// expr
 		ExprSum,
@@ -462,7 +465,27 @@ namespace ast {
 	////////////////////////////////////    Statements    /////////////////////////////////////////
 	///////////////////////////////////////////////////////////////////////////////////////////////
 
+	/* A return statement node. */
+	struct StmtReturn : public Stmt {
+		std::unique_ptr<Expr> item;
 
+		StmtReturn(Expr* item, Span& span) : Stmt(NodeType::StmtReturn, std::move(span)),
+			item(item)
+		{}
+		std::string accept(Visitor&) const override { return std::string(); }
+	};
+
+	/* A break statement node. */
+	struct StmtBreak : public Stmt {
+		explicit StmtBreak(Span& span) : Stmt(NodeType::StmtBreak, std::move(span)) {}
+		std::string accept(Visitor&) const override { return std::string(); }
+	};
+
+	/* A continue statement node. */
+	struct StmtContinue : public Stmt {
+		explicit StmtContinue(Span& span) : Stmt(NodeType::StmtContinue, std::move(span)) {}
+		std::string accept(Visitor&) const override { return std::string(); }
+	};
 
 
 	///////////////////////////////////////////////////////////////////////////////////////////////

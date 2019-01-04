@@ -156,9 +156,9 @@ private:
 	void stmt_match(const Recovery& recovery);
 	void stmt_switch(const Recovery& recovery);
 	void stmt_case(const Recovery& recovery);
-	void stmt_return(const Recovery& recovery);
-	void stmt_break(const Recovery& recovery);
-	void stmt_continue(const Recovery& recovery);
+	ast::StmtReturn* stmt_return(const Recovery& recovery);
+	ast::StmtBreak* stmt_break(const Recovery& recovery);
+	ast::StmtContinue* stmt_continue(const Recovery& recovery);
 
 	// type
 	std::tuple<Error*, ast::Type*> type(const Recovery& recovery);

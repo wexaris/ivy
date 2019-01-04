@@ -1580,15 +1580,15 @@ ast::Stmt* Parser::stmt(const Recovery& recovery) {
 			break;
 
 		case (int)TokenType::RETURN:
-			stmt = nullptr; stmt_return(recover::stmt_start + recovery);
+			stmt = stmt_return(recover::stmt_start + recovery);
 			break;
 
 		case (int)TokenType::BREAK:
-			stmt = nullptr; stmt_break(recover::stmt_start + recovery);
+			stmt = stmt_break(recover::stmt_start + recovery);
 			break;
 
 		case (int)TokenType::CONTINUE:
-			stmt = nullptr; stmt_continue(recover::stmt_start + recovery);
+			stmt = stmt_continue(recover::stmt_start + recovery);
 			break;
 
 		default: {
@@ -1776,42 +1776,60 @@ void Parser::stmt_case(const Recovery& recovery) {
 }
 
 // stmt_return : RETURN expr? ';'
-void Parser::stmt_return(const Recovery& recovery) {
+ast::StmtReturn* Parser::stmt_return(const Recovery& recovery) {
 	trace("stmt_return");
+	size_t start = curr_tok.span().lo_bit;
 
-	if (expect_keyword(TokenType::RETURN))
-		bug("stmt_return not checked before invoking");
+	if (expect_keyword(TokenType::RETURN)) {
+		expect_sym_recheck(';', recovery);
+		DEFAULT_PARSE_END(nullptr);
+	}
 
-	if (curr_tok.type() != ';')
-		expr(1);
+	ast::Expr* ex = nullptr;
+	if (curr_tok.type() != ';') {
+		auto expr_ret = expr(1);
+		ex = std::get<1>(expr_ret);
+	}
 
 	expect_sym_recheck(';', recovery);
 
-	end_trace();
+	auto sp = concat_span(start, curr_tok.span());
+	auto ret = new ast::StmtReturn(ex, sp);
+	DEFAULT_PARSE_END(ret)
 }
 
 // stmt_break : BREAK ';'
-void Parser::stmt_break(const Recovery& recovery) {
+ast::StmtBreak* Parser::stmt_break(const Recovery& recovery) {
 	trace("stmt_break");
+	size_t start = curr_tok.span().lo_bit;
 
-	if (expect_keyword(TokenType::BREAK))
-		bug("stmt_break not checked before invoking");
+	if (expect_keyword(TokenType::BREAK)) {
+		expect_sym_recheck(';', recovery);
+		DEFAULT_PARSE_END(nullptr);
+	}
 
 	expect_sym_recheck(';', recovery);
 
-	end_trace();
+	auto sp = concat_span(start, curr_tok.span());
+	auto ret = new ast::StmtBreak(sp);
+	DEFAULT_PARSE_END(ret);
 }
 
 // stmt_continue : CONTINUE ';'
-void Parser::stmt_continue(const Recovery& recovery) {
+ast::StmtContinue* Parser::stmt_continue(const Recovery& recovery) {
 	trace("stmt_continue");
+	size_t start = curr_tok.span().lo_bit;
 
-	if (expect_keyword(TokenType::CONTINUE))
-		bug("stmt_continue not checked before invoking");
+	if (expect_keyword(TokenType::CONTINUE)) {
+		expect_sym_recheck(';', recovery);
+		DEFAULT_PARSE_END(nullptr);
+	}
 
 	expect_sym_recheck(';', recovery);
 
-	end_trace();
+	auto sp = concat_span(start, curr_tok.span());
+	auto ret = new ast::StmtContinue(sp);
+	DEFAULT_PARSE_END(ret);
 }
 
 
