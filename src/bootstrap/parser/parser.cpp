@@ -581,7 +581,7 @@ ast::Ident* Parser::ident() {
 
 	ast::Ident* id = nullptr;
 	if (curr_tok == TokenType::ID) {
-	auto sp = Span(curr_tok.span());
+		auto sp = Span(curr_tok.span());
 		id = new ast::Ident(curr_tok.raw(), sp);
 		bump();
 	}
@@ -602,7 +602,7 @@ ast::Lifetime* Parser::lifetime() {
 
 	ast::Lifetime* lf = nullptr;
 	if (is_lifetime(curr_tok)) {
-	auto sp = Span(curr_tok.span());
+		auto sp = Span(curr_tok.span());
 		lf = new ast::Lifetime(curr_tok.raw(), sp);
 		bump();
 	}
@@ -687,7 +687,7 @@ inline ast::Value* Parser::literal(const Recovery& to) {
 	auto ret = literal();
 	if (!ret) { recover_to(to); }
 	return ret;
-	}
+}
 
 // binop : '+' | '-' | '*' | '/' | '^'
 inline Error* Parser::binop() {
@@ -999,7 +999,7 @@ ast::Decl* Parser::decl(bool is_global) {
 			decl = decl_use();
 			break;
 		case (int)TokenType::FUN:
-			decl = nullptr; decl_fun(false);
+			decl = decl_fun(false);
 			break;
 		case (int)TokenType::STRUCT:
 			decl = nullptr; decl_struct();
@@ -1973,7 +1973,7 @@ void Parser::stmt_continue(const Recovery& recovery) {
 // expr : val (binop expr)*
 std::tuple<Error*, ast::Expr*> Parser::expr(int min_prec) {
 	trace("expr");
-
+	
 	std::tuple<Error*, ast::Expr*> ret;
 
 	auto val_ret = val(recover::expr_end + Recovery{'+', '-', '*', '/', '^'});
@@ -1982,7 +1982,7 @@ std::tuple<Error*, ast::Expr*> Parser::expr(int min_prec) {
 		if (!is_binop(curr_tok)) {
 			ret = std::tuple(err, nullptr);
 			bump();
-	}
+		}
 	}
 
 	while (is_binop(curr_tok)) {
@@ -2036,7 +2036,7 @@ std::tuple<Error*, ast::Value*> Parser::val(const Recovery& recovery) {
 
 		switch(curr_tok.type()) {
 			case '!': {
-			bump();
+				bump();
 				auto args = arg_list(recovery);
 
 				auto sp = concat_span(start, curr_tok.span());
@@ -2044,7 +2044,7 @@ std::tuple<Error*, ast::Value*> Parser::val(const Recovery& recovery) {
 
 				ret = std::tuple(nullptr, val);
 				break;
-		}
+			}
 
 			case '(': {
 				auto args = arg_list(recovery);
@@ -2054,7 +2054,7 @@ std::tuple<Error*, ast::Value*> Parser::val(const Recovery& recovery) {
 
 				ret = std::tuple(nullptr, val);
 				break;
-		}
+			}
 			case '{': {
 				auto fields = struct_init(recovery);
 
@@ -2063,7 +2063,7 @@ std::tuple<Error*, ast::Value*> Parser::val(const Recovery& recovery) {
 
 				ret = std::tuple(nullptr, val);
 				break;
-		}
+			}
 
 			default:
 				auto sp = concat_span(start, curr_tok.span());
@@ -2155,40 +2155,40 @@ std::tuple<Error*, ast::Value*> Parser::val(const Recovery& recovery) {
 
 ast::UnaryOp* Parser::unary_op() {
 	trace("unary_op: " + translate::tk_info(curr_tok));
-		
+
 	ast::UnaryOp* uop = nullptr;
-		switch (curr_tok.type()) {
-			case '-': {
-				auto sp = Span(curr_tok.span());
-				uop = new ast::UopNeg(sp);
+	switch (curr_tok.type()) {
+		case '-': {
+			auto sp = Span(curr_tok.span());
+			uop = new ast::UopNeg(sp);
 			bump();
-				break;
-			}
-			case '!': {
-				auto sp = Span(curr_tok.span());
-				uop = new ast::UopNot(sp);
-			bump();
-				break;
+			break;
 		}
-			case '&': {
-				auto sp = Span(curr_tok.span());
-				uop = new ast::UopAddr(sp);
+		case '!': {
+			auto sp = Span(curr_tok.span());
+			uop = new ast::UopNot(sp);
 			bump();
-				break;
-	}
-			case '*': {
-				auto sp = Span(curr_tok.span());
-				uop = new ast::UopDeref(sp);
+			break;
+		}
+		case '&': {
+			auto sp = Span(curr_tok.span());
+			uop = new ast::UopAddr(sp);
 			bump();
-				break;
-	}
-			default:
+			break;
+		}
+		case '*': {
+			auto sp = Span(curr_tok.span());
+			uop = new ast::UopDeref(sp);
+			bump();
+			break;
+		}
+		default:
 			if (is_unaryop(curr_tok))
-			bug("inconsistent unary operator definitions");
-		}
+				bug("inconsistent unary operator definitions");
+	}
 
 	DEFAULT_PARSE_END(uop);
-	}
+}
 
 // struct_init : '{' '}'
 //             | '{' struct_init_item (',' struct_init_item)*     '}'
@@ -2267,11 +2267,11 @@ ExprVec Parser::arr_init(const Recovery& recovery) {
 			fields.push_back(std::unique_ptr<ast::Expr>(std::get<1>(field_ret)));
 
 		else {
-		while (curr_tok.type() == ',') {
-			bump();
+			while (curr_tok.type() == ',') {
+				bump();
 
-			if (curr_tok.type() == ']')
-				break;
+				if (curr_tok.type() == ']')
+					break;
 
 				auto field_ret = arr_field();
 				if (std::get<0>(field_ret))
