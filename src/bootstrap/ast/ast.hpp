@@ -120,17 +120,26 @@ namespace ast {
 		ValueTuple,
 
 		// type
+		TypeInfer,
 		TypeThing,
 		TypeBool,
-		TypeString,
+		TypeStr,
 		TypeChar,
-		TypeIsize,
+		TypeISize,
 		TypeI8,
 		TypeI16,
 		TypeI32,
 		TypeI64,
 		TypeI128,
-		TypeFloat,
+		TypeUSize,
+		TypeU8,
+		TypeU16,
+		TypeU32,
+		TypeU64,
+		TypeU128,
+		TypeFSize,
+		TypeF32,
+		TypeF64,
 		TypeVoid,
 		TypePath,
 		TypeTuple,
@@ -648,9 +657,27 @@ namespace ast {
 	///////////////////////////////////////    Types    ///////////////////////////////////////////
 	///////////////////////////////////////////////////////////////////////////////////////////////
 
+	/* A primitive 'thing' type node. */
+	struct TypeThing : public TypePrimitive {
+		TypeThing(Span& span) : TypePrimitive(NodeType::TypeThing, std::move(span)) {}
+		std::string accept(Visitor&) const override { return std::string(); }
+	};
+
 	/* A primitive isize type node. */
-	struct TypeIsize : public TypePrimitive {
-		TypeIsize(Span& span) : TypePrimitive(NodeType::TypeIsize, std::move(span)) {}
+	struct TypeStr : public TypePrimitive {
+		TypeStr(Span& span) : TypePrimitive(NodeType::TypeStr, std::move(span)) {}
+		std::string accept(Visitor&) const override { return std::string(); }
+	};
+
+	/* A primitive isize type node. */
+	struct TypeChar : public TypePrimitive {
+		TypeChar(Span& span) : TypePrimitive(NodeType::TypeChar, std::move(span)) {}
+		std::string accept(Visitor&) const override { return std::string(); }
+	};
+
+	/* A primitive isize type node. */
+	struct TypeISize : public TypePrimitive {
+		TypeISize(Span& span) : TypePrimitive(NodeType::TypeISize, std::move(span)) {}
 		std::string accept(Visitor&) const override { return std::string(); }
 	};
 
@@ -675,6 +702,54 @@ namespace ast {
 	/* A primitive i64 type node. */
 	struct TypeI64 : public TypePrimitive {
 		TypeI64(Span& span) : TypePrimitive(NodeType::TypeI64, std::move(span)) {}
+		std::string accept(Visitor&) const override { return std::string(); }
+	};
+
+	/* A primitive usize type node. */
+	struct TypeUSize : public TypePrimitive {
+		TypeUSize(Span& span) : TypePrimitive(NodeType::TypeUSize, std::move(span)) {}
+		std::string accept(Visitor&) const override { return std::string(); }
+	};
+
+	/* A primitive u8 type node. */
+	struct TypeU8 : public TypePrimitive {
+		TypeU8(Span& span) : TypePrimitive(NodeType::TypeU8, std::move(span)) {}
+		std::string accept(Visitor&) const override { return std::string(); }
+	};
+
+	/* A primitive u16 type node. */
+	struct TypeU16 : public TypePrimitive {
+		TypeU16(Span& span) : TypePrimitive(NodeType::TypeU16, std::move(span)) {}
+		std::string accept(Visitor&) const override { return std::string(); }
+	};
+
+	/* A primitive u32 type node. */
+	struct TypeU32 : public TypePrimitive {
+		TypeU32(Span& span) : TypePrimitive(NodeType::TypeU32, std::move(span)) {}
+		std::string accept(Visitor&) const override { return std::string(); }
+	};
+
+	/* A primitive u64 type node. */
+	struct TypeU64 : public TypePrimitive {
+		TypeU64(Span& span) : TypePrimitive(NodeType::TypeU64, std::move(span)) {}
+		std::string accept(Visitor&) const override { return std::string(); }
+	};
+
+	/* A primitive fsize type node. */
+	struct TypeFSize : public TypePrimitive {
+		TypeFSize(Span& span) : TypePrimitive(NodeType::TypeFSize, std::move(span)) {}
+		std::string accept(Visitor&) const override { return std::string(); }
+	};
+
+	/* A primitive f32 type node. */
+	struct TypeF32 : public TypePrimitive {
+		TypeF32(Span& span) : TypePrimitive(NodeType::TypeF32, std::move(span)) {}
+		std::string accept(Visitor&) const override { return std::string(); }
+	};
+
+	/* A primitive f64 type node. */
+	struct TypeF64 : public TypePrimitive {
+		TypeF64(Span& span) : TypePrimitive(NodeType::TypeF64, std::move(span)) {}
 		std::string accept(Visitor&) const override { return std::string(); }
 	};
 

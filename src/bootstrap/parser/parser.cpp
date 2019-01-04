@@ -507,7 +507,7 @@ inline void Parser::unimpl(const std::string& msg) {
 //           | INT | I64 | I32 | I16 | I8
 //           | UINT | U64 | U32 | U16 | U8
 //           | FLOAT | F64 | F32
-ast::TypePrimitive* Parser::primitive() { // FIXME:  add missing types
+ast::TypePrimitive* Parser::primitive() {
 	trace("primitive: " + std::string(curr_tok.raw()));
 
 	auto sp = Span(curr_tok.span());
@@ -515,60 +515,73 @@ ast::TypePrimitive* Parser::primitive() { // FIXME:  add missing types
 
 	switch (curr_tok.type()) {
 		case (int)TokenType::THING:
+			ret = new ast::TypeThing(sp);
 			bump();
 			break;
 		case (int)TokenType::STR:
+			ret = new ast::TypeStr(sp);
 			bump();
 			break;
 		case (int)TokenType::CHAR:
+			ret = new ast::TypeChar(sp);
 			bump();
 			break;
 		case (int)TokenType::INT:
-			ret = new ast::TypeIsize(sp);
-			bump();
-			break;
-		case (int)TokenType::I64:
-			ret = new ast::TypeI64(sp);
-			bump();
-			break;
-		case (int)TokenType::I32:
-			ret = new ast::TypeI32(sp);
-			bump();
-			break;
-		case (int)TokenType::I16:
-			ret = new ast::TypeI16(sp);
+			ret = new ast::TypeISize(sp);
 			bump();
 			break;
 		case (int)TokenType::I8:
 			ret = new ast::TypeI8(sp);
 			bump();
 			break;
+		case (int)TokenType::I16:
+			ret = new ast::TypeI16(sp);
+			bump();
+			break;
+		case (int)TokenType::I32:
+			ret = new ast::TypeI32(sp);
+			bump();
+			break;
+		case (int)TokenType::I64:
+			ret = new ast::TypeI64(sp);
+			bump();
+			break;
 		case (int)TokenType::UINT:
-			bump();
-			break;
-		case (int)TokenType::U64:
-			bump();
-			break;
-		case (int)TokenType::U32:
-			bump();
-			break;
-		case (int)TokenType::U16:
+			ret = new ast::TypeUSize(sp);
 			bump();
 			break;
 		case (int)TokenType::U8:
+			ret = new ast::TypeU8(sp);
+			bump();
+			break;
+		case (int)TokenType::U16:
+			ret = new ast::TypeU16(sp);
+			bump();
+			break;
+		case (int)TokenType::U32:
+			ret = new ast::TypeU32(sp);
+			bump();
+			break;
+		case (int)TokenType::U64:
+			ret = new ast::TypeU64(sp);
 			bump();
 			break;
 		case (int)TokenType::FLOAT:
+			ret = new ast::TypeFSize(sp);
 			bump();
 			break;
 		case (int)TokenType::F32:
+			ret = new ast::TypeF32(sp);
 			bump();
 			break;
 		case (int)TokenType::F64:
+			ret = new ast::TypeF64(sp);
 			bump();
 			break;
 		default: {
-			bug("primitive not checked before invoking");
+			if (is_type(curr_tok))
+				bug("inconsistent primitive definitions");
+			err_expected(translate::tk_type(curr_tok), "a type");
 		}
 	}	
 
