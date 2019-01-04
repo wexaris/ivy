@@ -1539,7 +1539,7 @@ ast::Stmt* Parser::stmt(const Recovery& recovery) {
 			break;
 
 		case (int)TokenType::FUN:
-			stmt = nullptr; decl_fun(false);
+			stmt = decl_fun(false);
 			break;
 
 		case (int)TokenType::IF:
