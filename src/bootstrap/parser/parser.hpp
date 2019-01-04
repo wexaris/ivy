@@ -81,12 +81,10 @@ private:
 	ast::Ident* ident();
 	ast::Lifetime* lifetime();
 	ast::Value* literal();
-	Error* binop();
 	Error* unaryop();
 	inline ast::Ident* ident(const Recovery& recovery);
 	inline ast::Lifetime* lifetime(const Recovery& recovery);
 	inline ast::Value* literal(const Recovery& recovery);
-	inline Error* binop(const Recovery& recovery);
 	inline Error* unaryop(const Recovery& recovery);
 
 	// collectors

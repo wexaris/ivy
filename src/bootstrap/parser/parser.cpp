@@ -702,23 +702,6 @@ inline ast::Value* Parser::literal(const Recovery& to) {
 	return ret;
 }
 
-// binop : '+' | '-' | '*' | '/' | '^'
-inline Error* Parser::binop() {
-	trace("binop: " + std::string(curr_tok.raw()));
-	if (!is_binop(curr_tok))
-		DEFAULT_PARSE_END(err_expected(translate::tk_type(curr_tok), "a binary operator"));
-	bump();
-	DEFAULT_PARSE_END(nullptr);
-}
-// binop : '+' | '-' | '*' | '/' | '^'
-inline Error* Parser::binop(const Recovery& to) {
-	if (auto err = binop()) {
-		recover_to(to);
-		return err;
-	}
-	return nullptr;
-}
-
 // unaryop : '-' | '!' | '&' | '*'
 inline Error* Parser::unaryop() {
 	trace("unaryop: " + std::string(curr_tok.raw()));
