@@ -1969,20 +1969,20 @@ void Parser::stmt_continue(const Recovery& recovery) {
 // expr : val (binop expr)*
 std::tuple<Error*, ast::Expr*> Parser::expr(int min_prec) {
 	trace("expr");
-	
-	std::tuple<Error*, ast::Expr*> ret;
+	size_t start = curr_tok.span().lo_bit;
 
-	auto val_ret = val(recover::expr_end + Recovery{'+', '-', '*', '/', '^'});
-	auto err = std::get<0>(val_ret);
-	if (err) {
-		if (!is_binop(curr_tok)) {
-			ret = std::tuple(err, nullptr);
-			bump();
-		}
-	}
+	ast::Expr* lhs = nullptr;
+	ast::Expr* rhs = nullptr;
+	Error* err = nullptr;
 
+	auto val_ret = val(Recovery{'+', '-', '*', '/', '^'});
+	err = std::get<0>(val_ret);
+	lhs = std::get<1>(val_ret);
+
+	// This while loop should only loop through once
+	// We only want it for the 'break' statement
 	while (is_binop(curr_tok)) {
-		
+
 		auto opinfo = op_find(curr_tok.type());
 		if (!opinfo)
 			bug("inconsistent binary operator definitions");
@@ -1994,14 +1994,44 @@ std::tuple<Error*, ast::Expr*> Parser::expr(int min_prec) {
 		end_trace();
 
 		bump();
+
+		// Decide next expression's operator precedence requirements
 		int next_prec = opinfo->value.assoc == OPInfo::LEFT ? opinfo->value.prec + 1 : opinfo->value.prec;
 
 		auto expr_ret = expr(next_prec);
-		auto err = std::get<0>(expr_ret);
-		if (err)
-			ret = std::tuple(err, nullptr);
-	}
+		rhs = std::get<1>(expr_ret);
+		if (!err) { err = std::get<0>(expr_ret); }
 
+		auto sp = concat_span(start, curr_tok.span());
+
+		ast::Expr* ex = nullptr;
+		switch(opinfo->key) {
+			case '+':
+				ex = new ast::ExprSum(lhs, rhs, sp);
+				break;
+			case '-':
+				ex = new ast::ExprSub(lhs, rhs, sp);
+				break;
+			case '*':
+				ex = new ast::ExprMul(lhs, rhs, sp);
+				break;
+			case '/':
+				ex = new ast::ExprDiv(lhs, rhs, sp);
+				break;
+			case '^':
+				ex = new ast::ExprExp(lhs, rhs, sp);
+				break;
+			default:
+				bug("inconsistent binary operator definitions");
+		}
+
+		// Return a binop expression node
+		auto ret = std::tuple(err, ex);
+		DEFAULT_PARSE_END(ret);
+	}
+		
+	// Return only the value node
+	auto ret = std::tuple(err, lhs);
 	DEFAULT_PARSE_END(ret);
 }
 
