@@ -132,7 +132,7 @@ namespace ast {
 		TypeI128,
 		TypeFloat,
 		TypeVoid,
-		TypeInfer,
+		TypePath,
 		TypeTuple,
 		TypeRef,
 		TypePtr,
@@ -695,7 +695,7 @@ namespace ast {
 		std::unique_ptr<Path> path;
 		GenericParamVec generics;
 
-		TypePath(Path* path, GenericParamVec& generics, Span& span) : Type(NodeType::TypeTuple, std::move(span)),
+		TypePath(Path* path, GenericParamVec& generics, Span& span) : Type(NodeType::TypePath, std::move(span)),
 			path(path),
 			generics(std::move(generics))
 		{}
