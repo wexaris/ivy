@@ -18,6 +18,15 @@ std::string translate::tk_info(const Token& tk) {
 	}
 }
 
+std::string translate::tk_info(int ty) {
+	// If the type is 1-255, return the ASCII character
+	if (ty > 0 && ty <= 255)
+		return "'" + std::string(1, (char)ty) + "'";
+
+	// Fall back to type info since there is no meaningful value to report
+	return tk_type(ty);
+}
+
 std::string translate::tk_type(int type) {
 
 	if (type > 0 && type <= 255)		return "symbol";
@@ -39,6 +48,7 @@ std::string translate::tk_type(int type) {
 
 		// BinOp
 		case (int)TokenType::EQEQ:		return "==";
+		case (int)TokenType::NE:		return "!=";
 		case (int)TokenType::SUME:		return "+=";
 		case (int)TokenType::SUBE:		return "-=";
 		case (int)TokenType::MULE:		return "*=";
@@ -70,7 +80,7 @@ std::string translate::tk_type(int type) {
 		case (int)TokenType::I16:		return "i16";
 		case (int)TokenType::I32:		return "i32";
 		case (int)TokenType::I64:		return "i64";
-		case (int)TokenType::UINT:		return "uint";
+		case (int)TokenType::UINT:		return "unsigned int";
 		case (int)TokenType::U8:		return "u8";
 		case (int)TokenType::U16:		return "u16";
 		case (int)TokenType::U32:		return "u32";

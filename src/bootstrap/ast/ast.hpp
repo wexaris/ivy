@@ -104,11 +104,27 @@ namespace ast {
 		StmtContinue,
 
 		// expr
+		ExprAssign,
+		ExprEq,
+		ExprNotEq,
+		ExprLesser,
+		ExprLesserEq,
+		ExprGreater,
+		ExprGreaterEq,
 		ExprSum,
+		ExprSumEq,
 		ExprSub,
+		ExprSubEq,
 		ExprMul,
+		ExprMulEq,
 		ExprDiv,
+		ExprDivEq,
+		ExprMod,
+		ExprModEq,
 		ExprExp,
+		ExprAnd,
+		ExprOr,
+		ExprMemAcc,
 		ValueBool,
 		ValueString,
 		ValueChar,
@@ -492,6 +508,150 @@ namespace ast {
 	////////////////////////////////////    Expressions    ////////////////////////////////////////
 	///////////////////////////////////////////////////////////////////////////////////////////////
 
+	/* An assignment statement node. */
+	struct ExprAssign : public Expr {
+		std::unique_ptr<Expr> left;
+		std::unique_ptr<Expr> right;
+
+		ExprAssign(Expr* lhs, Expr* rhs, Span& span) : Expr(NodeType::ExprAssign, std::move(span)),
+			left(lhs),
+			right(rhs)
+		{}
+		std::string accept(Visitor&) const override { return std::string(); }
+	};
+
+	/* An assignment expression node. */
+	struct ExprEq : public Expr {
+		std::unique_ptr<Expr> left;
+		std::unique_ptr<Expr> right;
+
+		ExprEq(Expr* lhs, Expr* rhs, Span& span) : Expr(NodeType::ExprEq, std::move(span)),
+			left(lhs),
+			right(rhs)
+		{}
+		std::string accept(Visitor&) const override { return std::string(); }
+	};
+
+	/* An inequality expression node. */
+	struct ExprNotEq : public Expr {
+		std::unique_ptr<Expr> left;
+		std::unique_ptr<Expr> right;
+
+		ExprNotEq(Expr* lhs, Expr* rhs, Span& span) : Expr(NodeType::ExprNotEq, std::move(span)),
+			left(lhs),
+			right(rhs)
+		{}
+		std::string accept(Visitor&) const override { return std::string(); }
+	};
+
+	/* An inequality expression node. */
+	struct ExprSumEq : public Expr {
+		std::unique_ptr<Expr> left;
+		std::unique_ptr<Expr> right;
+
+		ExprSumEq(Expr* lhs, Expr* rhs, Span& span) : Expr(NodeType::ExprSumEq, std::move(span)),
+			left(lhs),
+			right(rhs)
+		{}
+		std::string accept(Visitor&) const override { return std::string(); }
+	};
+
+	/* An inequality expression node. */
+	struct ExprSubEq : public Expr {
+		std::unique_ptr<Expr> left;
+		std::unique_ptr<Expr> right;
+
+		ExprSubEq(Expr* lhs, Expr* rhs, Span& span) : Expr(NodeType::ExprSubEq, std::move(span)),
+			left(lhs),
+			right(rhs)
+		{}
+		std::string accept(Visitor&) const override { return std::string(); }
+	};
+
+	/* An inequality expression node. */
+	struct ExprMulEq : public Expr {
+		std::unique_ptr<Expr> left;
+		std::unique_ptr<Expr> right;
+
+		ExprMulEq(Expr* lhs, Expr* rhs, Span& span) : Expr(NodeType::ExprMulEq, std::move(span)),
+			left(lhs),
+			right(rhs)
+		{}
+		std::string accept(Visitor&) const override { return std::string(); }
+	};
+
+	/* An inequality expression node. */
+	struct ExprDivEq : public Expr {
+		std::unique_ptr<Expr> left;
+		std::unique_ptr<Expr> right;
+
+		ExprDivEq(Expr* lhs, Expr* rhs, Span& span) : Expr(NodeType::ExprDivEq, std::move(span)),
+			left(lhs),
+			right(rhs)
+		{}
+		std::string accept(Visitor&) const override { return std::string(); }
+	};
+
+	/* An inequality expression node. */
+	struct ExprModEq : public Expr {
+		std::unique_ptr<Expr> left;
+		std::unique_ptr<Expr> right;
+
+		ExprModEq(Expr* lhs, Expr* rhs, Span& span) : Expr(NodeType::ExprModEq, std::move(span)),
+			left(lhs),
+			right(rhs)
+		{}
+		std::string accept(Visitor&) const override { return std::string(); }
+	};
+
+	/* An inequality expression node. */
+	struct ExprLesserEq : public Expr {
+		std::unique_ptr<Expr> left;
+		std::unique_ptr<Expr> right;
+
+		ExprLesserEq(Expr* lhs, Expr* rhs, Span& span) : Expr(NodeType::ExprLesserEq, std::move(span)),
+			left(lhs),
+			right(rhs)
+		{}
+		std::string accept(Visitor&) const override { return std::string(); }
+	};
+
+	/* An inequality expression node. */
+	struct ExprGreaterEq : public Expr {
+		std::unique_ptr<Expr> left;
+		std::unique_ptr<Expr> right;
+
+		ExprGreaterEq(Expr* lhs, Expr* rhs, Span& span) : Expr(NodeType::ExprGreaterEq, std::move(span)),
+			left(lhs),
+			right(rhs)
+		{}
+		std::string accept(Visitor&) const override { return std::string(); }
+	};
+
+	/* A sum expression node. */
+	struct ExprLesser : public Expr {
+		std::unique_ptr<Expr> left;
+		std::unique_ptr<Expr> right;
+
+		ExprLesser(Expr* lhs, Expr* rhs, Span& span) : Expr(NodeType::ExprLesser, std::move(span)),
+			left(lhs),
+			right(rhs)
+		{}
+		std::string accept(Visitor&) const override { return std::string(); }
+	};
+
+	/* A sum expression node. */
+	struct ExprGreater : public Expr {
+		std::unique_ptr<Expr> left;
+		std::unique_ptr<Expr> right;
+
+		ExprGreater(Expr* lhs, Expr* rhs, Span& span) : Expr(NodeType::ExprGreater, std::move(span)),
+			left(lhs),
+			right(rhs)
+		{}
+		std::string accept(Visitor&) const override { return std::string(); }
+	};
+
 	/* A sum expression node. */
 	struct ExprSum : public Expr {
 		std::unique_ptr<Expr> left;
@@ -540,6 +700,18 @@ namespace ast {
 		std::string accept(Visitor&) const override { return std::string(); }
 	};
 
+	/* A division expression node. */
+	struct ExprMod : public Expr {
+		std::unique_ptr<Expr> left;
+		std::unique_ptr<Expr> right;
+
+		ExprMod(Expr* lhs, Expr* rhs, Span& span) : Expr(NodeType::ExprMod, std::move(span)),
+			left(lhs),
+			right(rhs)
+		{}
+		std::string accept(Visitor&) const override { return std::string(); }
+	};
+
 	/* An exponent expression node. */
 	struct ExprExp : public Expr {
 		std::unique_ptr<Expr> base;
@@ -548,6 +720,42 @@ namespace ast {
 		ExprExp(Expr* base, Expr* exp, Span& span) : Expr(NodeType::ExprExp, std::move(span)),
 			base(base),
 			exp(exp)
+		{}
+		std::string accept(Visitor&) const override { return std::string(); }
+	};
+
+	/* An inequality expression node. */
+	struct ExprAnd : public Expr {
+		std::unique_ptr<Expr> left;
+		std::unique_ptr<Expr> right;
+
+		ExprAnd(Expr* lhs, Expr* rhs, Span& span) : Expr(NodeType::ExprAnd, std::move(span)),
+			left(lhs),
+			right(rhs)
+		{}
+		std::string accept(Visitor&) const override { return std::string(); }
+	};
+
+	/* An inequality expression node. */
+	struct ExprOr : public Expr {
+		std::unique_ptr<Expr> left;
+		std::unique_ptr<Expr> right;
+
+		ExprOr(Expr* lhs, Expr* rhs, Span& span) : Expr(NodeType::ExprOr, std::move(span)),
+			left(lhs),
+			right(rhs)
+		{}
+		std::string accept(Visitor&) const override { return std::string(); }
+	};
+
+	/* A member access expression node. */
+	struct ExprMemAcc : public Expr {
+		std::unique_ptr<Expr> lhs;
+		std::unique_ptr<Ident> rhs;
+
+		ExprMemAcc(Expr* lhs, Ident* rhs, Span& span) : Expr(NodeType::ExprMemAcc, std::move(span)),
+			lhs(lhs),
+			rhs(rhs)
 		{}
 		std::string accept(Visitor&) const override { return std::string(); }
 	};

@@ -105,7 +105,7 @@ protected:
 	/* Validate hexadecimal escape characters.
 	 * Scans 'num' amount of characters until the 'delim' character is reached.
 	 * Returns wether the escape is valid, */
-	bool scan_hex_escape(uint num, char delim);
+	bool scan_hex_escape(unsigned int num, char delim);
 
 	/* Saves the current Span position. */
 	inline void save_curr_start() {

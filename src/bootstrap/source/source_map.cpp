@@ -6,7 +6,7 @@ bool FileLoader::file_exists(const std::string& path) {
 	return f.good();
 }
 
-std::string FileLoader::read_file(const std::string& path) {
+std::optional<std::string> FileLoader::read_file(const std::string& path) {
 	// Open the file at the path
 	std::ifstream fs(path);
 
@@ -23,11 +23,10 @@ std::string FileLoader::read_file(const std::string& path) {
 		fs.read(&str[0], str.size());
 
 		fs.close();
-		return(str);
+		return str;
 	}
 
-	std::string msg = std::string("Failed to open file ") + path;
-	throw std::runtime_error(msg);
+	return std::nullopt;
 }
 
 TranslationUnit& SourceMap::new_translation_unit(const std::string& path, const std::string& src) {
@@ -39,9 +38,12 @@ TranslationUnit& SourceMap::new_translation_unit(const std::string& path, const 
 
 TranslationUnit& SourceMap::load_file(const std::string& path) {
 	// Return text from file, if it opens
-	if (FileLoader::file_exists(path))
-		return new_translation_unit(path, FileLoader::read_file(path));
-
-	std::string msg = std::string("Failed to open a file at ") + path;
-	throw std::runtime_error(msg);
+	if (FileLoader::file_exists(path)) {
+		auto file_txt = FileLoader::read_file(path);
+		if (file_txt)
+			return new_translation_unit(path, *file_txt);
+	}
+	
+	handler.emit_fatal("failed to open a file at " + path);
+	throw;
 }

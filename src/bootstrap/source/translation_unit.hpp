@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-/* An item containing source code, ususally a file. 
+/* An item containing source code, usually a file. 
  * Stores the path to the file of origin and the source.
  * Has a position inside the larger SourceMap. */
 class TranslationUnit {
@@ -42,8 +42,8 @@ public:
 	 * Tab characters are replaced by four spaces. */
 	std::string get_line(size_t ln, bool fmt) const;
 
-	/* Save a '\n' char's position
-	 * Getting positions from an index  relies on this. */
+	/* Save a newline position.
+	 * Getting positions from an index relies on this. */
 	void save_newline(size_t index) {
 		newlines.push_back(index);
 	}

@@ -13,7 +13,7 @@ namespace range {
 	}
 
 	/* Check if the given integer can be a chracter.  */
-	static inline bool is_char(uint i) {
+	static inline bool is_char(unsigned int i) {
 		return i < 256;
 	}
 
@@ -49,7 +49,7 @@ namespace range {
 	 * Checks the character for the right base.
 	 * If the character can't be a number in the given base,
 	 * a 'nullopt' is retuned. */
-	static inline std::optional<uint> get_num(char c, uint base) {
+	static inline std::optional<unsigned int> get_num(char c, unsigned int base) {
 		if (base > 36)
 			Session::handler.make_bug("tried to get number in base " + std::to_string(base)).emit();
 
@@ -58,7 +58,7 @@ namespace range {
 				return c - '0';
 			return std::nullopt;
 		}
-		uint val;
+		unsigned int val;
 		if (base < 10) {
 			if (is_dec(c))
 				val = c - '0';

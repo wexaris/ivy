@@ -33,8 +33,6 @@ if( CMAKE_COMPILER_IS_GNUCXX )
 
 	# add generic
 	add_compile_options( -pedantic -Wall -Wextra -Werror )
-
-	message( ${CMAKE_BUILD_TYPE} )
 	
 	# add debug / release
 	if( ${CMAKE_BUILD_TYPE} STREQUAL "Debug" )

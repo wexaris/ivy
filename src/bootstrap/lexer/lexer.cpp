@@ -159,15 +159,15 @@ void Lexer::consume_ws_and_comments() {
 	}
 }
 
-bool Lexer::scan_hex_escape(uint num, char delim) {
+bool Lexer::scan_hex_escape(unsigned int num, char delim) {
 	bool valid = true;
-	uint number = 0;
+	unsigned int number = 0;
 
 	// Check 'num' amount of characters
-	for (uint i = 0; i < num; i++) {
+	for (unsigned int i = 0; i < num; i++) {
 		// File EOF in escape
 		if (!is_valid(curr)) {
-			// Citical failure
+			// Critical failure
 			// We can't guess how the literal was supposed to be terminated
 			handler.emit_fatal_higligted("incomplete numeric escape", curr_span());
 		}

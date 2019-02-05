@@ -5,8 +5,8 @@ class TranslationUnit;
 
 /* An structure for passing around lines and columns. */
 struct TextPos {
-	size_t line;
-	size_t col;
+	size_t line = 0;
+	size_t col = 0;
 };
 
 /* A large position in a file.

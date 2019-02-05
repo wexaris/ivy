@@ -18,7 +18,7 @@ public:
 	 * The error's 'format()' is called to get the final string that will be printed.
 	 * Some 'CompilerException' might be thrown if the error is of type 'ERROR', 'FATAL' or 'BUG'. */
 	virtual void emit(const Error& err) {
-		// Cenceled errors aren't emitted
+		// Canceled errors aren't emitted
 		if (err.is_canceled())
 			return;
 

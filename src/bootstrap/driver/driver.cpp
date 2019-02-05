@@ -21,7 +21,6 @@ inline void usage() {
 	printf("    -Werr        treat all warnings as errors\n");
 	printf("    -trace       emit trace messages during compilation\n");
 	printf("    -h           display this help menu\n\n");
-	std::exit(0);
 }
 
 bool compile(const std::vector<std::string>& input, const std::string& output) {
@@ -54,12 +53,12 @@ bool compile(const std::vector<std::string>& input, const std::string& output) {
 			Session::handler.emit_fatal("build failed due to " + err_count + "\n");
 		}
 	}
-	// If anything throwed an internal exception,
+	// If anything threw an internal exception,
 	// Return compilation failure
 	catch (const FatalException& e) {
 		return false;
 	}
-	// If anything throwed an internal exception, it was most likely a 'bug' or 'unimpl'
+	// If anything threw an internal exception, it was most likely a 'bug' or 'unimpl'
 	// Return compilation failure
 	catch (const InternalException& e) {
 		return false;
@@ -121,7 +120,7 @@ int main(int argc, char* argv[]) {
 
 			// Invalid option
 			else {
-				printf("unrecognised option: %s\n", arg.c_str());
+				printf("unrecognized option: %s\n", arg.c_str());
 				usage();
 				return EXIT_FAILURE;
 			}
@@ -133,7 +132,7 @@ int main(int argc, char* argv[]) {
 	}
 
 	// Error if there is no input file
-	if (input_files.size() == 0) {
+	if (input_files.empty()) {
 		printf("input files missing\n");
 		return EXIT_FAILURE;
 	}
@@ -151,7 +150,7 @@ int main(int argc, char* argv[]) {
 			output_file = cwd + "/a.out";
 	}
 	// In case the given output doesn't start from the root
-	// prepend ir with the cwd
+	// prepend it with the cwd
 	else if (output_file[0] != '/')
 		output_file = cwd + output_file;
 	// In case we are given an output directory but no file,
@@ -185,7 +184,7 @@ int main() {
 	// Prints the tokens in the 'main.ivy' test file
 	print_main();
 
-	// Run thests
+	// Run tests
 	// TODO:  There should be more but we're short on time
 	tests::lexer::token_has_correct_absolute_pos();
 	tests::lexer::token_has_correct_line_pos();

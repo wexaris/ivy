@@ -108,20 +108,40 @@ struct OPInfo {
  * Key - operator (char)
  * Value - OPInfo. */
 struct OPInfoPair {
-	const char key;
+	const int key;
 	OPInfo value;
 };
 /* Maps operators to their OPInfo. */
 constexpr static OPInfoPair opinfo_map[] {
-	{'+',    {1, OPInfo::LEFT}},
-	{'-',    {1, OPInfo::LEFT}},
-	{'*',    {2, OPInfo::LEFT}},
-	{'/',    {2, OPInfo::LEFT}},
-	{'^',    {3, OPInfo::RIGHT}}
+	{'=',    {1, OPInfo::RIGHT}},
+	{(int)TokenType::SUME,  {1, OPInfo::RIGHT}},
+	{(int)TokenType::SUBE,  {1, OPInfo::RIGHT}},
+	{(int)TokenType::MULE,  {1, OPInfo::RIGHT}},
+	{(int)TokenType::SUBE,  {1, OPInfo::RIGHT}},
+	{(int)TokenType::MODE,  {1, OPInfo::RIGHT}},
+	{(int)TokenType::CARE,  {1, OPInfo::RIGHT}},
+
+	{(int)TokenType::OR,    {2, OPInfo::LEFT}},	// ||
+	{(int)TokenType::AND,   {3, OPInfo::LEFT}},	// &&
+
+	{(int)TokenType::EQEQ,  {4, OPInfo::LEFT}},	// ==
+	{(int)TokenType::NE,    {4, OPInfo::LEFT}},	// !=
+	{(int)TokenType::LE,    {5, OPInfo::LEFT}},	// >=
+	{(int)TokenType::GE,    {5, OPInfo::LEFT}},	// <=
+
+	{'<',    {5, OPInfo::LEFT}},
+	{'>',    {5, OPInfo::LEFT}},
+
+	{'+',    {6, OPInfo::LEFT}},
+	{'-',    {6, OPInfo::LEFT}},
+	{'*',    {7, OPInfo::LEFT}},
+	{'/',    {7, OPInfo::LEFT}},
+	{'%',    {7, OPInfo::LEFT}},
+	{'^',    {8, OPInfo::RIGHT}},
 };
 /* Attempts to find the given operator in the OPInfo map.
  * If no operations match, a nullptr is returned. */
-constexpr const OPInfoPair* op_find(char key) {
+constexpr const OPInfoPair* op_find(int key) {
 	for (unsigned long i = 0; i < sizeof(opinfo_map)/sizeof(*opinfo_map); i++)
 		if (opinfo_map[i].key == key)
 			return &opinfo_map[i];
@@ -188,7 +208,27 @@ inline bool is_attr(const Token& tk) {
 
 /* True is the provided token is a binary operator. */
 inline bool is_binop(const Token& tk) {
-	return tk.type() == '+' || tk.type() == '-' || tk.type() == '*' || tk.type() == '/' || tk.type() == '^';
+	return tk == TokenType::AND ||
+		tk == TokenType::OR ||
+		tk == TokenType::EQEQ ||
+		tk == TokenType::NE ||
+		tk == TokenType::LE ||
+		tk == TokenType::GE ||
+		tk == TokenType::SUME ||
+		tk == TokenType::SUBE ||
+		tk == TokenType::MULE ||
+		tk == TokenType::DIVE ||
+		tk == TokenType::MODE ||
+		tk == TokenType::CARE ||
+		tk.type() == '=' ||
+		tk.type() == '<' ||
+		tk.type() == '>' ||
+		tk.type() == '+' ||
+		tk.type() == '-' ||
+		tk.type() == '*' ||
+		tk.type() == '/' ||
+		tk.type() == '%' ||
+		tk.type() == '^';
 }
 
 /* True is the provided token is a unary operator. */
@@ -199,22 +239,22 @@ inline bool is_unaryop(const Token& tk) {
 /* Splits the current multi-character binop into smaller tokens. */
 Token Parser::split_multi_binop() {
 	switch (curr_tok.type()) {
-		[[fallthrough]] case (int)TokenType::EQEQ:
-		[[fallthrough]] case (int)TokenType::NE:
-		[[fallthrough]] case (int)TokenType::SUME:
-		[[fallthrough]] case (int)TokenType::SUBE:
-		[[fallthrough]] case (int)TokenType::MULE:
-		[[fallthrough]] case (int)TokenType::DIVE:
-		[[fallthrough]] case (int)TokenType::MOD:
-		[[fallthrough]] case (int)TokenType::CARE:
-		[[fallthrough]] case (int)TokenType::GE:
-		[[fallthrough]] case (int)TokenType::LE:
-		[[fallthrough]] case (int)TokenType::ORE:
-		[[fallthrough]] case (int)TokenType::ANDE:
-		[[fallthrough]] case (int)TokenType::OR:
-		[[fallthrough]] case (int)TokenType::AND:
-		[[fallthrough]] case (int)TokenType::SHL:
-		[[fallthrough]] case (int)TokenType::SHR:
+		case (int)TokenType::EQEQ: [[fallthrough]];
+		case (int)TokenType::NE:   [[fallthrough]];
+		case (int)TokenType::SUME: [[fallthrough]];
+		case (int)TokenType::SUBE: [[fallthrough]];
+		case (int)TokenType::MULE: [[fallthrough]];
+		case (int)TokenType::DIVE: [[fallthrough]];
+		case (int)TokenType::MOD:  [[fallthrough]];
+		case (int)TokenType::CARE: [[fallthrough]];
+		case (int)TokenType::GE:   [[fallthrough]];
+		case (int)TokenType::LE:   [[fallthrough]];
+		case (int)TokenType::ORE:  [[fallthrough]];
+		case (int)TokenType::ANDE: [[fallthrough]];
+		case (int)TokenType::OR:   [[fallthrough]];
+		case (int)TokenType::AND:  [[fallthrough]];
+		case (int)TokenType::SHL:  [[fallthrough]];
+		case (int)TokenType::SHR:
 			curr_tok = Token(
 				curr_tok.raw()[1],
 				curr_tok.raw().substr(1, 2),
@@ -229,10 +269,70 @@ Token Parser::split_multi_binop() {
 }
 
 void Parser::recover_to(const Recovery& to) {
+	int paren_lvl = 0;
+	int brack_lvl = 0;
+	int brace_lvl = 0;
+
 	while (curr_tok != TokenType::END) {
-		for (auto c : to)
-			if (curr_tok.type() == c)
-				return;
+		switch (curr_tok.type())
+		{
+		case '(':
+			if (paren_lvl++ == 0) {
+				for (auto c : to) {
+					if (c == '(')
+						return;
+				}
+			}
+			break;
+		case ')':
+			if (paren_lvl-- == 0) {
+				for (auto c : to) {
+					if (c == '}')
+						return;
+				}
+			}
+			break;
+		case '[':
+			if (brack_lvl++ == 0) {
+				for (auto c : to) {
+					if (c == '[')
+						return;
+				}
+			}
+			break;
+		case ']':
+			if (brack_lvl-- == 0) {
+				for (auto c : to) {
+					if (c == ']')
+						return;
+				}
+			}
+			break;
+		case '{':
+			if (brace_lvl++ == 0) {
+				for (auto c : to) {
+					if (c == '{')
+						return;
+				}
+			}
+			break;
+		case '}':
+			if (brace_lvl-- == 0) {
+				for (auto c : to) {
+					if (c == '}')
+						return;
+				}
+			}
+			break;
+		default:
+			if (paren_lvl <= 0 || brack_lvl <= 0 || brace_lvl <= 0) {
+				for (auto c : to) {
+					if (curr_tok.type() == c)
+						return;
+				}
+			}
+			break;
+		}
 		bump();
 	}
 }
@@ -584,8 +684,9 @@ inline Attributes Parser::attributes() {
 	return attributes;
 }
 
-// Path : ast::Ident (SCOPE ast::Ident)*
-ast::Path* Parser::path(const Recovery& to) {
+// Path : ident (SCOPE ident)*
+//      | ident ('.' ident)*
+ast::Path* Parser::path(int delim, const Recovery& to) {
 	trace("path");
 	size_t start = curr_tok.span().lo_bit;
 	Path path;
@@ -594,11 +695,11 @@ ast::Path* Parser::path(const Recovery& to) {
 	auto id_ret = ident(to + Recovery{(int)TokenType::SCOPE});
 	path.push_back(std::unique_ptr<ast::Ident>(id_ret));
 
-	while (curr_tok == TokenType::SCOPE) {
+	while (curr_tok.type() == delim) {
 		bump();
 
 		// Add current token to path
-		auto id_ret = ident(to + Recovery{(int)TokenType::SCOPE});
+		auto id_ret = ident(to + Recovery{delim});
 		path.push_back(std::unique_ptr<ast::Ident>(id_ret));
 	}
 
@@ -889,7 +990,7 @@ ast::DeclModule* Parser::decl_module(bool is_global) {
 	// Split global and non-global recoveries
 	Recovery rec = is_global ? Recovery{';', '{'} : Recovery{'{'};
 
-	auto mod_path = path(recover::decl_start + rec);
+	auto mod_path = path((int)TokenType::SCOPE, recover::decl_start + rec);
 
 	std::vector<std::unique_ptr<ast::Decl>> decls;	
 	if (curr_tok.type() == ';') {
@@ -973,7 +1074,7 @@ ast::Decl* Parser::decl_import_item() {
 		DEFAULT_PARSE_END(nullptr);
 	}
 
-	auto import_path = path(recover::decl_start + recover::semi);
+	auto import_path = path((int)TokenType::SCOPE, recover::decl_start + recover::semi);
 
 	expect_sym_recheck(';', recover::decl_start);
 
@@ -1070,7 +1171,7 @@ ast::DeclUse* Parser::decl_use() {
 	if (expect_keyword(TokenType::USE))
 		bug("decl_use not checked before invoking");
 
-	auto path = this->path(recover::decl_start + recover::semi);
+	auto path = this->path((int)TokenType::SCOPE, recover::decl_start + recover::semi);
 
 	expect_sym_recheck(';', recover::decl_start);
 
@@ -1509,10 +1610,12 @@ void Parser::impl_block() {
 		auto attrib = attributes();
 
 		// FIXME:  Add constructor support
-		if (curr_tok == TokenType::TYPE)
-			decl_type();
-		else if (curr_tok == TokenType::FUN)
+		if (curr_tok == TokenType::FUN)
 			decl_fun(true);
+		else {
+			err_expected(translate::tk_type(curr_tok), "a function declaration");
+			recover_to({ (int)TokenType::FUN, '}' });
+		}
 	}
 	expect_sym_recheck('}', recover::decl_start);
 
@@ -1594,11 +1697,11 @@ ast::Stmt* Parser::stmt(const Recovery& recovery) {
 		default: {
 				size_t start = curr_tok.span().lo_bit;
 
-				// Attempt to parse an expression, since no other statemnts match
+				// Attempt to parse an expression, since no other statements match
 				auto expr_ret = expr(1);
 
 				// If we haven't moved forward after parsing an expression,
-				// somthing is wrong, so make an error about expecting a statement.
+				// something is wrong, so make an error about expecting a statement.
 				// 
 				// After that try to recover to the given recovery or a semicolon.
 				if (start == curr_tok.span().lo_bit) {
@@ -1729,9 +1832,16 @@ void Parser::stmt_for(const Recovery& recovery) {
 	if (expect_keyword(TokenType::FOR))
 		bug("stmt_for not checked before invoking");
 
-	unimpl("stmt_for");
+	expr(1, recovery + Recovery{';'});
+	expect_symbol(';');
+	expr(1, recovery + Recovery{';'});
+	expect_symbol(';');
+	expr(1, recovery + Recovery{'{'});
 
-	(void)recovery;
+	if (curr_tok.type() == '{') {
+		auto block = fun_block();
+	}
+
 	end_trace();
 }
 
@@ -1848,7 +1958,7 @@ std::tuple<Error*, ast::Expr*> Parser::expr(int min_prec) {
 	ast::Expr* rhs = nullptr;
 	Error* err = nullptr;
 
-	auto val_ret = val(Recovery{'+', '-', '*', '/', '^'});
+	auto val_ret = val(Recovery{'+', '-', '*', '/', '^'}); // FIXME:  HORRIBLE STUFF EXPRESSION PRECEDENCE IS DEAD
 	err = std::get<0>(val_ret);
 	lhs = std::get<1>(val_ret);
 
@@ -1858,7 +1968,7 @@ std::tuple<Error*, ast::Expr*> Parser::expr(int min_prec) {
 
 		auto opinfo = op_find(curr_tok.type());
 		if (!opinfo)
-			bug("inconsistent binary operator definitions");
+			bug("inconsistent binary operator definitions; missing " + translate::tk_info(curr_tok));
 
 		if (opinfo->value.prec < min_prec)
 			break;
@@ -1871,6 +1981,16 @@ std::tuple<Error*, ast::Expr*> Parser::expr(int min_prec) {
 		// Decide next expression's operator precedence requirements
 		int next_prec = opinfo->value.assoc == OPInfo::LEFT ? opinfo->value.prec + 1 : opinfo->value.prec;
 
+		if (opinfo->key == '.') {
+			auto id = ident(recover::expr_end);
+			auto sp = concat_span(start, curr_tok.span());
+
+			auto ex = new ast::ExprMemAcc(lhs, id, sp);
+
+			auto ret = std::tuple(err, ex);
+			DEFAULT_PARSE_END(ret);
+		}
+
 		auto expr_ret = expr(next_prec);
 		rhs = std::get<1>(expr_ret);
 		if (!err) { err = std::get<0>(expr_ret); }
@@ -1878,24 +1998,73 @@ std::tuple<Error*, ast::Expr*> Parser::expr(int min_prec) {
 		auto sp = concat_span(start, curr_tok.span());
 
 		ast::Expr* ex = nullptr;
-		switch(opinfo->key) {
-			case '+':
-				ex = new ast::ExprSum(lhs, rhs, sp);
-				break;
-			case '-':
-				ex = new ast::ExprSub(lhs, rhs, sp);
-				break;
-			case '*':
-				ex = new ast::ExprMul(lhs, rhs, sp);
-				break;
-			case '/':
-				ex = new ast::ExprDiv(lhs, rhs, sp);
-				break;
-			case '^':
-				ex = new ast::ExprExp(lhs, rhs, sp);
-				break;
-			default:
-				bug("inconsistent binary operator definitions");
+		switch(opinfo->key)
+		{
+		case (int)TokenType::AND:
+			ex = new ast::ExprAnd(lhs, rhs, sp);
+			break;
+		case (int)TokenType::OR:
+			ex = new ast::ExprOr(lhs, rhs, sp);
+			break;
+		case (int)TokenType::EQEQ:
+			ex = new ast::ExprEq(lhs, rhs, sp);
+			break;
+		case (int)TokenType::NE:
+			ex = new ast::ExprNotEq(lhs, rhs, sp);
+			break;
+		case (int)TokenType::LE:
+			ex = new ast::ExprLesserEq(lhs, rhs, sp);
+			break;
+		case (int)TokenType::GE:
+			ex = new ast::ExprGreaterEq(lhs, rhs, sp);
+			break;
+		case (int)TokenType::SUME:
+			ex = new ast::ExprSumEq(lhs, rhs, sp);
+			break;
+		case (int)TokenType::SUBE:
+			ex = new ast::ExprSubEq(lhs, rhs, sp);
+			break;
+		case (int)TokenType::MULE:
+			ex = new ast::ExprMulEq(lhs, rhs, sp);
+			break;
+		case (int)TokenType::DIVE:
+			ex = new ast::ExprDivEq(lhs, rhs, sp);
+			break;
+		case (int)TokenType::MODE:
+			ex = new ast::ExprModEq(lhs, rhs, sp);
+			break;
+		case (int)TokenType::CARE:
+			unimpl("^= expressions");
+			break;
+		case '=':
+			ex = new ast::ExprAssign(lhs, rhs, sp);
+			break;
+		case '<':
+			ex = new ast::ExprLesser(lhs, rhs, sp);
+			break;
+		case '>':
+			ex = new ast::ExprGreater(lhs, rhs, sp);
+			break;
+		case '+':
+			ex = new ast::ExprSum(lhs, rhs, sp);
+			break;
+		case '-':
+			ex = new ast::ExprSub(lhs, rhs, sp);
+			break;
+		case '*':
+			ex = new ast::ExprMul(lhs, rhs, sp);
+			break;
+		case '/':
+			ex = new ast::ExprDiv(lhs, rhs, sp);
+			break;
+		case '%':
+			ex = new ast::ExprMod(lhs, rhs, sp);
+			break;
+		case '^':
+			ex = new ast::ExprExp(lhs, rhs, sp);
+			break;
+		default:
+			bug("inconsistent binary operator definitions; missing " + translate::tk_info(opinfo->key));
 		}
 
 		// Return a binop expression node
@@ -1926,22 +2095,30 @@ std::tuple<Error*, ast::Expr*> Parser::expr(int min_prec, const Recovery& recove
 //      | '(' ')'
 std::tuple<Error*, ast::Value*> Parser::val(const Recovery& recovery) {
 	trace("val");
+	size_t start = curr_tok.span().lo_bit;
+
 	std::tuple<Error*, ast::Value*> ret;
 
-	if (curr_tok == TokenType::ID) {				// path
-		size_t start = curr_tok.span().lo_bit;
+	if (is_unaryop(curr_tok)) {					// unaryop val
+		auto uop = unary_op();
 
-		auto val_path = path(recovery);
+		auto val_ret = val(recovery);
+		if (std::get<1>(val_ret))
+			std::get<1>(val_ret)->add_uop(uop);
 
+		ret = val_ret;
+	}
+	else if (curr_tok == TokenType::ID) {			// path
+		auto val_path = path((int)TokenType::SCOPE, recovery);
+
+		ast::Value* val = nullptr;
 		switch(curr_tok.type()) {
 			case '!': {
 				bump();
 				auto args = arg_list(recovery);
 
 				auto sp = concat_span(start, curr_tok.span());
-				auto val = new ast::ValueMacroInvoc(val_path, args, sp);
-
-				ret = std::tuple(nullptr, val);
+				val = new ast::ValueMacroInvoc(val_path, args, sp);
 				break;
 			}
 
@@ -1949,27 +2126,29 @@ std::tuple<Error*, ast::Value*> Parser::val(const Recovery& recovery) {
 				auto args = arg_list(recovery);
 
 				auto sp = concat_span(start, curr_tok.span());
-				auto val = new ast::ValueFunCall(val_path, args, sp);
+				val = new ast::ValueFunCall(val_path, args, sp);
+				break;
+			}
+			case '[': {
+				auto items = arr_init(recovery);
 
-				ret = std::tuple(nullptr, val);
+				auto sp = concat_span(start, curr_tok.span());
+				val = new ast::ValueArray(items, sp);
 				break;
 			}
 			case '{': {
 				auto fields = struct_init(recovery);
 
 				auto sp = concat_span(start, curr_tok.span());
-				auto val = new ast::ValueStruct(val_path, fields, sp);
-
-				ret = std::tuple(nullptr, val);
+				val = new ast::ValueStruct(val_path, fields, sp);
 				break;
 			}
 
 			default:
 				auto sp = concat_span(start, curr_tok.span());
-				auto val = new ast::ValuePath(val_path, sp);
-
-				ret = std::tuple(nullptr, val);
+				val = new ast::ValuePath(val_path, sp);
 		}
+		ret = std::tuple(nullptr, val);
 	}
 	else if (curr_tok.type() == '(') {				// '('
 		size_t start = curr_tok.span().lo_bit;
@@ -2006,13 +2185,13 @@ std::tuple<Error*, ast::Value*> Parser::val(const Recovery& recovery) {
 		ExprVec exprs;
 		Error* err = nullptr;
 
-		if (curr_tok.type() != ']') {				// '(' ')'
+		if (curr_tok.type() != ']') {				// '[' ']'
 			auto expr_ret = expr(1);
 			err = std::get<0>(expr_ret);
 			auto expr_1 = std::get<1>(expr_ret);
 			exprs.push_back(std::unique_ptr<ast::Expr>(expr_1));
 
-			while (curr_tok.type() == ',') {		// '(' expr (',' expr)* ')'
+			while (curr_tok.type() == ',') {		// '[' expr (',' expr)* ']'
 				bump();
 
 				auto expr_ret = expr(1);
@@ -2034,19 +2213,63 @@ std::tuple<Error*, ast::Value*> Parser::val(const Recovery& recovery) {
 			std::tuple((Error*)nullptr, lit_ret) :
 			std::tuple(&handler.last(), nullptr);
 	}
-	else if (is_unaryop(curr_tok)) {				// unaryop val
-		auto uop = unary_op();
-
-		auto val_ret = val(recovery);
-		if (std::get<1>(val_ret))
-			std::get<1>(val_ret)->add_uop(uop);
-
-		ret = val_ret;
-	}
 	else {
 		auto err = err_expected(translate::tk_type(curr_tok), "an expression");
 		recover_to(recovery);
+
 		ret = std::tuple(err, nullptr);
+		DEFAULT_PARSE_END(ret);
+	}
+
+	while (curr_tok.type() == '.') {
+		bump();
+		if (curr_tok == TokenType::ID) {
+
+			auto val_path = path('.', recovery);
+
+			ast::Value* val = nullptr;
+			switch (curr_tok.type()) {
+			case '!': {
+				bump();
+				auto args = arg_list(recovery);
+
+				auto sp = concat_span(start, curr_tok.span());
+				val = new ast::ValueMacroInvoc(val_path, args, sp);
+				break;
+			}
+
+			case '(': {
+				auto args = arg_list(recovery);
+
+				auto sp = concat_span(start, curr_tok.span());
+				val = new ast::ValueFunCall(val_path, args, sp);
+				break;
+			}
+			case '[': {
+				auto items = arr_init(recovery);
+
+				auto sp = concat_span(start, curr_tok.span());
+				val = new ast::ValueArray(items, sp);
+				break;
+			}
+			case '{': {
+				auto fields = struct_init(recovery);
+
+				auto sp = concat_span(start, curr_tok.span());
+				val = new ast::ValueStruct(val_path, fields, sp);
+				break;
+			}
+
+			default:
+				auto sp = concat_span(start, curr_tok.span());
+				val = new ast::ValuePath(val_path, sp);
+			}
+			ret = std::tuple(nullptr, val);
+		}
+		else {
+			err_expected(translate::tk_info(curr_tok), "an identifier, '(', '[' or '{'");
+			recover_to(recovery);
+		}
 	}
 
 	DEFAULT_PARSE_END(ret);
@@ -2295,9 +2518,9 @@ std::tuple<Error*, ast::TypePtr*> Parser::type_ptr(const Recovery& recovery) {
 	DEFAULT_PARSE_END(ret)
 }
 
-// type_tuple : '(' ')'                      // TypeVoid
-//            | '(' typle ')'                // Type
-//            | '(' typle (',' type)* ')'    // TypeTuple
+// type_tuple : '(' ')'                     // TypeVoid
+//            | '(' type ')'                // Type
+//            | '(' type (',' type)* ')'    // TypeTuple
 std::tuple<Error*, ast::Type*> Parser::type_tuple(const Recovery& recovery) {
 	trace("type_tuple");
 	size_t start = curr_tok.span().lo_bit;
@@ -2383,7 +2606,7 @@ ast::TypePath* Parser::type_path(const Recovery& recovery) {
 	trace("type_path");
 	size_t start = curr_tok.span().lo_bit;
 
-	auto p = path(recovery);
+	auto p = path((int)TokenType::SCOPE, recovery);
 	auto generics = generic_params(recovery);
 
 	auto sp = concat_span(start, curr_tok.span());

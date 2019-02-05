@@ -40,7 +40,7 @@
 		constexpr const Arch _ARCH = Arch::x86;
 	#endif
 #else
-	#ifndef WINDOWS
+	#ifndef _WIN32
 		#error "Unrecognized architecture"
 	#endif
 #endif

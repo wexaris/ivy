@@ -16,6 +16,8 @@ namespace translate {
 		return tk_type(tk.type());
 	}
 
-	/* Returns the type and possibly. */
+	/* Returns the value of the token as a string. */
 	std::string tk_info(const Token& tk);
+	/* Returns the value of the type. */
+	std::string tk_info(int ty);
 }

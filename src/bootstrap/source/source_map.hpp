@@ -17,7 +17,7 @@ public:
 	/* Returns a string with all of the text in the file at the give path
 	 * Throws an exception if the file doesn't exist.
 	 * Checking 'file_exists()' before reading is advised. */
-	static std::string read_file(const std::string& path);
+	static std::optional<std::string> read_file(const std::string& path);
 };
 
 /* A map containing all of the source files in a package.

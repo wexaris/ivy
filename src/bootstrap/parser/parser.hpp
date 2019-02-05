@@ -89,7 +89,7 @@ private:
 
 	// collectors
 	inline Attributes attributes();
-	ast::Path* path(const Recovery& to);
+	ast::Path* path(int delim, const Recovery& to);
 
 	// helping item collections
 	GenericParamVec generic_params(const Recovery& recovery);
